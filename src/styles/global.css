@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg:        #fbf7f6;
+    --bg-2:      #ffffff;
+    --bg-3:      #f6efed;
+    --surface:   #f6eeec;
+    --surface-2: #efe3e0;
+    --border:    #e9dad7;
+    --border-2:  #d9c5c1;
+    --ink:       #292021;
+    --ink-2:     #372c2d;
+    --ink-3:     #4a3b3c;
+    --crimson:   #5D0F0F;
+    --crimson-2: #7a1a1a;
+    --rose:      #895353;
+    --taupe:     #A98D8C;
+    --blush:     #E9D8D5;
+    --text:      #292021;
+    --text-2:    #4d3e3e;
+    --text-3:    #97817d;
+    --danger:    #c0392b;
+    --success:   #2e7d32;
+    --warning:   #b45309;
+  }
+
+  * { box-sizing: border-box; }
+  html, body, #root { height: 100%; }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--taupe); }
+}
+
+@layer components {
+  .sentrix-input {
+    @apply w-full bg-white border border-[#e9dad7] rounded-md px-3 py-2.5 text-sm outline-none transition-colors;
+    color: var(--text);
+  }
+  .sentrix-input::placeholder { color: var(--text-3); }
+  .sentrix-input:focus { border-color: var(--rose); }
+
+  .sentrix-select {
+    @apply w-full bg-white border border-[#e9dad7] rounded-md px-3 py-2.5 text-sm outline-none transition-colors cursor-pointer appearance-none;
+    color: var(--text);
+  }
+  .sentrix-select:focus { border-color: var(--rose); }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 font-medium text-sm rounded-md px-4 py-2.5 transition-colors cursor-pointer border-0 outline-none;
+    background: var(--crimson);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--crimson-2); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 font-medium text-sm rounded-md px-4 py-2.5 transition-colors cursor-pointer outline-none;
+    background: transparent;
+    border: 1px solid var(--border-2);
+    color: var(--text-2);
+  }
+  .btn-secondary:hover { background: var(--surface); color: var(--text); }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 text-sm rounded-md px-3 py-2 transition-colors cursor-pointer border-0 outline-none;
+    background: transparent;
+    color: var(--text-3);
+  }
+  .btn-ghost:hover { background: var(--surface); color: var(--text-2); }
+
+  .card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+
+  .badge {
+    @apply text-xs px-2 py-0.5 rounded-full font-medium;
+  }
+  .badge-connected { background: #fdf0f0; color: var(--crimson); border: 1px solid #f0dada; }
+  .badge-disconnected { background: var(--surface); color: var(--text-3); border: 1px solid var(--border); }
+  .badge-danger { background: #fef2f2; color: #b91c1c; }
+  .badge-warning { background: #fffbeb; color: #92400e; }
+  .badge-success { background: #f0fdf4; color: #166534; }
+
+  .nav-item {
+    @apply flex items-center gap-2.5 px-3 py-2 rounded-md text-sm cursor-pointer transition-colors relative;
+    color: #b9a5a2;
+  }
+  .nav-item:hover { background: var(--ink-2); color: var(--blush); }
+  .nav-item.active { background: var(--ink-2); color: #f3e7e4; font-weight: 500; }
+  .nav-item.active::before {
+    content: '';
+    position: absolute; left: -10px; top: 7px; bottom: 7px; width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--rose);
+  }
+  .nav-item.active svg { color: #d9a0a0; }
+
+  .page-header {
+    @apply px-7 py-4 flex items-center justify-between;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-2);
+  }
+
+  .page-content { @apply p-7; }
+
+  .eyebrow {
+    @apply text-[10.5px] uppercase font-medium;
+    letter-spacing: 0.12em;
+    color: var(--rose);
+  }
+
+  .table-head {
+    @apply text-[10.5px] uppercase font-medium;
+    letter-spacing: 0.1em;
+    color: var(--rose);
+    background: var(--surface);
+  }
+
+  .row-hover:hover { background: #faf3f1; }
+
+  .section-title { @apply text-sm font-medium mb-1; color: var(--text); }
+  .section-desc { @apply text-xs; color: var(--text-3); }
+  .divider { border-top: 1px solid var(--border); @apply my-4; }
+
+  .notice-bar {
+    @apply flex items-center gap-2.5 text-xs rounded-lg px-4 py-3 mb-5;
+    background: #fdf5f5;
+    border: 1px solid #f0dada;
+    color: var(--text-2);
+  }
+}
