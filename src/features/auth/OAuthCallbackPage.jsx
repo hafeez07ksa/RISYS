@@ -67,11 +67,11 @@ async function runPostConnect(connectorId, orgId) {
       })
       const data = await res.json()
       if (!res.ok || data.error) {
-        console.warn('[Sentrix] Jira webhook registration failed:', data.error || data)
+        console.warn('[RISYS] Jira webhook registration failed:', data.error || data)
       } else {
-        console.log('[Sentrix] Jira webhook registered:', data.webhookId)
+        console.log('[RISYS] Jira webhook registered:', data.webhookId)
       }
-    } catch (err) { console.warn('[Sentrix] Jira webhook error:', err) }
+    } catch (err) { console.warn('[RISYS] Jira webhook error:', err) }
   }
 
   if (connectorId === 'entra') {
@@ -82,11 +82,11 @@ async function runPostConnect(connectorId, orgId) {
       })
       const data = await res.json()
       if (!res.ok || data.error) {
-        console.warn('[Sentrix] Entra directory sync failed:', data.error)
+        console.warn('[RISYS] Entra directory sync failed:', data.error)
       } else {
-        console.log('[Sentrix] Entra synced:', data.users_synced, 'users')
+        console.log('[RISYS] Entra synced:', data.users_synced, 'users')
       }
-    } catch (err) { console.warn('[Sentrix] Entra sync error:', err) }
+    } catch (err) { console.warn('[RISYS] Entra sync error:', err) }
   }
 }
 
@@ -231,7 +231,7 @@ export function OAuthCallbackPage() {
       }, 1800)
 
     } catch (err) {
-      console.error('[Sentrix] OAuthCallbackPage error:', err)
+      console.error('[RISYS] OAuthCallbackPage error:', err)
       setErrorMsg(err.message || 'Connection failed')
       setPhase(PHASE.ERROR)
     }

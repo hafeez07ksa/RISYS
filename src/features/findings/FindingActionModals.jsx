@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { SEVERITY_CONFIG } from '@/lib/findings'
 import { logAudit, AUDIT } from '@/lib/audit'
+import { SelectField } from '@/components/ui/Combobox'
 
 /*
  * Connector-agnostic modals that turn a normalised finding into a Risk or an
@@ -94,10 +95,10 @@ export function CreateFindingRiskModal({ finding, onClose, onCreated }) {
             {[['likelihood', 'Likelihood (1–5)'], ['impact', 'Impact (1–5)']].map(([key, label]) => (
               <div key={key}>
                 <label style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070', marginBottom: 6 }}>{label}</label>
-                <select value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: Number(e.target.value) }))}
+                <SelectField value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: Number(e.target.value) }))}
                   style={{ width: '100%', fontSize: 12, padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e0e0', color: '#1a1314', outline: 'none', background: '#fff' }}>
                   {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
+                </SelectField>
               </div>
             ))}
           </div>

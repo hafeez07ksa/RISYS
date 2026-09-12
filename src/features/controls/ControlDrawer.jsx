@@ -12,6 +12,7 @@ import { usePeople } from '@/hooks/usePeople'
 import { usePermissions } from '@/hooks/usePermissions'
 import { getRiskLevel } from '@/lib/risks'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 
 const RESULT_COLORS = { Pass: '#166534', Fail: '#991b1b', Partial: '#92400e' }
 
@@ -45,23 +46,23 @@ function TestTab({ control, canTest }) {
         <div style={{ marginBottom: 16, padding: 12, background: 'var(--surface)', borderRadius: 8 }}>
           <p className="eyebrow" style={{ marginBottom: 10 }}>Log Test</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 8 }}>
-            <select value={form.test_type} onChange={set('test_type')} className="sentrix-select" style={{ fontSize: 12 }}>
+            <SelectField value={form.test_type} onChange={set('test_type')} style={{ fontSize: 12 }}>
               <option>Design</option><option>Operating</option>
-            </select>
-            <select value={form.result} onChange={set('result')} className="sentrix-select" style={{ fontSize: 12 }}>
+            </SelectField>
+            <SelectField value={form.result} onChange={set('result')} style={{ fontSize: 12 }}>
               <option>Pass</option><option>Fail</option><option>Partial</option>
-            </select>
-            <select value={form.effectiveness} onChange={set('effectiveness')} className="sentrix-select" style={{ fontSize: 12 }}>
+            </SelectField>
+            <SelectField value={form.effectiveness} onChange={set('effectiveness')} style={{ fontSize: 12 }}>
               {[1,2,3,4,5].map(v => <option key={v} value={v}>Eff {v}/5</option>)}
-            </select>
-            <input type="date" value={form.test_date} onChange={set('test_date')} className="sentrix-input" style={{ fontSize: 12 }} />
+            </SelectField>
+            <input type="date" value={form.test_date} onChange={set('test_date')} className="risys-input" style={{ fontSize: 12 }} />
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
               value={form.notes}
               onChange={set('notes')}
               placeholder="Test notes — sample size, exceptions found…"
-              className="sentrix-input"
+              className="risys-input"
               style={{ fontSize: 12, flex: 1 }}
             />
             <button onClick={save} disabled={saving} className="btn-primary" style={{ fontSize: 12, flexShrink: 0 }}>
@@ -129,14 +130,14 @@ function EvidenceTab({ control, canManage }) {
               <p className="eyebrow" style={{ marginBottom: 10 }}>Add Evidence</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <input value={form.title} onChange={set('title')} placeholder="Evidence title *" className="sentrix-input" style={{ fontSize: 12 }} />
-                  <select value={form.evidence_type} onChange={set('evidence_type')} className="sentrix-select" style={{ fontSize: 12 }}>
+                  <input value={form.title} onChange={set('title')} placeholder="Evidence title *" className="risys-input" style={{ fontSize: 12 }} />
+                  <SelectField value={form.evidence_type} onChange={set('evidence_type')} style={{ fontSize: 12 }}>
                     {['Document','Screenshot','Log','Attestation','Test Result','Policy','Certificate','Report'].map(t => (
                       <option key={t}>{t}</option>
                     ))}
-                  </select>
+                  </SelectField>
                 </div>
-                <input value={form.description} onChange={set('description')} placeholder="Description (optional)" className="sentrix-input" style={{ fontSize: 12 }} />
+                <input value={form.description} onChange={set('description')} placeholder="Description (optional)" className="risys-input" style={{ fontSize: 12 }} />
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'var(--text-2)' }}>
                   <Upload size={13} />
                   {file ? file.name : 'Attach file (optional)'}

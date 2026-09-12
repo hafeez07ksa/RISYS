@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/authStore'
 import { usePlatform, activationLink } from '@/hooks/usePlatform'
 import { PLANS, CopyBtn, PlatformHeader, EditLimitsModal, ReissueModal, SuspendModal, DeleteCompanyModal } from './shared'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 
 
 export function PlatformConsolePage() {
@@ -156,7 +157,7 @@ export function PlatformConsolePage() {
         {/* Platform staff */}
         <div style={{ marginBottom: 10 }}>
           <p className="section-title">Platform Staff</p>
-          <p className="section-desc">Sentrix employees with console access — completely separate from tenant roles</p>
+          <p className="section-desc">RISYS employees with console access — completely separate from tenant roles</p>
         </div>
         <StaffPanel platform={platform} currentUserId={user.id} onError={setError} />
       </div>
@@ -226,8 +227,8 @@ function StaffPanel({ platform, currentUserId, onError }) {
       ))}
       <div style={{ display: 'flex', gap: 8, padding: '12px 16px', borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
         <input value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()}
-          placeholder="colleague@sentrix.com — must already have a Sentrix login"
-          className="sentrix-input" style={{ flex: 1 }} />
+          placeholder="colleague@risys.com — must already have a RISYS login"
+          className="risys-input" style={{ flex: 1 }} />
         <button onClick={add} disabled={busy || !email.trim()} className="btn-primary" style={{ padding: '8px 14px' }}>
           {busy ? <Spinner size="sm" /> : <UserPlus size={13} />} Grant access
         </button>
@@ -271,27 +272,27 @@ function CreateCompanyModal({ platform, onClose }) {
             <>
               <div>
                 <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Company name</label>
-                <input value={form.name} onChange={set('name')} placeholder="e.g. Al Rajhi Trading Co." className="sentrix-input" autoFocus />
+                <input value={form.name} onChange={set('name')} placeholder="e.g. Al Rajhi Trading Co." className="risys-input" autoFocus />
               </div>
               <div>
                 <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Company admin email</label>
-                <input type="email" value={form.adminEmail} onChange={set('adminEmail')} placeholder="it.manager@client.com" className="sentrix-input" />
+                <input type="email" value={form.adminEmail} onChange={set('adminEmail')} placeholder="it.manager@client.com" className="risys-input" />
                 <p style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 3 }}>They receive an activation link valid for 14 days and choose their own password</p>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Plan</label>
-                  <select value={form.plan} onChange={set('plan')} className="sentrix-input" style={{ textTransform: 'capitalize' }}>
+                  <SelectField value={form.plan} onChange={set('plan')} style={{ textTransform: 'capitalize' }}>
                     {PLANS.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
+                  </SelectField>
                 </div>
                 <div>
                   <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Max users</label>
-                  <input type="number" min="1" value={form.maxMembers} onChange={set('maxMembers')} className="sentrix-input" />
+                  <input type="number" min="1" value={form.maxMembers} onChange={set('maxMembers')} className="risys-input" />
                 </div>
                 <div>
                   <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Storage (GB)</label>
-                  <input type="number" min="1" value={form.storageGb} onChange={set('storageGb')} className="sentrix-input" />
+                  <input type="number" min="1" value={form.storageGb} onChange={set('storageGb')} className="risys-input" />
                 </div>
               </div>
               {error && <p style={{ fontSize: 12, color: '#8C1616', background: '#FBEAEA', padding: '9px 12px', borderRadius: 8 }}>{error}</p>}
@@ -309,14 +310,14 @@ function CreateCompanyModal({ platform, onClose }) {
               </div>
               <div style={{ padding: '12px 14px', borderRadius: 10, background: 'var(--surface)', border: '1px solid var(--border)' }}>
                 <p className="eyebrow" style={{ marginBottom: 6 }}>Admin activation link — send to {result.admin_email}</p>
-                <p style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-2)', wordBreak: 'break-all', marginBottom: 8 }}>
+                <p style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-2)', wordBreak: 'break-all', marginBottom: 8 }}>
                   {activationLink(result.activation_token)}
                 </p>
                 <CopyBtn text={activationLink(result.activation_token)} label="Copy activation link" />
               </div>
               <p style={{ fontSize: 11.5, color: 'var(--text-3)', lineHeight: 1.6 }}>
                 The link is single-use, locked to their email, and expires {new Date(result.expires_at).toLocaleDateString('en-GB')}.
-                Opening it lets them create their own password — Sentrix never knows or stores it.
+                Opening it lets them create their own password — RISYS never knows or stores it.
               </p>
             </>
           )}

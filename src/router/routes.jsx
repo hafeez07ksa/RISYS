@@ -28,6 +28,8 @@ import { AuditLogPage } from '@/features/audit/AuditLogPage'
 import { ControlsPage } from '@/features/controls/ControlsPage'
 import { ControlDetailPage } from '@/features/controls/ControlDetailPage'
 import { CompliancePage } from '@/features/compliance/CompliancePage'
+import { ComplianceFrameworkRoute, ComplianceControlRoute } from '@/features/compliance/ComplianceRoutes'
+import { FrameworksPage } from '@/features/frameworks/FrameworksPage'
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/app/dashboard" replace /> },
@@ -54,6 +56,10 @@ export const router = createBrowserRouter([
       { path: 'controls',     element: <ControlsPage /> },
       { path: 'controls/:id', element: <ControlDetailPage /> },
       { path: 'compliance',   element: <CompliancePage /> },
+      // Framework and control are addressable so an assessment can be linked to
+      { path: 'compliance/:frameworkId',                 element: <ComplianceFrameworkRoute /> },
+      { path: 'compliance/:frameworkId/:requirementId',  element: <ComplianceControlRoute /> },
+      { path: 'frameworks',   element: <FrameworksPage /> },
       { path: 'tasks',        element: <TasksPage /> },
       { path: 'tasks/:id',   element: <TaskDetailPage /> },
       { path: 'audit',        element: <AuditLogPage /> },

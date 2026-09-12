@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SentrixLogo } from '@/components/ui/SentrixLogo'
+import { RisysLogo } from '@/components/ui/RisysLogo'
 import { Input, Select } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { useOrg } from '@/hooks/useOrg'
@@ -40,7 +40,7 @@ export function OnboardingPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f8f7f7' }}>
       <div className="w-full max-w-lg rounded-xl p-8" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
-        <div className="mb-6"><SentrixLogo /></div>
+        <div className="mb-6"><RisysLogo size="lg" tagline /></div>
 
         {/* Step indicator */}
         <div className="flex items-center gap-2 mb-6">
@@ -64,7 +64,7 @@ export function OnboardingPage() {
           <div className="flex flex-col gap-4">
             <div>
               <h2 className="text-base font-medium mb-1" style={{ color: '#1a1314' }}>Set up your organization</h2>
-              <p className="text-xs" style={{ color: '#8a7070' }}>We'll create your isolated, multi-tenant workspace on Sentrix.</p>
+              <p className="text-xs" style={{ color: '#8a7070' }}>We'll create your isolated, multi-tenant workspace on RISYS.</p>
             </div>
             <Input label="Organization Name" placeholder="Acme Corp" value={form.name} onChange={set('name')} />
             <div className="grid grid-cols-2 gap-3">
@@ -84,7 +84,7 @@ export function OnboardingPage() {
           <div className="flex flex-col gap-4">
             <div>
               <h2 className="text-base font-medium mb-1" style={{ color: '#1a1314' }}>What is your role?</h2>
-              <p className="text-xs" style={{ color: '#8a7070' }}>This tailors your Sentrix experience and default permissions.</p>
+              <p className="text-xs" style={{ color: '#8a7070' }}>This tailors your RISYS experience and default permissions.</p>
             </div>
             <div className="grid grid-cols-2 gap-2.5">
               {ROLES.map(r => (
@@ -130,7 +130,7 @@ export function OnboardingPage() {
           {step > 0 && <Button variant="secondary" onClick={() => setStep(s => s - 1)} className="flex-1">Back</Button>}
           {step < STEPS.length - 1
             ? <Button onClick={() => setStep(s => s + 1)} disabled={!canNext()} className="flex-1">Continue →</Button>
-            : <Button onClick={handleSubmit} loading={loading} className="flex-1">Launch Sentrix →</Button>
+            : <Button onClick={handleSubmit} loading={loading} className="flex-1">Launch RISYS →</Button>
           }
         </div>
       </div>

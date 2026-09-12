@@ -7,6 +7,7 @@ import {
   getTreatmentActionStatus, getExceptionStatus,
 } from '@/lib/risks'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 
 function Card({ children }) {
   return <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 10, padding: 16 }}>{children}</div>
@@ -55,7 +56,7 @@ function ActionCard({ action, member, onUpdate, onStatusUpdate, fetchUpdates, on
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-            <span style={{ fontFamily: 'monospace', fontSize: 10, color: 'var(--text-3)', background: 'var(--surface)', padding: '1px 5px', borderRadius: 3 }}>{action.action_ref}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', background: 'var(--surface)', padding: '1px 5px', borderRadius: 3 }}>{action.action_ref}</span>
             <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{action.title}</span>
             <Pill s={st} />
             <span style={{ fontSize: 11, color: pr.color, fontWeight: 600, textTransform: 'capitalize' }}>{pr.label}</span>
@@ -81,10 +82,10 @@ function ActionCard({ action, member, onUpdate, onStatusUpdate, fetchUpdates, on
           </div>
         </div>
         <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'flex-start' }}>
-          <select value={action.status} onChange={e => onUpdate(action.id, { status: e.target.value })}
+          <SelectField value={action.status} onChange={e => onUpdate(action.id, { status: e.target.value })}
             style={{ fontSize: 11, padding: '4px 6px', borderRadius: 6, border: '1px solid var(--border)', color: 'var(--text-2)', background: '#fff', cursor: 'pointer' }}>
             {TREATMENT_ACTION_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </select>
+          </SelectField>
           <button onClick={() => onDelete(action.id)} title="Delete action"
             style={{ padding: 5, borderRadius: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)' }}>
             <Trash size={13} />
@@ -107,7 +108,7 @@ function ActionCard({ action, member, onUpdate, onStatusUpdate, fetchUpdates, on
               <input type="range" min="0" max="100" step="5" value={pct} onChange={e => setPct(parseInt(e.target.value))} style={{ width: '100%' }} />
             </div>
             <input value={comment} onChange={e => setComment(e.target.value)} placeholder="What changed? (e.g. MFA rollout completed for finance dept)"
-              className="sentrix-input" style={{ flex: 1, minWidth: 200, fontSize: 12 }} />
+              className="risys-input" style={{ flex: 1, minWidth: 200, fontSize: 12 }} />
             <button onClick={submitUpdate} disabled={saving || (!comment.trim() && pct === (action.percent_complete || 0))}
               className="btn-primary" style={{ fontSize: 12, opacity: saving ? 0.6 : 1 }}>
               {saving ? <Spinner size="sm" /> : 'Post Update'}
@@ -151,7 +152,7 @@ function ExceptionCard({ exc, member, risk, canDecide: hasDecidePerm, onDecide }
   return (
     <Card>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-        <span style={{ fontFamily: 'monospace', fontSize: 10, color: 'var(--text-3)', background: 'var(--surface)', padding: '1px 5px', borderRadius: 3 }}>{exc.exception_ref}</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', background: 'var(--surface)', padding: '1px 5px', borderRadius: 3 }}>{exc.exception_ref}</span>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Risk Acceptance Request</span>
         <Pill s={st} />
         {expiringSoon && <span style={{ fontSize: 11, color: '#B5491B', fontWeight: 600 }}>Expires {new Date(exc.expires_at).toLocaleDateString('en-GB')}</span>}
@@ -170,7 +171,7 @@ function ExceptionCard({ exc, member, risk, canDecide: hasDecidePerm, onDecide }
       {canDecide && (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
           <input value={comment} onChange={e => setComment(e.target.value)} placeholder="Decision comment (optional)"
-            className="sentrix-input" style={{ width: '100%', fontSize: 12, marginBottom: 8 }} />
+            className="risys-input" style={{ width: '100%', fontSize: 12, marginBottom: 8 }} />
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => decide('approved')} disabled={deciding}
               style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500, padding: '6px 12px', borderRadius: 7, background: '#2F6B3C', color: '#fff', border: 'none', cursor: 'pointer' }}>
@@ -278,31 +279,31 @@ export function TreatmentTab({ risk, member, members, onRiskChanged, perms }) {
       {mode === 'action' && (
         <Card>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <input value={form.title} onChange={set('title')} placeholder="Action title — e.g. Deploy MFA across all privileged accounts" className="sentrix-input" style={inputStyle} autoFocus />
-            <textarea value={form.description} onChange={set('description')} rows={2} placeholder="What will be done, by whom, and how success is verified" className="sentrix-input" style={{ ...inputStyle, resize: 'vertical' }} />
+            <input value={form.title} onChange={set('title')} placeholder="Action title — e.g. Deploy MFA across all privileged accounts" className="risys-input" style={inputStyle} autoFocus />
+            <textarea value={form.description} onChange={set('description')} rows={2} placeholder="What will be done, by whom, and how success is verified" className="risys-input" style={{ ...inputStyle, resize: 'vertical' }} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10 }}>
-              <select value={form.action_type} onChange={set('action_type')} className="sentrix-input" style={inputStyle}>
+              <SelectField value={form.action_type} onChange={set('action_type')} style={inputStyle}>
                 {TREATMENT_ACTION_TYPES.map(t => <option key={t}>{t}</option>)}
-              </select>
-              <select value={form.priority} onChange={set('priority')} className="sentrix-input" style={inputStyle}>
+              </SelectField>
+              <SelectField value={form.priority} onChange={set('priority')} style={inputStyle}>
                 {ACTION_PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label} priority</option>)}
-              </select>
-              <select value={form.owner_id} onChange={set('owner_id')} className="sentrix-input" style={inputStyle}>
+              </SelectField>
+              <SelectField value={form.owner_id} onChange={set('owner_id')} style={inputStyle}>
                 <option value="">Assign owner…</option>
                 {members.map(m => <option key={m.user_id} value={m.user_id}>{m.title || m.user_id?.slice(0, 8)}</option>)}
-              </select>
-              <input type="date" value={form.target_date} onChange={set('target_date')} className="sentrix-input" style={inputStyle} title="Target completion date" />
+              </SelectField>
+              <input type="date" value={form.target_date} onChange={set('target_date')} className="risys-input" style={inputStyle} title="Target completion date" />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-              <input type="number" value={form.estimated_cost} onChange={set('estimated_cost')} placeholder="Estimated cost (SAR)" className="sentrix-input" style={inputStyle} />
-              <select value={form.expected_likelihood} onChange={set('expected_likelihood')} className="sentrix-input" style={inputStyle}>
+              <input type="number" value={form.estimated_cost} onChange={set('estimated_cost')} placeholder="Estimated cost (SAR)" className="risys-input" style={inputStyle} />
+              <SelectField value={form.expected_likelihood} onChange={set('expected_likelihood')} style={inputStyle}>
                 <option value="">Expected likelihood after…</option>
                 {[1,2,3,4,5].map(v => <option key={v} value={v}>{v}</option>)}
-              </select>
-              <select value={form.expected_impact} onChange={set('expected_impact')} className="sentrix-input" style={inputStyle}>
+              </SelectField>
+              <SelectField value={form.expected_impact} onChange={set('expected_impact')} style={inputStyle}>
                 <option value="">Expected impact after…</option>
                 {[1,2,3,4,5].map(v => <option key={v} value={v}>{v}</option>)}
-              </select>
+              </SelectField>
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button onClick={() => setMode(null)} className="btn-secondary" style={{ fontSize: 13 }}>Cancel</button>
@@ -323,21 +324,21 @@ export function TreatmentTab({ risk, member, members, onRiskChanged, perms }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <textarea value={excForm.justification} onChange={setExc('justification')} rows={3} autoFocus
               placeholder="Business justification — why accepting this risk is within appetite (cost/benefit, constraints, context)"
-              className="sentrix-input" style={{ ...inputStyle, resize: 'vertical' }} />
+              className="risys-input" style={{ ...inputStyle, resize: 'vertical' }} />
             <textarea value={excForm.compensating_controls} onChange={setExc('compensating_controls')} rows={2}
               placeholder="Compensating controls in place while the risk is accepted (optional)"
-              className="sentrix-input" style={{ ...inputStyle, resize: 'vertical' }} />
+              className="risys-input" style={{ ...inputStyle, resize: 'vertical' }} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div>
                 <p style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4 }}>Approver</p>
-                <select value={excForm.approver_id} onChange={setExc('approver_id')} className="sentrix-input" style={inputStyle}>
+                <SelectField value={excForm.approver_id} onChange={setExc('approver_id')} style={inputStyle}>
                   <option value="">Select approver…</option>
                   {members.map(m => <option key={m.user_id} value={m.user_id}>{m.title || m.user_id?.slice(0, 8)}</option>)}
-                </select>
+                </SelectField>
               </div>
               <div>
                 <p style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4 }}>Acceptance valid until</p>
-                <input type="date" value={excForm.expires_at} onChange={setExc('expires_at')} className="sentrix-input" style={inputStyle} />
+                <input type="date" value={excForm.expires_at} onChange={setExc('expires_at')} className="risys-input" style={inputStyle} />
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>

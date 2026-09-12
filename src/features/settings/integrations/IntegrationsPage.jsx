@@ -14,13 +14,13 @@ export function IntegrationsPage() {
     <div>
       <div className="mb-5">
         <h2 className="section-title">Integrations & Connectors</h2>
-        <p className="section-desc">Connect your platforms to let Sentrix automatically capture risks, incidents, and compliance signals.</p>
+        <p className="section-desc">Connect your platforms to let RISYS automatically capture risks, incidents, and compliance signals.</p>
       </div>
 
       {activeCount > 0 && (
         <div className="notice-bar">
           <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#5D0F0F' }} />
-          {activeCount} connector{activeCount > 1 ? 's' : ''} active — Sentrix is monitoring your connected platforms
+          {activeCount} connector{activeCount > 1 ? 's' : ''} active — RISYS is monitoring your connected platforms
         </div>
       )}
 

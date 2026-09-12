@@ -1,30 +1,37 @@
+/* ── Typeface loading ────────────────────────────────────────────────────────
+ * IBM Plex, chosen because Arabic is drawn as part of the same family. RISYS
+ * is a Saudi regulatory product; the NCA issues ECC in both languages and
+ * treats the Arabic as binding, so an Arabic UI is a when, not an if. Picking
+ * a Latin-only face now guarantees an unrelated Arabic font bolted on later.
+ *
+ * Mono is not decorative here. The control reference column (2-2-3-1, 1-10-4)
+ * is what people scan down, and it needs fixed-width unambiguous digits.
+ *
+ * Display is the wordmark and print covers only — nothing in the UI. If the
+ * brand's Optima licence lands, it replaces --font-display and nothing else.
+ */
+/* Faces are loaded in index.html with preconnect — an @import here would
+ * block rendering until the CSS file itself had been fetched and parsed. */
+
+@import './tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --bg:        #fbf7f6;
-    --bg-2:      #ffffff;
-    --bg-3:      #f6efed;
-    --surface:   #f6eeec;
-    --surface-2: #efe3e0;
-    --border:    #e9dad7;
-    --border-2:  #d9c5c1;
-    --ink:       #292021;
-    --ink-2:     #372c2d;
-    --ink-3:     #4a3b3c;
-    --crimson:   #5D0F0F;
-    --crimson-2: #7a1a1a;
-    --rose:      #895353;
-    --taupe:     #A98D8C;
-    --blush:     #E9D8D5;
-    --text:      #292021;
-    --text-2:    #4d3e3e;
-    --text-3:    #97817d;
-    --danger:    #c0392b;
-    --success:   #2e7d32;
-    --warning:   #b45309;
+    /* Colour, space, radius, elevation and motion tokens live in tokens.css.
+       Only the type tokens are declared here, beside the @import that loads
+       the faces they name. */
+
+    /* ── Type tokens ────────────────────────────────────────────────────────
+     * Every font declaration in the app points at one of these four. Swapping
+     * a typeface is a change here, not a search across 99 files. */
+    --font-sans:    'IBM Plex Sans', 'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-arabic:  'IBM Plex Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif;
+    --font-mono:    'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --font-display: 'DM Serif Display', Georgia, serif;
   }
 
   * { box-sizing: border-box; }
@@ -33,11 +40,21 @@
   body {
     background-color: var(--bg);
     color: var(--text);
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
+  /* Form elements do not inherit font-family by default */
+  input, textarea, select, button { font-family: inherit; }
+
+  /* Arabic content picks up the Arabic cut wherever it appears, including a
+     single Arabic string inside an otherwise English page. */
+  [lang='ar'], [dir='rtl'] { font-family: var(--font-arabic); }
+
+  /* Control references, clause ids and keys are identifiers, not quantities:
+     they stay in Western digits regardless of interface language. */
+  [lang='ar'] .mono, [lang='ar'] .tnum { font-feature-settings: 'lnum' 1; }
 
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -46,102 +63,226 @@
 }
 
 @layer components {
-  .sentrix-input {
-    @apply w-full bg-white border border-[#e9dad7] rounded-md px-3 py-2.5 text-sm outline-none transition-colors;
+
+  /* ── Focus (§42) ──────────────────────────────────────────────────────────
+   * One visible focus treatment, keyboard-only. Previously outline:none was
+   * set on inputs and buttons with nothing put back, so the app could not be
+   * navigated by keyboard at all. */
+  :focus-visible {
+    outline: 2px solid var(--rose);
+    outline-offset: 2px;
+    border-radius: var(--r-sm);
+  }
+
+  /* ── Form controls ────────────────────────────────────────────────────── */
+  .risys-input {
+    @apply w-full rounded-md text-sm transition-colors;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    padding: 7px 10px;
     color: var(--text);
+    font-size: var(--t-body);
   }
-  .sentrix-input::placeholder { color: var(--text-3); }
-  .sentrix-input:focus { border-color: var(--rose); }
+  .risys-input::placeholder { color: var(--text-3); }
+  .risys-input:hover { border-color: var(--border-2); }
+  .risys-input:focus { border-color: var(--rose); box-shadow: 0 0 0 3px rgba(137,83,83,0.10); }
+  .risys-input[aria-invalid='true'] { border-color: var(--critical); }
+  .risys-input:disabled { background: var(--surface); color: var(--text-3); cursor: not-allowed; }
 
-  .sentrix-select {
-    @apply w-full bg-white border border-[#e9dad7] rounded-md px-3 py-2.5 text-sm outline-none transition-colors cursor-pointer appearance-none;
-    color: var(--text);
-  }
-  .sentrix-select:focus { border-color: var(--rose); }
+  /* .risys-select is gone: there is no native <select> left in the app. Any
+     stray reference now simply styles nothing rather than double-bordering a
+     Combobox. */
 
-  .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 font-medium text-sm rounded-md px-4 py-2.5 transition-colors cursor-pointer border-0 outline-none;
-    background: var(--crimson);
-    color: #fff;
-  }
-  .btn-primary:hover { background: var(--crimson-2); }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 font-medium text-sm rounded-md px-4 py-2.5 transition-colors cursor-pointer outline-none;
-    background: transparent;
-    border: 1px solid var(--border-2);
+  .field-label {
+    @apply block font-medium;
+    font-size: var(--t-meta);
     color: var(--text-2);
+    margin-bottom: 5px;
   }
-  .btn-secondary:hover { background: var(--surface); color: var(--text); }
-
-  .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 text-sm rounded-md px-3 py-2 transition-colors cursor-pointer border-0 outline-none;
-    background: transparent;
-    color: var(--text-3);
+  .field-req { color: var(--crimson); margin-left: 2px; }
+  .field-help { font-size: var(--t-meta); color: var(--text-3); margin-top: 5px; }
+  .field-error {
+    @apply flex items-center gap-1.5;
+    font-size: var(--t-meta); color: var(--critical); margin-top: 5px;
   }
-  .btn-ghost:hover { background: var(--surface); color: var(--text-2); }
 
+  /* ── Buttons ──────────────────────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 font-medium rounded-md transition-colors cursor-pointer;
+    font-size: var(--t-sm);
+    padding: 7px 12px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .btn-primary   { composes: btn; background: var(--crimson); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--crimson-2); }
+  .btn-secondary { background: var(--bg-2); border-color: var(--border-2); color: var(--text-2); }
+  .btn-secondary:hover:not(:disabled) { background: var(--surface); color: var(--text); }
+  .btn-ghost     { background: transparent; color: var(--text-3); }
+  .btn-ghost:hover:not(:disabled) { background: var(--surface); color: var(--text-2); }
+
+  /* Legacy call sites still say btn-primary/secondary/ghost standalone. */
+  .btn-primary, .btn-secondary, .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 font-medium rounded-md transition-colors cursor-pointer;
+    font-size: var(--t-sm);
+    padding: 7px 12px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .btn-primary { background: var(--crimson); color: #fff; border-color: var(--crimson); }
+  .btn-secondary { border-color: var(--border-2); }
+  .btn-primary:disabled, .btn-secondary:disabled, .btn-ghost:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* ── Surfaces ─────────────────────────────────────────────────────────── */
   .card {
     background: var(--bg-2);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--r-lg);
   }
+  /* §7: a section is a titled region, not a floating card. Used for page
+     content that should read as part of the page rather than an object on it. */
+  .section {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+  }
+  .section-head {
+    @apply flex items-center justify-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-body { padding: 14px; }
 
+  /* ── Badges (§28) ─────────────────────────────────────────────────────── */
   .badge {
-    @apply text-xs px-2 py-0.5 rounded-full font-medium;
+    @apply inline-flex items-center gap-1 font-medium;
+    font-size: var(--t-micro);
+    padding: 2px 7px;
+    border-radius: var(--r-full);
+    border: 1px solid transparent;
+    line-height: 1.5;
+    white-space: nowrap;
   }
-  .badge-connected { background: #fdf0f0; color: var(--crimson); border: 1px solid #f0dada; }
-  .badge-disconnected { background: var(--surface); color: var(--text-3); border: 1px solid var(--border); }
-  .badge-danger { background: #fef2f2; color: #b91c1c; }
-  .badge-warning { background: #fffbeb; color: #92400e; }
-  .badge-success { background: #f0fdf4; color: #166534; }
+  .badge-critical     { background: var(--critical-bg); color: var(--critical); border-color: var(--critical-bd); }
+  .badge-high         { background: var(--high-bg);     color: var(--high);     border-color: var(--high-bd); }
+  .badge-medium       { background: var(--medium-bg);   color: var(--medium);   border-color: var(--medium-bd); }
+  .badge-low          { background: var(--low-bg);      color: var(--low);      border-color: var(--low-bd); }
+  .badge-info         { background: var(--info-bg);     color: var(--info);     border-color: var(--info-bd); }
+  .badge-neutral      { background: var(--neutral-bg);  color: var(--neutral);  border-color: var(--neutral-bd); }
+  .badge-brand        { background: var(--crimson-wash);color: var(--crimson);  border-color: #f0dada; }
+  /* aliases kept so existing call sites keep working */
+  .badge-danger       { background: var(--critical-bg); color: var(--critical); border-color: var(--critical-bd); }
+  .badge-warning      { background: var(--medium-bg);   color: var(--medium);   border-color: var(--medium-bd); }
+  .badge-success      { background: var(--low-bg);      color: var(--low);      border-color: var(--low-bd); }
+  .badge-connected    { background: var(--crimson-wash);color: var(--crimson);  border-color: #f0dada; }
+  .badge-disconnected { background: var(--surface);     color: var(--text-3);   border-color: var(--border); }
 
+  /* ── Sidebar nav ──────────────────────────────────────────────────────── */
   .nav-item {
-    @apply flex items-center gap-2.5 px-3 py-2 rounded-md text-sm cursor-pointer transition-colors relative;
-    color: #b9a5a2;
+    @apply flex items-center gap-2.5 rounded-md cursor-pointer relative transition-colors;
+    padding: 6px 10px;
+    font-size: var(--t-body);
+    color: var(--on-dark-2);
   }
-  .nav-item:hover { background: var(--ink-2); color: var(--blush); }
-  .nav-item.active { background: var(--ink-2); color: #f3e7e4; font-weight: 500; }
+  .nav-item:hover { background: rgba(255,255,255,0.045); color: var(--on-dark); }
+  /* §5: a restrained highlight — a rail and a tint, not a filled block. */
+  .nav-item.active { background: rgba(255,255,255,0.07); color: var(--on-dark); font-weight: 500; }
   .nav-item.active::before {
     content: '';
-    position: absolute; left: -10px; top: 7px; bottom: 7px; width: 3px;
-    border-radius: 0 3px 3px 0;
+    position: absolute; left: -8px; top: 6px; bottom: 6px; width: 2.5px;
+    border-radius: 0 2px 2px 0;
     background: var(--rose);
   }
   .nav-item.active svg { color: #d9a0a0; }
+  .nav-section {
+    font-size: var(--t-micro);
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: #6f5a58;
+    padding: 0 10px;
+    margin-bottom: 4px;
+  }
 
+  /* ── Page frame (§7) ──────────────────────────────────────────────────── */
   .page-header {
-    @apply px-7 py-4 flex items-center justify-between;
+    @apply flex items-center justify-between;
+    padding: 0 var(--gutter);
+    height: var(--topbar-h);
     border-bottom: 1px solid var(--border);
     background: var(--bg-2);
   }
+  .page-content { padding: var(--s-5) var(--gutter) var(--s-10); }
 
-  .page-content { @apply p-7; }
+  /* ── Tables (§31) ─────────────────────────────────────────────────────── */
+  .table-head {
+    font-size: var(--t-micro);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--rose);
+    background: var(--surface);
+  }
+  .row-hover:hover { background: var(--hover); }
+
+  /* ── Numerals ──────────────────────────────────────────────────────────────
+   * Proportional digits make a column of scores or percentages jitter line to
+   * line and stop the decimal points lining up. Anything that sits in a column
+   * — counts, scores, percentages, dates, table cells — gets tabular figures.
+   */
+  .tnum, table, td, th,
+  .stat-value, .score-value {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* Identifiers: control references, clause ids, API keys, org confirmations. */
+  .mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+  }
+
+  /* Wordmark and print covers only — never interface text. */
+  .display { font-family: var(--font-display); }
 
   .eyebrow {
-    @apply text-[10.5px] uppercase font-medium;
+    font-size: var(--t-micro);
+    text-transform: uppercase;
+    font-weight: 500;
     letter-spacing: 0.12em;
     color: var(--rose);
   }
 
-  .table-head {
-    @apply text-[10.5px] uppercase font-medium;
-    letter-spacing: 0.1em;
-    color: var(--rose);
-    background: var(--surface);
-  }
-
-  .row-hover:hover { background: #faf3f1; }
-
-  .section-title { @apply text-sm font-medium mb-1; color: var(--text); }
-  .section-desc { @apply text-xs; color: var(--text-3); }
+  .section-title { font-size: var(--t-section); font-weight: 600; color: var(--text); }
+  .section-desc  { font-size: var(--t-meta); color: var(--text-3); }
   .divider { border-top: 1px solid var(--border); @apply my-4; }
 
   .notice-bar {
-    @apply flex items-center gap-2.5 text-xs rounded-lg px-4 py-3 mb-5;
+    @apply flex items-center gap-2.5 rounded-lg;
+    font-size: var(--t-sm);
+    padding: 10px 14px;
+    margin-bottom: var(--s-5);
     background: #fdf5f5;
     border: 1px solid #f0dada;
     color: var(--text-2);
   }
+
+  /* ── Skeleton (§33) ───────────────────────────────────────────────────── */
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 37%, var(--surface) 63%);
+    background-size: 400% 100%;
+    animation: sk 1.4s ease-in-out infinite;
+    border-radius: var(--r-sm);
+  }
+  @keyframes sk { 0% { background-position: 100% 50% } 100% { background-position: 0 50% } }
+
+  /* ── Motion (§35) ─────────────────────────────────────────────────────── */
+  @keyframes drawer-in { from { transform: translateX(100%) } to { transform: translateX(0) } }
+  @keyframes fade-in   { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes pop-in    { from { opacity: 0; transform: translateY(-4px) scale(0.98) } to { opacity: 1; transform: none } }
+  .anim-drawer { animation: drawer-in var(--dur-3) var(--ease); }
+  .anim-fade   { animation: fade-in var(--dur-2) var(--ease); }
+  .anim-pop    { animation: pop-in var(--dur-2) var(--ease); transform-origin: top; }
 }

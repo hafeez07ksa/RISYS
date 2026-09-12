@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ShieldCheck, AlertTriangle, LogOut, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
-import { SentrixLogo } from '@/components/ui/SentrixLogo'
+import { RisysLogo } from '@/components/ui/RisysLogo'
 import { Spinner } from '@/components/ui/Spinner'
 import { roleLabel } from '@/hooks/usePeople'
 
@@ -12,11 +12,11 @@ import { roleLabel } from '@/hooks/usePeople'
 function Shell({ children }) {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div style={{ marginBottom: 26 }}><SentrixLogo size="md" /></div>
+      <div style={{ marginBottom: 26 }}><RisysLogo size="lg" tagline /></div>
       <div style={{ width: '100%', maxWidth: 420, background: '#fff', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', boxShadow: '0 8px 32px rgba(41,32,33,0.07)' }}>
         {children}
       </div>
-      <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 18 }}>Sentrix — Governance, Risk & Compliance</p>
+
     </div>
   )
 }
@@ -220,21 +220,21 @@ export function AcceptInvitePage() {
       <div style={{ padding: '20px 28px 28px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
           <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Email</label>
-          <input value={invite.email} disabled className="sentrix-input" style={{ opacity: 0.65, cursor: 'not-allowed' }} />
+          <input value={invite.email} disabled className="risys-input" style={{ opacity: 0.65, cursor: 'not-allowed' }} />
           <p style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 3 }}>Locked to the invited address</p>
         </div>
         {mode === 'signup' && (
           <div>
             <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Full name</label>
             <input value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))}
-              placeholder="e.g. Sara Al-Otaibi" className="sentrix-input" autoFocus />
+              placeholder="e.g. Sara Al-Otaibi" className="risys-input" autoFocus />
           </div>
         )}
         <div>
           <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Password</label>
           <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
             onKeyDown={e => e.key === 'Enter' && submitAuth()}
-            placeholder={mode === 'signup' ? 'At least 8 characters' : 'Your password'} className="sentrix-input" autoFocus={mode === 'login'} />
+            placeholder={mode === 'signup' ? 'At least 8 characters' : 'Your password'} className="risys-input" autoFocus={mode === 'login'} />
         </div>
 
         {error && <p style={{ fontSize: 12, color: '#8C1616', background: '#FBEAEA', padding: '9px 12px', borderRadius: 8 }}>{error}</p>}
@@ -254,7 +254,7 @@ function InviteHeader({ invite }) {
     <div style={{ padding: '24px 28px 18px', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
       <p className="eyebrow" style={{ marginBottom: 6 }}>You're invited</p>
       <h1 style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', lineHeight: 1.35 }}>
-        Join <span style={{ color: 'var(--crimson)' }}>{invite.org_name}</span> on Sentrix
+        Join <span style={{ color: 'var(--crimson)' }}>{invite.org_name}</span> on RISYS
       </h1>
       <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 5 }}>
         {invite.inviter_name ? `Invited by ${invite.inviter_name} · ` : ''}Role: <strong style={{ color: 'var(--text-2)' }}>{roleLabel(invite.role)}</strong>

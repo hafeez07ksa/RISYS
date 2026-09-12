@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SentrixLogo } from '@/components/ui/SentrixLogo'
+import { RisysLogo } from '@/components/ui/RisysLogo'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/hooks/useAuth'
@@ -23,7 +23,7 @@ export function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f8f7f7' }}>
       <div className="w-full max-w-md rounded-xl p-8" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
-        <div className="mb-7"><SentrixLogo /></div>
+        <div className="mb-7"><RisysLogo size="lg" tagline /></div>
         <h1 className="text-lg font-medium mb-1" style={{ color: '#1a1314' }}>Sign in</h1>
         <p className="text-xs mb-6" style={{ color: '#8a7070' }}>Continue to your GRC workspace</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -34,7 +34,7 @@ export function LoginPage() {
         </form>
         <div className="mt-5 text-center">
           <p className="text-xs" style={{ color: '#97817d', lineHeight: 1.6 }}>
-            Workspaces on Sentrix are provisioned by our team.<br />
+            Workspaces on RISYS are provisioned by our team.<br />
             No account? Contact your organization's administrator.
           </p>
         </div>

@@ -12,7 +12,7 @@ export function ConnectorLogo({ connector, size = 40, muted = false }) {
       fontSize: size * 0.42,
       fontWeight: 700,
       color: muted ? '#b0a8a8' : connector.logoColor,
-      fontFamily: "'DM Sans', sans-serif",
+      fontFamily: 'var(--font-sans)',
       flexShrink: 0,
       transition: 'color 0.2s',
     }}>

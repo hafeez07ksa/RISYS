@@ -2,12 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sentrix — GRC Platform</title>
+
+    <title>RISYS</title>
+    <meta name="description" content="RISYS — Risk Intelligence System. Automated governance, risk and compliance for Saudi regulatory frameworks." />
+    <meta name="theme-color" content="#251518" />
+
+    <!-- The RISYS mark in brand cream on brand ink, so it reads on both a light
+         and a dark browser tab strip. The .ico is listed because browsers
+         prefer a root favicon.ico over a <link>, which is how the old Sentrix
+         mark kept winning no matter what this tag said. -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!-- IBM Plex, not DM Sans. The token layer points --font-sans, --font-mono
+         and --font-arabic at Plex; this file used to request DM Sans, so all
+         three fell through to system fallbacks and the mono column landed on
+         Consolas. DM Serif Display stays — it is --font-display, the wordmark. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=DM+Serif+Display&display=swap"
+    />
   </head>
   <body>
     <div id="root"></div>

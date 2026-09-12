@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useConnectors } from '@/hooks/useConnectors'
 import { SEVERITIES, JIRA_ISSUE_TYPES } from '@/lib/incidents'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 
 // ── Disconnect modal + button ─────────────────────────────────────────────────
 function DisconnectControl({ onDisconnected }) {
@@ -48,18 +49,18 @@ function DisconnectControl({ onDisconnected }) {
               <div style={{ padding: '12px 14px', borderRadius: 8, background: '#f8f7f7', border: '1px solid #e5e0e0', fontSize: 12, color: '#4a3a3a', lineHeight: 1.7 }}>
                 <p style={{ fontWeight: 600, color: '#1a1314', marginBottom: 6 }}>What happens when you disconnect:</p>
                 <p>· Jira webhooks stop sending new issues immediately</p>
-                <p>· Existing incidents from Jira remain in Sentrix</p>
+                <p>· Existing incidents from Jira remain in RISYS</p>
                 <p>· Issue type mappings are preserved for reconnection</p>
                 <p>· You can reconnect again at any time</p>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 11.5, color: '#8a7070', marginBottom: 6 }}>
-                  Type <strong style={{ color: '#1a1314', fontFamily: 'monospace', letterSpacing: '0.05em' }}>{keyword}</strong> to confirm
+                  Type <strong style={{ color: '#1a1314', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>{keyword}</strong> to confirm
                 </label>
                 <input value={input} onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && matches && handleDisconnect()}
                   placeholder={keyword} autoFocus
-                  style={{ width: '100%', fontSize: 13, fontFamily: 'monospace', padding: '9px 12px', borderRadius: 8, outline: 'none', border: `1.5px solid ${matches ? '#bbf7d0' : '#e5e0e0'}`, background: matches ? '#f0fdf4' : '#fff', color: '#1a1314', boxSizing: 'border-box', letterSpacing: '0.08em', transition: 'border-color 0.15s' }} />
+                  style={{ width: '100%', fontSize: 13, fontFamily: 'var(--font-mono)', padding: '9px 12px', borderRadius: 8, outline: 'none', border: `1.5px solid ${matches ? '#bbf7d0' : '#e5e0e0'}`, background: matches ? '#f0fdf4' : '#fff', color: '#1a1314', boxSizing: 'border-box', letterSpacing: '0.08em', transition: 'border-color 0.15s' }} />
               </div>
               {error && <p style={{ fontSize: 12, color: '#b91c1c' }}>{error}</p>}
             </div>
@@ -137,7 +138,7 @@ export function JiraManagePage() {
               width: 44, height: 44, borderRadius: 12, background: '#0052CC',
               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             }}>
-              <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', fontFamily: 'sans-serif' }}>J</span>
+              <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', fontFamily: 'var(--font-sans)' }}>J</span>
             </div>
 
             <div className="flex-1 min-w-0">
@@ -148,7 +149,7 @@ export function JiraManagePage() {
                 </span>
               </div>
               <p className="text-xs" style={{ color: '#8a7070' }}>
-                Connected · Atlassian · Issues flow in as Sentrix incidents in real time
+                Connected · Atlassian · Issues flow in as RISYS incidents in real time
               </p>
             </div>
 
@@ -192,7 +193,7 @@ export function JiraManagePage() {
                   Issue Type → Severity Mapping
                 </h2>
                 <p className="text-xs" style={{ color: '#8a7070', lineHeight: 1.6 }}>
-                  Define how Jira issue types map to Sentrix incident severity levels.
+                  Define how Jira issue types map to RISYS incident severity levels.
                   If an issue type has no mapping, severity is determined by Jira's priority field.
                 </p>
               </div>
@@ -203,14 +204,14 @@ export function JiraManagePage() {
                 <div className="px-5 py-10 text-center">
                   <GitBranch size={28} strokeWidth={1} className="mx-auto mb-3" style={{ color: '#d4cccc' }} />
                   <p className="text-sm font-medium mb-1" style={{ color: '#4a3a3a' }}>No mappings yet</p>
-                  <p className="text-xs" style={{ color: '#8a7070' }}>Add your first mapping below to control how Jira issues become Sentrix incidents.</p>
+                  <p className="text-xs" style={{ color: '#8a7070' }}>Add your first mapping below to control how Jira issues become RISYS incidents.</p>
                 </div>
               ) : (
                 <>
                   <div className="grid px-5 py-2.5 text-[11px] uppercase tracking-wider"
                     style={{ gridTemplateColumns: '1fr 200px 48px', background: '#f8f7f7', borderBottom: '1px solid #e5e0e0', color: '#8a7070' }}>
                     <span>Jira Issue Type</span>
-                    <span>Sentrix Severity</span>
+                    <span>RISYS Severity</span>
                     <span />
                   </div>
                   {mappings.map((m, i) => {
@@ -240,13 +241,13 @@ export function JiraManagePage() {
                 <p className="text-xs font-medium mb-3" style={{ color: '#4a3a3a' }}>Add mapping</p>
                 <div className="flex items-center gap-3">
                   <div className="relative flex-1">
-                    <select value={newType} onChange={e => { setNewType(e.target.value); setCustomType('') }}
+                    <SelectField value={newType} onChange={e => { setNewType(e.target.value); setCustomType('') }}
                       className="w-full text-xs pl-3 pr-7 py-2.5 rounded-lg border outline-none appearance-none"
                       style={{ background: '#fff', borderColor: '#e5e0e0', color: newType ? '#1a1314' : '#8a7070' }}>
                       <option value="">Select issue type...</option>
                       {unmappedTypes.map(t => <option key={t} value={t}>{t}</option>)}
                       <option value="__custom__">Custom type...</option>
-                    </select>
+                    </SelectField>
                     <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#8a7070' }}>▾</span>
                   </div>
 
@@ -260,11 +261,11 @@ export function JiraManagePage() {
                   <span style={{ color: '#d4cccc', fontSize: 18, flexShrink: 0 }}>→</span>
 
                   <div className="relative flex-shrink-0">
-                    <select value={newSeverity} onChange={e => setNewSeverity(e.target.value)}
+                    <SelectField value={newSeverity} onChange={e => setNewSeverity(e.target.value)}
                       className="text-xs pl-3 pr-7 py-2.5 rounded-lg border outline-none appearance-none"
                       style={{ background: '#fff', borderColor: '#e5e0e0', color: '#1a1314' }}>
                       {SEVERITIES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                    </select>
+                    </SelectField>
                     <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#8a7070' }}>▾</span>
                   </div>
 
@@ -282,7 +283,7 @@ export function JiraManagePage() {
             {/* Default behaviour */}
             <div className="rounded-xl p-4 text-xs" style={{ background: '#f8f7f7', border: '1px solid #e5e0e0', color: '#8a7070', lineHeight: 1.7 }}>
               <p className="font-semibold mb-1" style={{ color: '#4a3a3a' }}>Default behaviour</p>
-              When a Jira issue arrives with no matching issue type mapping, Sentrix automatically maps
+              When a Jira issue arrives with no matching issue type mapping, RISYS automatically maps
               Jira's priority field: <strong style={{ color: '#1a1314' }}>Highest → Critical</strong>, <strong style={{ color: '#1a1314' }}>High → High</strong>, <strong style={{ color: '#1a1314' }}>Medium → Medium</strong>, <strong style={{ color: '#1a1314' }}>Low → Low</strong>, <strong style={{ color: '#1a1314' }}>Lowest → Informational</strong>.
             </div>
 
@@ -304,8 +305,8 @@ export function JiraManagePage() {
                 {[
                   { label: 'Connector',       value: 'Jira (Atlassian)' },
                   { label: 'Status',          value: 'Active', color: '#166534' },
-                  { label: 'Sync direction',  value: 'One-way — Jira → Sentrix (inbound only)' },
-                  { label: 'Trigger',         value: 'Real-time webhook — issues appear in Sentrix within seconds' },
+                  { label: 'Sync direction',  value: 'One-way — Jira → RISYS (inbound only)' },
+                  { label: 'Trigger',         value: 'Real-time webhook — issues appear in RISYS within seconds' },
                   { label: 'Scope',           value: 'All projects · Webhook fires on issue create, update, delete' },
                   { label: 'Data retained',   value: 'All ingested incidents are kept if disconnected' },
                 ].map(item => (
@@ -332,7 +333,7 @@ export function JiraManagePage() {
                   <div key={p.scope} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 10px', borderRadius: 7, background: '#f8f7f7' }}>
                     <CheckCircle size={13} style={{ color: '#22c55e', flexShrink: 0, marginTop: 1 }} />
                     <div>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: '#1a1314', fontFamily: 'monospace' }}>{p.scope}</p>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: '#1a1314', fontFamily: 'var(--font-mono)' }}>{p.scope}</p>
                       <p style={{ fontSize: 11, color: '#8a7070' }}>{p.desc}</p>
                     </div>
                   </div>
@@ -340,20 +341,20 @@ export function JiraManagePage() {
               </div>
             </div>
 
-            {/* What Sentrix captures */}
+            {/* What RISYS captures */}
             <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
               <div style={{ padding: '12px 20px', borderBottom: '1px solid #f0eded', background: '#f8f7f7' }}>
-                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>What Sentrix Captures</p>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>What RISYS Captures</p>
               </div>
               <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {[
                   { field: 'Issue key',     desc: 'e.g. SEC-142 · used to link back to Jira' },
-                  { field: 'Summary',       desc: 'Becomes the Sentrix incident title' },
+                  { field: 'Summary',       desc: 'Becomes the RISYS incident title' },
                   { field: 'Description',   desc: 'Full issue description, stored on the incident' },
-                  { field: 'Issue type',    desc: 'Mapped to Sentrix severity via your mappings above' },
+                  { field: 'Issue type',    desc: 'Mapped to RISYS severity via your mappings above' },
                   { field: 'Priority',      desc: 'Fallback severity when no issue type mapping exists' },
                   { field: 'Status',        desc: 'Synced when issue transitions (open → in progress → done)' },
-                  { field: 'Assignee',      desc: 'Mapped to Sentrix incident assignee if email matches' },
+                  { field: 'Assignee',      desc: 'Mapped to RISYS incident assignee if email matches' },
                   { field: 'Reporter',      desc: 'Stored as incident source metadata' },
                   { field: 'Labels / tags', desc: 'Stored for search and filtering' },
                 ].map(p => (

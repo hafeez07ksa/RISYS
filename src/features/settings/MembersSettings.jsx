@@ -158,10 +158,10 @@ function DeleteConfirmModal({ member, onClose, onConfirm }) {
           </p>
           <div>
             <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>
-              Type <span style={{ textTransform: 'none', fontFamily: 'monospace', color: '#8C1616' }}>{expected}</span> to confirm
+              Type <span style={{ textTransform: 'none', fontFamily: 'var(--font-mono)', color: '#8C1616' }}>{expected}</span> to confirm
             </label>
             <input value={typed} onChange={e => setTyped(e.target.value)} autoFocus
-              placeholder={expected} className="sentrix-input" style={{ fontFamily: 'monospace', fontSize: 12.5 }} />
+              placeholder={expected} className="risys-input" style={{ fontFamily: 'var(--font-mono)', fontSize: 12.5 }} />
           </div>
           {error && <p style={{ fontSize: 12, color: '#8C1616', background: '#FBEAEA', padding: '9px 12px', borderRadius: 8 }}>{error}</p>}
         </div>

@@ -17,6 +17,7 @@ import {
   RISK_CATEGORIES, RISK_STATUSES, WORKFLOW_STATES, RISK_TREATMENTS,
 } from '@/lib/risks'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 
 function RiskBadge({ score }) {
   const l = getRiskLevel(score)
@@ -263,12 +264,12 @@ export function RiskRegisterPage() {
             { value: treatmentFilter, onChange: setTreatmentFilter, options: RISK_TREATMENTS, placeholder: 'All treatments' },
           ].map((f, i) => (
             <div key={i} className="relative">
-              <select value={f.value} onChange={e => f.onChange(e.target.value)}
+              <SelectField value={f.value} onChange={e => f.onChange(e.target.value)}
                 className="text-xs pl-3 pr-7 py-2 rounded-md border appearance-none outline-none cursor-pointer"
                 style={{ borderColor: '#e9dad7', color: f.value ? '#292021' : '#97817d', background: '#fff' }}>
                 <option value="">{f.placeholder}</option>
                 {f.options.map(o => <option key={o.value || o} value={o.value || o}>{o.label || o}</option>)}
-              </select>
+              </SelectField>
               <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#97817d' }}>▾</span>
             </div>
           ))}
@@ -286,12 +287,12 @@ export function RiskRegisterPage() {
           <div className="flex items-center gap-3 mb-3 px-4 py-2.5 rounded-lg"
             style={{ background: '#f6ebe8', border: '1px solid #e6cfc9' }}>
             <span className="text-xs font-medium" style={{ color: '#5D0F0F' }}>{selected.size} selected</span>
-            <select onChange={e => { bulkSetStatus(e.target.value); e.target.value = '' }} defaultValue=""
+            <SelectField onChange={e => { bulkSetStatus(e.target.value); e.target.value = '' }} defaultValue=""
               className="text-xs px-2 py-1.5 rounded-md border outline-none cursor-pointer"
               style={{ borderColor: '#e9dad7', background: '#fff', color: '#4d3e3e' }} disabled={bulkBusy}>
               <option value="" disabled>Set status…</option>
               {RISK_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-            </select>
+            </SelectField>
             {perms.canDeleteRisk && <button onClick={bulkDelete} disabled={bulkBusy}
               className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md"
               style={{ background: '#fff', color: '#8C1616', border: '1px solid #F0CECE' }}>

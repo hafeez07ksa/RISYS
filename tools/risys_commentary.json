@@ -1,0 +1,162 @@
+{
+  "1-5-2": {
+    "automation_class": "automated",
+    "plain_terms": "The methodology must actually be applied across the entity — a populated, scored, owned risk register rather than a document describing one.",
+    "how_to": "Run the register. Every risk scored consistently, assigned an owner, moved through the lifecycle, with treatment actions tracked to closure.",
+    "evidence": "The live risk register, scoring consistency across entries, ownership coverage, and treatment progress.",
+    "platforms": "RISYS.",
+    "in_risys": "Fully automated and self-evidencing. RISYS computes register population, scoring completeness, ownership coverage and treatment closure rates directly from its own data. This is one of the very few controls in Domain 1 that scores itself, and it is a strong demonstration point."
+  },
+  "1-5-1": {
+    "automation_class": "manual_evidence",
+    "plain_terms": "The cybersecurity department must identify, document and approve a risk management methodology and procedures, built around confidentiality, integrity and availability of information and technology assets.",
+    "how_to": "Document the methodology: how risks are identified, the scoring scale for likelihood and impact, the risk appetite and acceptance thresholds, the treatment options, and the review cadence. Get it approved.",
+    "evidence": "The approved methodology document, the risk scoring scale, and the risk appetite statement.",
+    "platforms": "RISYS itself is the natural home, alongside the document store.",
+    "in_risys": "RISYS already implements a standardised scoring model with inherent and residual scoring and a control effectiveness reduction. The methodology document should describe exactly what RISYS does — at which point the platform becomes the implementation of the client's methodology rather than a record of it."
+  },
+  "1-8-1": {
+    "automation_class": "automated",
+    "plain_terms": "The cybersecurity department must periodically review whether the entity is actually implementing its cybersecurity controls. This is the first-line self-assessment.",
+    "how_to": "Run a periodic self-assessment across the control set. NCA will issue the ECC-2:2024 Assessment and Compliance Tool for this purpose, and the entity's internal review should align to it.",
+    "evidence": "Self-assessment results, the review schedule, and identified gaps with remediation plans.",
+    "platforms": "RISYS is the natural system of record. NCA's own compliance tool sits alongside it.",
+    "in_risys": "Strongly automated and one of the best demonstration controls in the framework. Running the ECC assessment inside RISYS is itself the evidence for 1-8-1 — control statuses, assessment dates, assessor identity and gap register all come from platform data. Align the RISYS compliance status vocabulary to NCA's scoring scale so output can be submitted without translation."
+  },
+  "1-8-2": {
+    "automation_class": "manual_evidence",
+    "plain_terms": "Implementation must also be reviewed and audited by parties other than the cybersecurity department, conducted independently, respecting conflict of interest, in line with Generally Accepted Auditing Standards. This is second and third line assurance — internal audit or an external firm.",
+    "how_to": "Commission internal audit or an external assessor on a defined cycle. Ensure genuine independence — the reviewer must not report to the head of cybersecurity.",
+    "evidence": "Audit reports, engagement letters, the independence declaration, and auditor credentials.",
+    "platforms": "Audit management: internal audit platforms such as TeamMate or AuditBoard, or the RISYS evidence store.",
+    "in_risys": "Manual evidence, but RISYS holds the findings. A useful capability is importing external audit findings as tracked remediation items with owners and due dates, which links this control to 1-8-3."
+  },
+  "2-2-1": {
+    "automation_class": "manual_evidence",
+    "plain_terms": "Identity and access management requirements must be identified, documented and approved.",
+    "how_to": "Write the IAM standard: authentication requirements, authorisation model, privileged access rules, joiner-mover-leaver process and review cadence.",
+    "evidence": "The approved IAM policy.",
+    "platforms": "Document store.",
+    "in_risys": "Evidence upload with review cycle."
+  },
+  "2-2-2": {
+    "automation_class": "automated",
+    "plain_terms": "The IAM requirements must be operating across the estate — the configured reality matching the written standard.",
+    "how_to": "Enforce through conditional access policies, group-based authorisation and automated provisioning rather than manual administration.",
+    "evidence": "Conditional access policy configuration, provisioning records, and coverage across the user population.",
+    "platforms": "Microsoft Entra ID, Active Directory, Okta, Ping Identity. Identity governance in SailPoint, Saviynt, or Entra ID Governance.",
+    "in_risys": "Fully automated with the existing Entra connector. Every gap RISYS finds in 2-2-3 is evidence against this control."
+  },
+  "2-2-3": {
+    "automation_class": "automated",
+    "plain_terms": "The subcontrols here are the most automatable set in the framework: single-factor authentication, multi-factor authentication chosen on impact assessment for remote access and privileged accounts, authorisation on need-to-know and least privilege, privileged access management, and periodic review of identities and access rights.",
+    "how_to": "Enforce MFA through conditional access, with no unscoped exclusions. Implement privileged access management with just-in-time elevation and approval. Run access recertification campaigns on a defined cycle. Design groups so that authorisation reflects role rather than accumulating over time.",
+    "evidence": "MFA registration and enforcement coverage, the conditional access policy set with exclusions justified, the privileged account inventory, PIM activation logs, and completed access review campaigns with revocation actions taken.",
+    "platforms": "Microsoft Entra ID including Privileged Identity Management and Access Reviews, Active Directory with a PAM tool, CyberArk, BeyondTrust, Delinea, Okta, SailPoint, Saviynt.",
+    "in_risys": "The flagship automated control. RISYS already reads MFA registration state and privileged directory roles from Entra. Extending to conditional access policies, PIM activation and access review completion covers all five subcontrols. Note the current defect: the inactivity finding cannot fire because last sign-in is never populated, which weakens 2-2-3-5 — fix that first, since access review evidence is exactly what this control asks for."
+  },
+  "2-2-4": {
+    "automation_class": "automated",
+    "plain_terms": "The implementation of identity and access management requirements must be periodically reviewed.",
+    "how_to": "Run scheduled access recertification and review the IAM configuration itself — conditional access drift, stale exclusions, orphaned privileged roles.",
+    "evidence": "Access review campaign records with completion rates and revocations, and configuration review records.",
+    "platforms": "Entra ID Access Reviews, SailPoint, Saviynt.",
+    "in_risys": "Automatable. Entra Access Reviews expose campaign status, completion and decisions through Graph. RISYS can also run the review cycle itself where the client has no governance tooling, which is the common case in mid-size organisations."
+  },
+  "2-4-1": {
+    "automation_class": "manual_evidence",
+    "plain_terms": "Requirements for protecting the email service must be identified, documented and approved.",
+    "how_to": "Write the email security standard covering filtering, authentication, archiving and access controls.",
+    "evidence": "The approved standard.",
+    "platforms": "Document store.",
+    "in_risys": "Evidence upload with review cycle."
+  },
+  "2-4-2": {
+    "automation_class": "automated",
+    "plain_terms": "Email protection must be configured and operating.",
+    "how_to": "Deploy and tune the email security stack; monitor filtering effectiveness and false negative rates.",
+    "evidence": "Configuration state, filtering statistics, and threat detection volumes.",
+    "platforms": "Microsoft Defender for Office 365, Proofpoint, Mimecast, Barracuda, Cisco Secure Email.",
+    "in_risys": "Automatable through the email security platform API. Note that the existing M365 connector reads mailbox forwarding rules and SharePoint sharing — it does not read email protection policy state, so this control needs a Defender for Office 365 build that does not exist yet."
+  },
+  "2-4-3": {
+    "automation_class": "automated",
+    "plain_terms": "Five minimum requirements: filtering phishing and spam with modern techniques, multi-factor authentication for remote and webmail access chosen on impact assessment, email archiving and backup, protection against advanced persistent threats using zero-day malware, and validation of the entity's email domains using SPF, DKIM and DMARC.",
+    "how_to": "Enable advanced threat protection with safe attachments and safe links. Enforce MFA on webmail through conditional access. Configure archiving with a defined retention period. Publish SPF, DKIM and DMARC records and move DMARC to an enforcing policy rather than leaving it at none.",
+    "evidence": "Filtering policy configuration and detection statistics, conditional access covering webmail, archive configuration and retention settings, ATP policy state, and DNS records showing SPF, DKIM and DMARC with the DMARC policy value.",
+    "platforms": "Microsoft Defender for Office 365 or Exchange Online Protection, Proofpoint, Mimecast. DMARC monitoring through Dmarcian, Valimail or Agari. DNS through the domain registrar.",
+    "in_risys": "Subcontrol 2-4-3-5 is the cheapest signal in the framework: a plain DNS lookup, no connector, no credentials and no client cooperation, returning a definitive pass or fail. It can be built in an afternoon and demonstrated on a prospect's own domain. Treat a DMARC policy of none as a fail, not a pass."
+  },
+  "2-10-1": {
+    "automation_class": "manual_evidence",
+    "plain_terms": "Requirements for technical vulnerability management must be identified, documented and approved.",
+    "how_to": "Write the standard defining scan scope and frequency, severity classification, remediation SLAs per severity, and the exception process.",
+    "evidence": "The approved vulnerability management policy with remediation SLAs.",
+    "platforms": "Document store.",
+    "in_risys": "Evidence upload with review cycle."
+  },
+  "2-10-2": {
+    "automation_class": "automated",
+    "plain_terms": "Scanning must be running across the defined scope and findings must be flowing into remediation.",
+    "how_to": "Operate the scanning programme with authenticated scans where possible, and route findings to owners with due dates derived from the SLA.",
+    "evidence": "Scan coverage against the asset inventory, scan frequency, and open finding counts by severity and age.",
+    "platforms": "Tenable Nessus or Tenable.io, Qualys VMDR, Rapid7 InsightVM, Microsoft Defender Vulnerability Management.",
+    "in_risys": "Fully automated and one of the highest-value integrations available. Open findings by severity and their ageing against SLA is precisely the kind of live metric that makes a compliance platform feel operational rather than administrative."
+  },
+  "2-10-3": {
+    "automation_class": "automated",
+    "plain_terms": "Five minimum requirements: periodic assessment and detection, classification by severity, remediation based on classification and associated cyber risks, patch management with updates verified in a non-production environment before being applied, and subscription to trusted sources for new vulnerabilities.",
+    "how_to": "Scan on a defined cycle. Use CVSS with environmental scoring so severity reflects the entity's context. Remediate against SLA. Note the specific requirement in 2-10-3-4 for pre-production testing of patches — that is a process requirement many organisations skip and it is explicitly checkable. Subscribe to threat intelligence and vendor advisories, including the NCA's own advisories.",
+    "evidence": "Scan schedule and results, severity classification methodology, remediation SLA adherence with mean time to remediate by severity, change records showing patches tested in non-production before deployment, and subscription records for threat intelligence sources.",
+    "platforms": "Tenable, Qualys, Rapid7, Microsoft Defender Vulnerability Management.",
+    "in_risys": "Strongly automated once a scanner is connected."
+  },
+  "2-13-1": {
+    "automation_class": "manual_evidence",
+    "plain_terms": "Requirements for incident and threat management must be identified, documented and approved.",
+    "how_to": "Write the incident response plan: classification scheme, severity definitions, escalation paths, roles, communication plan and NCA reporting procedure.",
+    "evidence": "The approved incident response plan and escalation matrix.",
+    "platforms": "Document store.",
+    "in_risys": "Evidence upload with review cycle."
+  },
+  "2-13-2": {
+    "automation_class": "automated",
+    "plain_terms": "Incident management must be operating — incidents logged, classified, assigned and closed.",
+    "how_to": "Run the incident process. Track detection and response times against defined targets.",
+    "evidence": "The incident register, classification distribution, mean time to detect and respond, and closure rates.",
+    "platforms": "RISYS incidents module, ServiceNow Security Incident Response, Jira Service Management, Microsoft Sentinel incidents, PagerDuty.",
+    "in_risys": "Fully automated and self-evidencing. RISYS already has an incidents module with lifecycle, SLA configuration and Jira ingestion. Incident volume, classification, SLA adherence and closure rate all come from platform data."
+  },
+  "2-13-3": {
+    "automation_class": "semi_automated",
+    "plain_terms": "Five minimum requirements: incident response plans and escalation procedures, incident classification, reporting cybersecurity incidents to the NCA, sharing incident notifications, threat intelligence, penetration indicators and incident reports with the NCA, and collecting and handling threat intelligence feeds.",
+    "how_to": "The NCA reporting obligation in 2-13-3-3 and 2-13-3-4 is the distinctive Saudi requirement and the one foreign vendors miss entirely. Define which incident classifications trigger NCA notification, within what timeframe, through which channel, and who is authorised to make the report. Build threat intelligence collection into the SOC workflow.",
+    "evidence": "The classification scheme with NCA reporting thresholds mapped to it, records of reports actually submitted to NCA with timestamps, evidence of intelligence sharing, and the threat intelligence source inventory.",
+    "platforms": "RISYS incidents module plus a threat intelligence feed.",
+    "in_risys": "The NCA reporting threshold belongs in the incident classification configuration, so that raising an incident of a given class surfaces the reporting obligation rather than relying on someone remembering it."
+  },
+  "2-15-1": {
+    "automation_class": "manual_evidence",
+    "plain_terms": "Requirements for protecting external web applications must be identified, documented and approved.",
+    "how_to": "Write the web application security standard covering WAF, architecture, protocols, usage policy and authentication.",
+    "evidence": "The approved standard and the inventory of external web applications.",
+    "platforms": "Document store.",
+    "in_risys": "Evidence upload with review cycle."
+  },
+  "2-15-2": {
+    "automation_class": "automated",
+    "plain_terms": "The protections must be deployed in front of the external web applications.",
+    "how_to": "Deploy WAF coverage across all external applications and verify no application is exposed without it.",
+    "evidence": "WAF coverage per application, policy mode, and blocked request statistics.",
+    "platforms": "Cloudflare, Akamai, Azure Front Door and Application Gateway WAF, AWS WAF, F5, Imperva, Fortinet FortiWeb.",
+    "in_risys": "Automated. Cloud WAF platforms have strong APIs. Coverage reconciled against the external application inventory identifies unprotected applications."
+  },
+  "2-15-3": {
+    "automation_class": "automated",
+    "plain_terms": "Five minimum requirements: a web application firewall, multi-tier architecture, secure protocols such as HTTPS, a published secure usage policy, and user authentication with factors defined by impact assessment — the last modified in ECC-2 from a flat MFA requirement to a risk-based one.",
+    "how_to": "Deploy WAF in blocking rather than detection mode. Document the multi-tier architecture separating presentation, logic and data. Enforce HTTPS with HSTS and disable plaintext HTTP. Publish the acceptable use terms. Implement authentication proportionate to the assessed impact of compromise.",
+    "evidence": "WAF configuration and mode, architecture diagrams showing tier separation, TLS configuration and HSTS headers, published usage terms, and the authentication impact assessment with the resulting control decision.",
+    "platforms": "WAF as above. TLS posture from Qualys SSL Labs or an internal scanner. Authentication through Entra ID, Okta, or the application's own identity provider.",
+    "in_risys": "Subcontrols 2-15-3-1 and 2-15-3-3 are externally verifiable without any client integration — a scan of the client's public domains reveals TLS configuration, HSTS and often WAF presence from HTTP headers. Runnable on a prospect before anything is signed."
+  }
+}

@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { usePeople } from '@/hooks/usePeople'
 import { SEVERITIES, STATUSES } from '@/lib/incidents'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 import { logAudit, AUDIT } from '@/lib/audit'
 
 export function RaiseIncidentModal({ onClose, onCreated }) {
@@ -66,7 +67,7 @@ export function RaiseIncidentModal({ onClose, onCreated }) {
             <label className="text-xs uppercase tracking-wider" style={{ color: '#8a7070' }}>Title *</label>
             <input value={form.title} onChange={set('title')}
               placeholder="e.g. Unauthorized access attempt on production server"
-              className="sentrix-input" autoFocus />
+              className="risys-input" autoFocus />
           </div>
 
           {/* Description */}
@@ -75,7 +76,7 @@ export function RaiseIncidentModal({ onClose, onCreated }) {
             <textarea value={form.description} onChange={set('description')}
               placeholder="Describe what happened, impact, and any initial findings..."
               rows={3}
-              className="sentrix-input resize-none" />
+              className="risys-input resize-none" />
           </div>
 
           {/* Severity + Status */}
@@ -83,11 +84,10 @@ export function RaiseIncidentModal({ onClose, onCreated }) {
             <div className="flex flex-col gap-1.5">
               <label className="text-xs uppercase tracking-wider" style={{ color: '#8a7070' }}>Severity</label>
               <div className="relative">
-                <select value={form.severity} onChange={set('severity')}
-                  className="w-full text-xs pl-3 pr-7 py-2.5 rounded-md border outline-none appearance-none cursor-pointer"
+                <SelectField value={form.severity} onChange={set('severity')} className="w-full"
                   style={{ borderColor: '#e5e0e0', color: '#1a1314' }}>
                   {SEVERITIES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
+                </SelectField>
                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#8a7070' }}>▾</span>
               </div>
             </div>
@@ -95,11 +95,10 @@ export function RaiseIncidentModal({ onClose, onCreated }) {
             <div className="flex flex-col gap-1.5">
               <label className="text-xs uppercase tracking-wider" style={{ color: '#8a7070' }}>Status</label>
               <div className="relative">
-                <select value={form.status} onChange={set('status')}
-                  className="w-full text-xs pl-3 pr-7 py-2.5 rounded-md border outline-none appearance-none cursor-pointer"
+                <SelectField value={form.status} onChange={set('status')} className="w-full"
                   style={{ borderColor: '#e5e0e0', color: '#1a1314' }}>
                   {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
+                </SelectField>
                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#8a7070' }}>▾</span>
               </div>
             </div>
@@ -109,8 +108,7 @@ export function RaiseIncidentModal({ onClose, onCreated }) {
           <div className="flex flex-col gap-1.5">
             <label className="text-xs uppercase tracking-wider" style={{ color: '#8a7070' }}>Assign to</label>
             <div className="relative">
-              <select value={form.assigned_to} onChange={set('assigned_to')}
-                className="w-full text-xs pl-3 pr-7 py-2.5 rounded-md border outline-none appearance-none cursor-pointer"
+              <SelectField value={form.assigned_to} onChange={set('assigned_to')} className="w-full"
                 style={{ borderColor: '#e5e0e0', color: form.assigned_to ? '#1a1314' : '#8a7070' }}>
                 <option value="">Unassigned</option>
                 {members.map(m => (
@@ -118,7 +116,7 @@ export function RaiseIncidentModal({ onClose, onCreated }) {
                     {m.user_id?.slice(0, 8)}... ({m.role})
                   </option>
                 ))}
-              </select>
+              </SelectField>
               <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#8a7070' }}>▾</span>
             </div>
           </div>

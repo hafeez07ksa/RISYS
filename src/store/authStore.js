@@ -91,7 +91,7 @@ export const useAuthStore = create(
       },
     }),
     {
-      name: 'sentrix-auth',
+      name: 'risys-auth',
       // Persist nothing sensitive: organization access must be re-proven
       // against the database on every load, never trusted from localStorage.
       partialize: () => ({}),

@@ -10,6 +10,7 @@ import { usePeople } from '@/hooks/usePeople'
 import { useComments } from '@/hooks/useComments'
 import { supabase } from '@/lib/supabase'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 import { SeverityBadge, StatusBadge } from '@/components/ui/IncidentBadges'
 import { STATUSES, SEVERITIES } from '@/lib/incidents'
 import { getSLAStatus, formatTimeRemaining, SLA_DEFAULTS } from '@/lib/sla'
@@ -212,11 +213,11 @@ function EscalateModal({ incident, onClose, onCreated }) {
             {[['likelihood', 'Likelihood (1–5)', 'inherent_likelihood'], ['impact', 'Impact (1–5)', 'inherent_impact']].map(([, label, key]) => (
               <div key={key}>
                 <label className="text-[11px] uppercase tracking-wider block mb-1.5" style={{ color: '#8a7070' }}>{label}</label>
-                <select value={form[key]} onChange={e => set(key, Number(e.target.value))}
+                <SelectField value={form[key]} onChange={e => set(key, Number(e.target.value))}
                   className="w-full text-xs px-3 py-2 rounded-lg border outline-none appearance-none"
                   style={{ borderColor: '#e5e0e0', color: '#1a1314' }}>
                   {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
+                </SelectField>
               </div>
             ))}
           </div>
@@ -409,12 +410,12 @@ export function IncidentDetailPage() {
 
               {/* Status selector */}
               <div className="relative">
-                <select value={incident.status} onChange={e => handleStatusChange(e.target.value)}
+                <SelectField value={incident.status} onChange={e => handleStatusChange(e.target.value)}
                   disabled={saving}
                   className="text-xs pl-3 pr-6 py-1.5 rounded-full border appearance-none outline-none cursor-pointer font-medium"
                   style={{ color: statusObj?.color || '#4a3a3a', background: statusObj?.bg || '#f8f7f7', borderColor: statusObj?.border || '#e5e0e0' }}>
                   {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
+                </SelectField>
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[9px]">▾</span>
               </div>
 
@@ -478,7 +479,7 @@ export function IncidentDetailPage() {
                 <div>
                   <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070', marginBottom: 6 }}>Assignee</p>
                   <div className="relative">
-                    <select value={incident.assigned_to || ''} onChange={e => handleAssigneeChange(e.target.value)}
+                    <SelectField value={incident.assigned_to || ''} onChange={e => handleAssigneeChange(e.target.value)}
                       disabled={saving}
                       className="w-full text-xs px-3 py-2 rounded-lg border outline-none appearance-none cursor-pointer"
                       style={{ borderColor: '#e5e0e0', color: incident.assigned_to ? '#1a1314' : '#8a7070' }}>
@@ -488,7 +489,7 @@ export function IncidentDetailPage() {
                           {m.full_name || m.email || m.user_id?.slice(0, 8)}
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                     <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[9px]" style={{ color: '#8a7070' }}>▾</span>
                   </div>
                 </div>

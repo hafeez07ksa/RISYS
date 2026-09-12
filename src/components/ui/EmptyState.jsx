@@ -1,11 +1,47 @@
-export function EmptyState({ icon: Icon, title, description, action }) {
+import { Inbox } from 'lucide-react'
+
+/* Empty states (§32). Two distinct cases that must never be conflated:
+ *
+ *   nothing exists yet  → explain what will appear here and offer to create one
+ *   nothing MATCHES     → say so and offer to clear the filters
+ *
+ * Showing "No risks yet — create your first risk" to someone whose filter is
+ * simply too narrow is actively wrong: the risks exist, and the suggested
+ * action would duplicate one. `filtered` picks the right copy. */
+export function EmptyState({
+  icon: Icon = Inbox,
+  title,
+  description,
+  action,
+  filtered = false,
+  onClearFilters,
+  compact = false,
+}) {
   return (
-    <div className="flex flex-col items-center justify-center text-center py-16 px-8 rounded-xl"
-      style={{ border: '1px dashed #e5e0e0', background: '#fff' }}>
-      {Icon && <Icon size={36} strokeWidth={1} className="mb-4" style={{ color: '#d4cccc' }} />}
-      <p className="text-sm font-medium mb-1" style={{ color: '#4a3a3a' }}>{title}</p>
-      {description && <p className="text-xs max-w-xs" style={{ color: '#8a7070' }}>{description}</p>}
-      {action && <div className="mt-5">{action}</div>}
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      textAlign: 'center', padding: compact ? '28px 20px' : '52px 20px',
+    }}>
+      <div style={{
+        width: 38, height: 38, borderRadius: 'var(--r-lg)', background: 'var(--surface)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+      }}>
+        <Icon size={17} style={{ color: 'var(--taupe)' }} />
+      </div>
+      <p style={{ fontSize: 'var(--t-body)', fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+        {title}
+      </p>
+      {description && (
+        <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-3)', margin: '5px 0 0', maxWidth: 340, lineHeight: 1.6 }}>
+          {description}
+        </p>
+      )}
+      <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
+        {filtered && onClearFilters && (
+          <button className="btn-secondary" onClick={onClearFilters}>Clear filters</button>
+        )}
+        {action}
+      </div>
     </div>
   )
 }

@@ -83,7 +83,7 @@ function ScopeToggle({ scope, enabled, onChange, saving }) {
             fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
             padding: '1px 6px', borderRadius: 20,
             background: '#f5f3f3', color: '#8a7070', border: '1px solid #e5e0e0',
-            fontFamily: 'monospace',
+            fontFamily: 'var(--font-mono)',
           }}>{scope.permission}</span>
         </div>
         <p className="text-xs leading-relaxed" style={{ color: '#8a7070' }}>{scope.description}</p>
@@ -516,7 +516,7 @@ export function M365ManagePage() {
                       opacity: enabledScopes.has(s.id) ? 1 : 0.45,
                     }}>
                       <Icon size={13} style={{ color: s.color, flexShrink: 0 }} />
-                      <span style={{ fontSize: 12, fontFamily: 'monospace', fontWeight: 600, color: '#1a1314', width: 220, flexShrink: 0 }}>
+                      <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#1a1314', width: 220, flexShrink: 0 }}>
                         {s.permission}
                       </span>
                       <span style={{ fontSize: 12, color: '#8a7070' }}>

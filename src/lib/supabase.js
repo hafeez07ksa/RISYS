@@ -4,7 +4,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('[Sentrix] Supabase env vars not set. Using mock mode.')
+  console.warn('[RISYS] Supabase env vars not set. Using mock mode.')
 }
 
 export const supabase = createClient(

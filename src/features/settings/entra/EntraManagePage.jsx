@@ -101,18 +101,18 @@ function DangerZone({ connectorId, connectorName, onDisconnected }) {
               <div style={{ padding: '12px 14px', borderRadius: 8, background: '#f8f7f7', border: '1px solid #e5e0e0', fontSize: 12, color: '#4a3a3a', lineHeight: 1.7 }}>
                 <p style={{ fontWeight: 600, color: '#1a1314', marginBottom: 6 }}>What happens when you disconnect:</p>
                 <p>· All directory syncs stop immediately</p>
-                <p>· Existing synced users remain in Sentrix</p>
+                <p>· Existing synced users remain in RISYS</p>
                 <p>· Security findings will no longer update</p>
                 <p>· You can reconnect again at any time</p>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 11.5, color: '#8a7070', marginBottom: 6 }}>
-                  Type <strong style={{ color: '#1a1314', fontFamily: 'monospace', letterSpacing: '0.05em' }}>{keyword}</strong> to confirm
+                  Type <strong style={{ color: '#1a1314', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>{keyword}</strong> to confirm
                 </label>
                 <input value={input} onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && matches && handleDisconnect()}
                   placeholder={keyword} autoFocus
-                  style={{ width: '100%', fontSize: 13, fontFamily: 'monospace', padding: '9px 12px', borderRadius: 8, outline: 'none', border: `1.5px solid ${matches ? '#bbf7d0' : '#e5e0e0'}`, background: matches ? '#f0fdf4' : '#fff', color: '#1a1314', boxSizing: 'border-box', letterSpacing: '0.08em', transition: 'border-color 0.15s' }} />
+                  style={{ width: '100%', fontSize: 13, fontFamily: 'var(--font-mono)', padding: '9px 12px', borderRadius: 8, outline: 'none', border: `1.5px solid ${matches ? '#bbf7d0' : '#e5e0e0'}`, background: matches ? '#f0fdf4' : '#fff', color: '#1a1314', boxSizing: 'border-box', letterSpacing: '0.08em', transition: 'border-color 0.15s' }} />
               </div>
               {error && <p style={{ fontSize: 12, color: '#b91c1c' }}>{error}</p>}
             </div>
@@ -585,10 +585,10 @@ export function EntraManagePage() {
               </div>
             </div>
 
-            {/* What Sentrix captures */}
+            {/* What RISYS captures */}
             <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
               <div style={{ padding: '12px 20px', borderBottom: '1px solid #f0eded', background: '#f8f7f7' }}>
-                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>What Sentrix Captures</p>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>What RISYS Captures</p>
               </div>
               <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 0 }}>
                 {[

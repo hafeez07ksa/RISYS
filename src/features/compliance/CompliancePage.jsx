@@ -1,16 +1,16 @@
-import { useState } from 'react'
-import { BookCheck, ChevronRight, TrendingUp } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { BookCheck, ChevronRight, TrendingUp, Zap } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
 import {
-  FRAMEWORKS,
+  PRIMARY_FRAMEWORKS,
   STATUS_CONFIG,
   useFrameworkRequirements,
   useComplianceStatuses,
   useFrameworkMappings,
+  useRequirementAutomation,
   computeFrameworkScore,
 } from '@/hooks/useCompliance'
-import { ComplianceFrameworkPage } from './ComplianceFrameworkPage'
 
 // ── Score ring ────────────────────────────────────────────────────────────────
 function ScoreRing({ score, size = 56 }) {
@@ -36,8 +36,9 @@ function FrameworkCard({ fw, onSelect }) {
   const { requirements, loading: reqLoading } = useFrameworkRequirements(fw.id)
   const { statuses } = useComplianceStatuses(fw.id)
   const { mappings, controls } = useFrameworkMappings(fw.id)
+  const { automation } = useRequirementAutomation(fw.id)
 
-  const score = reqLoading ? null : computeFrameworkScore(requirements, statuses, mappings, controls, fw)
+  const score = reqLoading ? null : computeFrameworkScore(requirements, statuses, mappings, controls, fw, automation)
   const mainReqs = requirements.filter(r => r.control_type !== 'Sub-Control')
 
   const bars = score ? [
@@ -105,7 +106,7 @@ function FrameworkCard({ fw, onSelect }) {
             { label: 'N/A',         value: score.na,          color: 'var(--text-3)' },
           ].map(s => (
             <div key={s.label} style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: 18, fontWeight: 600, color: s.color }}>{s.value}</p>
+              <p className="tnum" style={{ fontSize: 18, fontWeight: 600, color: s.color }}>{s.value}</p>
               <p style={{ fontSize: 10, color: 'var(--text-3)' }}>{s.label}</p>
             </div>
           )) : (
@@ -118,7 +119,15 @@ function FrameworkCard({ fw, onSelect }) {
 
       {/* Footer */}
       <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{mainReqs.length} requirements</span>
+        <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
+          {mainReqs.length} requirements
+          {score && score.automated > 0 && (
+            <span style={{ color: 'var(--text-3)' }}>
+              {' · '}<Zap size={10} style={{ display: 'inline', marginRight: 2, verticalAlign: -1 }} />
+              {score.automated} automated
+            </span>
+          )}
+        </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: fw.color, fontWeight: 500 }}>
           View details <ChevronRight size={13} />
         </div>
@@ -130,17 +139,12 @@ function FrameworkCard({ fw, onSelect }) {
 // ── Main Compliance Page ──────────────────────────────────────────────────────
 export function CompliancePage() {
   const { organization } = useAuth()
-  const [activeFramework, setActiveFramework] = useState(null)
+  const navigate = useNavigate()
 
-  // Drill into a framework
-  if (activeFramework) {
-    return (
-      <ComplianceFrameworkPage
-        frameworkId={activeFramework}
-        onBack={() => setActiveFramework(null)}
-      />
-    )
-  }
+  // Framework and control views are real routes rather than local state, so an
+  // assessor can send someone a link to a specific control — which is most of
+  // what makes an assessment auditable.
+  const openFramework = (id) => navigate(`/app/compliance/${encodeURIComponent(id)}`)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -154,14 +158,16 @@ export function CompliancePage() {
             Framework Compliance
           </h2>
           <p style={{ fontSize: 13, color: 'var(--text-3)', maxWidth: 640 }}>
-            Track your compliance posture across Saudi regulatory frameworks. Select a framework to map controls, set statuses, and view gap analysis.
+            Your active framework. Requirements covered by a connector signal score themselves
+            from measured data; the rest are assessed manually. Select the framework to map
+            controls, set statuses, and view gap analysis.
           </p>
         </div>
 
         {/* Framework grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
-          {FRAMEWORKS.map(fw => (
-            <FrameworkCard key={fw.id} fw={fw} onSelect={setActiveFramework} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 420px))', gap: 16 }}>
+          {PRIMARY_FRAMEWORKS.map(fw => (
+            <FrameworkCard key={fw.id} fw={fw} onSelect={openFramework} />
           ))}
         </div>
       </div>

@@ -10,6 +10,7 @@ import { usePeople } from '@/hooks/usePeople'
 import { useTasks } from '@/hooks/useTasks'
 import { supabase } from '@/lib/supabase'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 import { TASK_STATUSES, TASK_PRIORITIES, getTaskStatus, getTaskPriority } from '@/lib/sla'
 import { logAudit, AUDIT } from '@/lib/audit'
 
@@ -207,12 +208,12 @@ export function TaskDetailPage() {
               {/* Status */}
               <div className="flex items-center gap-2">
                 <StatusIcon size={16} style={{ color: s.color }} />
-                <select value={task.status} onChange={e => handleUpdate({ status: e.target.value })}
+                <SelectField value={task.status} onChange={e => handleUpdate({ status: e.target.value })}
                   disabled={saving}
                   className="text-xs pl-2 pr-6 py-1.5 rounded-full border appearance-none outline-none cursor-pointer font-medium"
                   style={{ color: s.color, background: s.bg, borderColor: s.border }}>
                   {TASK_STATUSES.map(ts => <option key={ts.value} value={ts.value}>{ts.label}</option>)}
-                </select>
+                </SelectField>
               </div>
 
               {/* Priority */}
@@ -291,7 +292,7 @@ export function TaskDetailPage() {
                 <div>
                   <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070', marginBottom: 6 }}>Assignee</p>
                   <div className="relative">
-                    <select value={task.assigned_to || ''} onChange={e => handleUpdate({ assigned_to: e.target.value || null })}
+                    <SelectField value={task.assigned_to || ''} onChange={e => handleUpdate({ assigned_to: e.target.value || null })}
                       disabled={saving}
                       className="w-full text-xs px-3 py-2 rounded-lg border outline-none appearance-none cursor-pointer"
                       style={{ borderColor: '#e5e0e0', color: task.assigned_to ? '#1a1314' : '#8a7070' }}>
@@ -301,7 +302,7 @@ export function TaskDetailPage() {
                           {m.full_name || m.email || m.user_id?.slice(0, 8)}
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                     <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[9px]" style={{ color: '#8a7070' }}>▾</span>
                   </div>
                 </div>

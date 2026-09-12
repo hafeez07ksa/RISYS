@@ -4,6 +4,7 @@ import { TowerControl, ShieldAlert } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
 import { Spinner } from '@/components/ui/Spinner'
+import { RisysLogo } from '@/components/ui/RisysLogo'
 
 /*
  * The vendor door. Same Supabase auth underneath, but:
@@ -28,7 +29,7 @@ export function PlatformLoginPage() {
         .from('platform_admins').select('user_id').eq('user_id', user.id).limit(1)
       if (!data || !data.length) {
         await signOut()
-        throw new Error('This console is restricted to Sentrix platform staff.')
+        throw new Error('This console is restricted to RISYS platform staff.')
       }
       navigate('/platform')
     } catch (err) {
@@ -44,7 +45,7 @@ export function PlatformLoginPage() {
           <TowerControl size={17} style={{ color: '#F3E7E4' }} />
         </div>
         <div>
-          <p style={{ fontFamily: "'DM Serif Display', serif", fontSize: 19, color: '#F3E7E4', lineHeight: 1 }}>Sentrix</p>
+          <RisysLogo size="md" tone="light" />
           <p style={{ fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '0.22em', color: '#A98D8C', marginTop: 2 }}>Platform Console</p>
         </div>
       </div>
@@ -58,13 +59,13 @@ export function PlatformLoginPage() {
             <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Staff email</label>
             <input type="email" required value={form.email} autoFocus
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              placeholder="you@sentrix.com" className="sentrix-input" />
+              placeholder="you@risys.com" className="risys-input" />
           </div>
           <div>
             <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Password</label>
             <input type="password" required value={form.password}
               onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-              placeholder="••••••••" className="sentrix-input" />
+              placeholder="••••••••" className="risys-input" />
           </div>
 
           {error && (

@@ -3,6 +3,7 @@ import { CalendarCheck, AlertTriangle } from 'lucide-react'
 import { useRiskReviews } from '@/hooks/useRisks'
 import { REVIEW_OUTCOMES, getReviewOutcome, nextReviewDate, isReviewOverdue } from '@/lib/risks'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 
 function Card({ children }) {
   return <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 10, padding: 16 }}>{children}</div>
@@ -66,16 +67,16 @@ export function ReviewsTab({ risk, member, onRiskChanged, canReview }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
               <p style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4 }}>Review outcome</p>
-              <select value={outcome} onChange={e => setOutcome(e.target.value)} className="sentrix-input" style={{ width: '100%', fontSize: 13 }}>
+              <SelectField value={outcome} onChange={e => setOutcome(e.target.value)} className="risys-input" style={{ width: '100%', fontSize: 13 }}>
                 {REVIEW_OUTCOMES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+              </SelectField>
             </div>
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
               placeholder="Review notes — what was considered, any changes in exposure, control performance, KRI trends…"
-              className="sentrix-input" style={{ width: '100%', fontSize: 13, resize: 'vertical' }} />
+              className="risys-input" style={{ width: '100%', fontSize: 13, resize: 'vertical' }} />
             <div>
               <p style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4 }}>Next review date (auto-set from {risk.review_frequency || 'Quarterly'} frequency)</p>
-              <input type="date" value={nextDate} onChange={e => setNextDate(e.target.value)} className="sentrix-input" style={{ fontSize: 13 }} />
+              <input type="date" value={nextDate} onChange={e => setNextDate(e.target.value)} className="risys-input" style={{ fontSize: 13 }} />
             </div>
             {error && <p style={{ fontSize: 12, color: '#8C1616' }}>{error}</p>}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>

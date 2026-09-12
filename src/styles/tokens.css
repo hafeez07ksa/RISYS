@@ -1,0 +1,124 @@
+/* ── RISYS design tokens ──────────────────────────────────────────────────────
+ *
+ * One source of truth for colour, space, radius, elevation and motion.
+ *
+ * Why this file exists: the codebase carried TWO parallel palettes. The :root
+ * block declared one (#292021 ink, #97817d muted, #e9dad7 border) while the
+ * pages hardcoded a second, undeclared one (#1a1314, #8a7070, #e5e0e0,
+ * #4a3a3a, #f5f3f3, #d4cccc) across 2,914 literals. Same intent, different
+ * values — which is exactly why a border looks slightly different on Findings
+ * than on Controls, and why nothing felt like one product.
+ *
+ * The two sets are reconciled here. The legacy literals are kept as aliases so
+ * un-migrated pages keep rendering while they are moved over page by page.
+ * ------------------------------------------------------------------------- */
+
+:root {
+  /* ── Brand ──────────────────────────────────────────────────────────────── */
+  /* Sampled from the supplied artwork. --brand-wine is the orbit ring in the
+   * mark; it is plummier than --crimson, which the UI uses for actions. They
+   * sit side by side in the sidebar, so they are declared separately rather
+   * than one being quietly redefined as the other. */
+  --brand-ink:    #251518;
+  --brand-wine:   #4C0C25;
+  --brand-cream:  #F8F4EA;
+
+  --crimson:      #5D0F0F;   /* primary action, active accent                */
+  --crimson-2:    #7a1a1a;   /* hover                                        */
+  --crimson-3:    #8C1616;   /* was a third brand red in the wild; folded in */
+  --crimson-wash: #FBEAEA;   /* tinted fill behind brand icons               */
+  --rose:         #895353;   /* secondary accent, eyebrows, focus ring       */
+  --taupe:        #A98D8C;
+  --blush:        #E9D8D5;
+
+  /* ── Surfaces ───────────────────────────────────────────────────────────── */
+  --bg:        #fbf7f6;      /* app canvas                                   */
+  --bg-2:      #ffffff;      /* raised content surface                       */
+  --bg-3:      #f6efed;
+  --surface:   #f6eeec;      /* table head, quiet fills                      */
+  --surface-2: #efe3e0;
+  --hover:     #faf3f1;      /* row / item hover                             */
+
+  /* ── Ink ────────────────────────────────────────────────────────────────── */
+  --text:      #292021;      /* primary                                      */
+  --text-2:    #4d3e3e;      /* secondary                                    */
+  --text-3:    #97817d;      /* metadata, helper, placeholder                */
+  --ink:       #292021;      /* sidebar base                                 */
+  --ink-2:     #372c2d;      /* sidebar raised                               */
+  --ink-3:     #4a3b3c;
+  --on-dark:   #F8F4EA;      /* brand cream, sampled from the supplied mark  */
+  --on-dark-2: #b9a5a2;      /* muted text on sidebar                        */
+
+  /* ── Lines ──────────────────────────────────────────────────────────────── */
+  --border:    #e9dad7;      /* default hairline                             */
+  --border-2:  #d9c5c1;      /* stronger: inputs, dividers under pressure    */
+  --border-3:  #f0ecec;      /* faintest: inside dense tables                */
+
+  /* ── Status (§28 — one language, used everywhere) ───────────────────────── */
+  --critical:      #b91c1c;  --critical-bg: #fef2f2;  --critical-bd: #fecaca;
+  --high:          #c0392b;  --high-bg:     #fef3f0;  --high-bd:     #fbd5cc;
+  --medium:        #92400e;  --medium-bg:   #fffbeb;  --medium-bd:   #fde68a;
+  --low:           #166534;  --low-bg:      #f0fdf4;  --low-bd:      #bbf7d0;
+  --info:          #1e40af;  --info-bg:     #eff6ff;  --info-bd:     #bfdbfe;
+  --neutral:       #6b5a5a;  --neutral-bg:  #f6eeec;  --neutral-bd:  #e9dad7;
+
+  --danger:  var(--critical);
+  --warning: var(--medium);
+  --success: var(--low);
+
+  /* ── Spacing (4px base) ─────────────────────────────────────────────────── */
+  --s-1: 4px;   --s-2: 8px;   --s-3: 12px;  --s-4: 16px;
+  --s-5: 20px;  --s-6: 24px;  --s-8: 32px;  --s-10: 40px;  --s-12: 48px;
+
+  /* Page gutter. One value so every page aligns to the same left edge. */
+  --gutter: 28px;
+
+  /* ── Radius ─────────────────────────────────────────────────────────────── */
+  --r-sm: 4px;  --r: 6px;  --r-md: 8px;  --r-lg: 12px;  --r-full: 999px;
+
+  /* ── Elevation — restrained. Enterprise UI earns depth, it doesn't spend it */
+  --e-1: 0 1px 2px rgba(41,32,33,0.04);
+  --e-2: 0 4px 12px rgba(41,32,33,0.07);
+  --e-3: 0 8px 24px rgba(41,32,33,0.10);
+  --e-4: 0 16px 48px rgba(41,32,33,0.14);
+
+  /* ── Type scale — capped deliberately. §29: hierarchy from weight and
+   *    colour, not size. Nothing in the UI is larger than 20px except a
+   *    metric readout. */
+  --t-page:   15px;   /* page title                                          */
+  --t-section:13px;   /* section title                                       */
+  --t-body:   13px;
+  --t-sm:     12px;
+  --t-meta:   11.5px; /* metadata                                            */
+  --t-micro:  10.5px; /* eyebrow, table head                                 */
+  --t-metric: 20px;   /* KPI value                                           */
+
+  /* ── Motion — fast and serious (§35) ────────────────────────────────────── */
+  --dur-1: 90ms;  --dur-2: 150ms;  --dur-3: 220ms;
+  --ease: cubic-bezier(0.2, 0, 0.13, 1);
+
+  /* ── Layout ─────────────────────────────────────────────────────────────── */
+  --sidebar-w: 224px;
+  --sidebar-w-collapsed: 56px;
+  --topbar-h: 52px;
+  --z-drawer: 70;  --z-modal: 80;  --z-popover: 90;  --z-toast: 100;
+
+  /* ── Legacy aliases ──────────────────────────────────────────────────────
+   * The second palette, mapped onto the first. Un-migrated pages referencing
+   * these hexes directly still render correctly; as each page is migrated its
+   * literals are replaced with the semantic token above. */
+  --legacy-ink:     var(--text);      /* #1a1314 */
+  --legacy-muted:   var(--text-3);    /* #8a7070 */
+  --legacy-border:  var(--border);    /* #e5e0e0 */
+  --legacy-text-2:  var(--text-2);    /* #4a3a3a */
+  --legacy-hover:   var(--hover);     /* #f5f3f3 */
+  --legacy-border-2:var(--border-2);  /* #d4cccc */
+}
+
+/* Reduced motion: honour it. Nothing here is load-bearing. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

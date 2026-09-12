@@ -5,6 +5,7 @@ import { usePeople } from '@/hooks/usePeople'
 import { useAuth } from '@/hooks/useAuth'
 import { TASK_PRIORITIES } from '@/lib/sla'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 import { logAudit, AUDIT } from '@/lib/audit'
 
 export function CreateTaskModal({ onClose, onCreated, incidentId, riskId }) {
@@ -70,25 +71,24 @@ export function CreateTaskModal({ onClose, onCreated, incidentId, riskId }) {
             <label className="text-xs uppercase tracking-wider" style={{ color: '#8a7070' }}>Title *</label>
             <input value={form.title} onChange={set('title')}
               placeholder="e.g. Enable MFA for Ahmed Khan"
-              className="sentrix-input" autoFocus />
+              className="risys-input" autoFocus />
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs uppercase tracking-wider" style={{ color: '#8a7070' }}>Description</label>
             <textarea value={form.description} onChange={set('description')}
               placeholder="Steps, context, acceptance criteria…"
-              rows={2} className="sentrix-input resize-none" />
+              rows={2} className="risys-input resize-none" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs uppercase tracking-wider" style={{ color: '#8a7070' }}>Priority</label>
               <div className="relative">
-                <select value={form.priority} onChange={set('priority')}
-                  className="w-full text-xs pl-3 pr-7 py-2.5 rounded-md border outline-none appearance-none cursor-pointer"
+                <SelectField value={form.priority} onChange={set('priority')} className="w-full"
                   style={{ borderColor: '#e5e0e0', color: '#1a1314' }}>
                   {TASK_PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                </select>
+                </SelectField>
                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#8a7070' }}>▾</span>
               </div>
             </div>
@@ -96,8 +96,7 @@ export function CreateTaskModal({ onClose, onCreated, incidentId, riskId }) {
             <div className="flex flex-col gap-1.5">
               <label className="text-xs uppercase tracking-wider" style={{ color: '#8a7070' }}>Assign to</label>
               <div className="relative">
-                <select value={form.assigned_to} onChange={set('assigned_to')}
-                  className="w-full text-xs pl-3 pr-7 py-2.5 rounded-md border outline-none appearance-none cursor-pointer"
+                <SelectField value={form.assigned_to} onChange={set('assigned_to')} className="w-full"
                   style={{ borderColor: '#e5e0e0', color: form.assigned_to ? '#1a1314' : '#8a7070' }}>
                   <option value="">Unassigned</option>
                   {members.map(m => (
@@ -105,7 +104,7 @@ export function CreateTaskModal({ onClose, onCreated, incidentId, riskId }) {
                       {m.full_name || m.email || m.user_id?.slice(0, 8)} ({m.role})
                     </option>
                   ))}
-                </select>
+                </SelectField>
                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#8a7070' }}>▾</span>
               </div>
             </div>
@@ -115,12 +114,12 @@ export function CreateTaskModal({ onClose, onCreated, incidentId, riskId }) {
             <div className="flex flex-col gap-1.5">
               <label className="text-xs uppercase tracking-wider" style={{ color: '#8a7070' }}>Due date</label>
               <input type="datetime-local" value={form.due_at} onChange={set('due_at')}
-                className="sentrix-input text-xs" />
+                className="risys-input text-xs" />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs uppercase tracking-wider" style={{ color: '#8a7070' }}>Reminder</label>
               <input type="datetime-local" value={form.reminder_at} onChange={set('reminder_at')}
-                className="sentrix-input text-xs" />
+                className="risys-input text-xs" />
             </div>
           </div>
 

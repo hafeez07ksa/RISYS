@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ChevronDown, ChevronUp, FlaskConical } from 'lucide-react'
 import { useControlTests } from '@/hooks/useRisks'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 
 const RESULT_COLORS = { Pass: '#2F6B3C', Fail: '#8C1616', Partial: '#9C6F0F' }
 
@@ -39,17 +40,17 @@ export function ControlTestsPanel({ control, onTestLogged, canTest }) {
         <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
           {/* log a test — managers/admins only */}
           {canTest && <div style={{ display: 'grid', gridTemplateColumns: '110px 90px 90px 110px 1fr auto', gap: 8, alignItems: 'center', marginBottom: 12 }}>
-            <select value={form.test_type} onChange={set('test_type')} className="sentrix-input" style={{ fontSize: 12 }}>
+            <SelectField value={form.test_type} onChange={set('test_type')} style={{ fontSize: 12 }}>
               <option>Design</option><option>Operating</option>
-            </select>
-            <select value={form.result} onChange={set('result')} className="sentrix-input" style={{ fontSize: 12 }}>
+            </SelectField>
+            <SelectField value={form.result} onChange={set('result')} style={{ fontSize: 12 }}>
               <option>Pass</option><option>Fail</option><option>Partial</option>
-            </select>
-            <select value={form.effectiveness} onChange={set('effectiveness')} className="sentrix-input" style={{ fontSize: 12 }} title="Assessed effectiveness 1–5">
+            </SelectField>
+            <SelectField value={form.effectiveness} onChange={set('effectiveness')} style={{ fontSize: 12 }} title="Assessed effectiveness 1–5">
               {[1,2,3,4,5].map(v => <option key={v} value={v}>Eff {v}/5</option>)}
-            </select>
-            <input type="date" value={form.test_date} onChange={set('test_date')} className="sentrix-input" style={{ fontSize: 12 }} />
-            <input value={form.notes} onChange={set('notes')} placeholder="Test notes — sample size, exceptions found…" className="sentrix-input" style={{ fontSize: 12 }} />
+            </SelectField>
+            <input type="date" value={form.test_date} onChange={set('test_date')} className="risys-input" style={{ fontSize: 12 }} />
+            <input value={form.notes} onChange={set('notes')} placeholder="Test notes — sample size, exceptions found…" className="risys-input" style={{ fontSize: 12 }} />
             <button onClick={save} disabled={saving} className="btn-primary" style={{ fontSize: 12 }}>
               {saving ? <Spinner size="sm" /> : 'Log Test'}
             </button>

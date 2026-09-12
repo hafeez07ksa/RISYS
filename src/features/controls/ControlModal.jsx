@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Save, Loader2, ChevronRight } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
+import { SelectField } from '@/components/ui/Combobox'
 import { usePeople } from '@/hooks/usePeople'
 import { CONTROL_TYPES, CONTROL_FREQUENCIES } from '@/hooks/useControls'
 import { FrameworkClausePicker } from './FrameworkClausePicker'
@@ -85,7 +86,7 @@ export function ControlModal({ open, onClose, onSave, editControl }) {
             value={form.name}
             onChange={set('name')}
             placeholder="e.g. MFA enforced on all privileged accounts"
-            className="sentrix-input"
+            className="risys-input"
             autoFocus
           />
         ))}
@@ -95,7 +96,7 @@ export function ControlModal({ open, onClose, onSave, editControl }) {
             value={form.description}
             onChange={set('description')}
             placeholder="What does this control do and how is it implemented?"
-            className="sentrix-input"
+            className="risys-input"
             rows={3}
             style={{ resize: 'vertical' }}
           />
@@ -103,36 +104,36 @@ export function ControlModal({ open, onClose, onSave, editControl }) {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {FIELD('Type', (
-            <select value={form.control_type} onChange={set('control_type')} className="sentrix-select">
+            <SelectField value={form.control_type} onChange={set('control_type')}>
               {CONTROL_TYPES.map(t => <option key={t}>{t}</option>)}
-            </select>
+            </SelectField>
           ))}
           {FIELD('Frequency', (
-            <select value={form.control_frequency} onChange={set('control_frequency')} className="sentrix-select">
+            <SelectField value={form.control_frequency} onChange={set('control_frequency')}>
               {CONTROL_FREQUENCIES.map(f => <option key={f}>{f}</option>)}
-            </select>
+            </SelectField>
           ))}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {FIELD('Owner', (
-            <select value={form.owner_id} onChange={set('owner_id')} className="sentrix-select">
+            <SelectField value={form.owner_id} onChange={set('owner_id')}>
               <option value="">Unassigned</option>
               {members.map(m => (
                 <option key={m.user_id} value={m.user_id}>
                   {m.full_name || m.email}
                 </option>
               ))}
-            </select>
+            </SelectField>
           ))}
           {FIELD('Effectiveness', (
-            <select value={form.effectiveness} onChange={set('effectiveness')} className="sentrix-select">
+            <SelectField value={form.effectiveness} onChange={set('effectiveness')}>
               <option value={1}>1 — Very Low</option>
               <option value={2}>2 — Low</option>
               <option value={3}>3 — Moderate</option>
               <option value={4}>4 — High</option>
               <option value={5}>5 — Very High</option>
-            </select>
+            </SelectField>
           ))}
         </div>
 
@@ -142,15 +143,15 @@ export function ControlModal({ open, onClose, onSave, editControl }) {
               type="date"
               value={form.next_test_date}
               onChange={set('next_test_date')}
-              className="sentrix-input"
+              className="risys-input"
             />
           ))}
           {FIELD('Status', (
-            <select value={form.status} onChange={set('status')} className="sentrix-select">
+            <SelectField value={form.status} onChange={set('status')}>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
               <option value="under_review">Under Review</option>
-            </select>
+            </SelectField>
           ))}
         </div>
 
@@ -164,7 +165,7 @@ export function ControlModal({ open, onClose, onSave, editControl }) {
                 border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer',
                 background: form.framework_ref ? '#fdf5f5' : '#fff',
                 fontSize: 13, color: form.framework_ref ? 'var(--crimson)' : 'var(--text-3)',
-                fontFamily: form.framework_ref ? 'monospace' : 'inherit',
+                fontFamily: form.framework_ref ? 'var(--font-mono)' : 'inherit',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}
             >
@@ -185,7 +186,7 @@ export function ControlModal({ open, onClose, onSave, editControl }) {
             value={form.notes}
             onChange={set('notes')}
             placeholder="Implementation notes, testing guidance, or context…"
-            className="sentrix-input"
+            className="risys-input"
             rows={2}
             style={{ resize: 'vertical' }}
           />

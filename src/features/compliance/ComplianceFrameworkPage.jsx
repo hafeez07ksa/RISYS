@@ -2,15 +2,19 @@ import { useState, useMemo } from 'react'
 import {
   ArrowLeft, ChevronRight, ChevronDown, ChevronUp,
   Search, Check, X, Plus, Link2, Trash2, SlidersHorizontal,
-  ShieldCheck, AlertTriangle, Minus, Loader2,
+  ShieldCheck, AlertTriangle, Minus, Loader2, Zap,
 } from 'lucide-react'
 import {
   FRAMEWORKS, STATUS_CONFIG, STATUS_OPTIONS,
   useFrameworkRequirements, useComplianceStatuses, useFrameworkMappings,
+  useRequirementAutomation,
   computeEffectiveStatus, computeFrameworkScore, isSubControl,
+  isAutomated, hasAutomatedResult, isOverridingEvidence,
+  sortRequirements, compareRequirementIds,
 } from '@/hooks/useCompliance'
 import { usePermissions } from '@/hooks/usePermissions'
 import { Spinner } from '@/components/ui/Spinner'
+import { BackLink } from '@/components/ui/BackLink'
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status, size = 'sm' }) {
@@ -92,7 +96,7 @@ function StatusPicker({ currentStatus, onSet, disabled }) {
 }
 
 // ── Link control modal ────────────────────────────────────────────────────────
-function LinkControlModal({ open, requirementId, requirementText, controls, mappingsFor, onLink, onUnlink, onClose }) {
+export function LinkControlModal({ open, requirementId, requirementText, controls, mappingsFor, onLink, onUnlink, onClose }) {
   const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(null)
 
@@ -130,7 +134,7 @@ function LinkControlModal({ open, requirementId, requirementText, controls, mapp
           <div style={{ position: 'relative' }}>
             <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search your controls…"
-              className="sentrix-input" style={{ paddingLeft: 30, fontSize: 12 }} autoFocus />
+              className="risys-input" style={{ paddingLeft: 30, fontSize: 12 }} autoFocus />
           </div>
         </div>
 
@@ -209,8 +213,7 @@ function LinkControlModal({ open, requirementId, requirementText, controls, mapp
 }
 
 // ── Single requirement row ────────────────────────────────────────────────────
-function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, canManage, onSetStatus, onOpenLink }) {
-  const [expanded, setExpanded] = useState(false)
+function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto, canManage, onSetStatus, onOpenControl }) {
   const reqId = req.control_id || req.clause_id || req.requirement_id
   const text  = req.control_text || req.clause_text || req.requirement_text || ''
   const isSubCtrl = isSubControl(req)
@@ -219,9 +222,12 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, canM
     <div style={{
       borderBottom: '1px solid var(--border)',
       background: isSubCtrl ? 'var(--surface)' : '#fff',
+      // Rail marks the subcontrol as belonging to the control above it
+      boxShadow: isSubCtrl ? 'inset 3px 0 0 var(--border-2)' : 'none',
     }}>
       <div
-        onClick={() => setExpanded(e => !e)}
+        onClick={() => onOpenControl(reqId)}
+        title="Open control"
         style={{
           display: 'grid',
           gridTemplateColumns: isSubCtrl ? '28px 130px 1fr 160px 200px 80px' : '28px 130px 1fr 160px 200px 80px',
@@ -233,19 +239,22 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, canM
         onMouseEnter={e => e.currentTarget.style.background = isSubCtrl ? '#f0ebe9' : '#faf3f1'}
         onMouseLeave={e => e.currentTarget.style.background = isSubCtrl ? 'var(--surface)' : '#fff'}
       >
-        {/* Expand toggle */}
-        <span style={{ color: 'var(--text-3)', display: 'flex', alignItems: 'center' }}>
-          {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+        {/* Opens the control's own page */}
+        <span style={{
+          color: isSubCtrl ? 'var(--border-2)' : 'var(--text-3)',
+          display: 'flex', alignItems: 'center',
+        }}>
+          <ChevronRight size={13} />
         </span>
 
         {/* ID */}
         <span style={{
           fontSize: isSubCtrl ? 11 : 12, fontWeight: isSubCtrl ? 400 : 600,
           color: isSubCtrl ? 'var(--text-3)' : 'var(--crimson)',
-          fontFamily: 'monospace', letterSpacing: '0.02em',
-          paddingLeft: isSubCtrl ? 16 : 0,
+          fontFamily: 'var(--font-mono)', letterSpacing: '0.02em',
+          paddingLeft: isSubCtrl ? 22 : 0,
         }}>
-          {reqId}
+          {isSubCtrl ? String(reqId).replace(/-/g, '.') : reqId}
         </span>
 
         {/* Text preview */}
@@ -257,9 +266,32 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, canM
           {text}
         </span>
 
-        {/* Mapped controls */}
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-          {mappedControls.length === 0 ? (
+        {/* Mapped controls — automated signals take the slot when present */}
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+          {isAutomated(auto) && (
+            <span
+              title={`${auto.signal_count} signal${auto.signal_count === 1 ? '' : 's'}${hasAutomatedResult(auto) ? '' : ' — not yet measured'}`}
+              style={{
+                fontSize: 10, padding: '2px 6px', borderRadius: 99, fontWeight: 600,
+                display: 'inline-flex', alignItems: 'center', gap: 3,
+                color: hasAutomatedResult(auto) ? '#1e40af' : 'var(--text-3)',
+                background: hasAutomatedResult(auto) ? '#eff6ff' : 'var(--surface-2)',
+                border: `1px solid ${hasAutomatedResult(auto) ? '#bfdbfe' : 'var(--border)'}`,
+              }}>
+              <Zap size={9} /> {auto.signal_count} auto
+            </span>
+          )}
+          {isOverridingEvidence(status?.status, auto) && (
+            <span
+              title={`Manual status differs from the measured result (${auto.automated_status})`}
+              style={{
+                fontSize: 10, padding: '2px 6px', borderRadius: 99, fontWeight: 600,
+                color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a',
+              }}>
+              override
+            </span>
+          )}
+          {mappedControls.length === 0 && !isAutomated(auto) ? (
             <span style={{ fontSize: 11, color: 'var(--text-3)' }}>—</span>
           ) : (
             mappedControls.slice(0, 2).map(c => (
@@ -284,56 +316,17 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, canM
           />
         </div>
 
-        {/* Map button */}
-        {canManage && (
-          <button
-            onClick={e => { e.stopPropagation(); onOpenLink(req) }}
-            className="btn-ghost"
-            style={{ fontSize: 11, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 4 }}
-          >
-            <Link2 size={11} />
-            Map
-          </button>
-        )}
+        {/* Everything else — guidance, evidence, mapping, signal detail —
+            lives on the control's own page, one click away. */}
+        <span />
       </div>
 
-      {/* Expanded detail */}
-      {expanded && (
-        <div style={{ padding: '12px 16px 16px', paddingLeft: isSubCtrl ? 60 : 44, background: isSubCtrl ? '#ede8e6' : '#fdf7f6', borderTop: '1px solid var(--border)' }}>
-          <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.65, marginBottom: mappedControls.length > 0 ? 12 : 0 }}>
-            {text}
-          </p>
-          {mappedControls.length > 0 && (
-            <div>
-              <p className="eyebrow" style={{ marginBottom: 8 }}>Mapped Controls</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {mappedControls.map(c => (
-                  <div key={c.id} style={{
-                    display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px',
-                    background: '#fff', border: '1px solid var(--border)', borderRadius: 6,
-                  }}>
-                    <ShieldCheck size={13} style={{ color: '#166534', flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, color: 'var(--text-2)', flex: 1 }}>{c.name}</span>
-                    <span style={{
-                      fontSize: 10, padding: '1px 7px', borderRadius: 99, fontWeight: 600,
-                      color: c.testing_status === 'Pass' ? '#166534' : c.testing_status === 'Fail' ? '#991b1b' : 'var(--text-3)',
-                      background: c.testing_status === 'Pass' ? '#f0fdf4' : c.testing_status === 'Fail' ? '#fef2f2' : 'var(--surface)',
-                    }}>
-                      {c.testing_status || 'Not Tested'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   )
 }
 
 // ── Domain/article group ──────────────────────────────────────────────────────
-function DomainGroup({ domainId, domainName, requirements, fw, statuses, mappings, controls, canManage, onSetStatus, onOpenLink, domainLabel }) {
+function DomainGroup({ domainId, domainName, requirements, fw, statuses, mappings, controls, automation = {}, canManage, onSetStatus, onOpenControl, domainLabel }) {
   const [open, setOpen] = useState(true)
   const scoreAll = fw?.scoreAllControls
 
@@ -342,7 +335,7 @@ function DomainGroup({ domainId, domainName, requirements, fw, statuses, mapping
   const compliant = scoreable.filter(r => {
     const reqId = r.control_id || r.clause_id
     const mapped = controls.filter(c => mappings.filter(m => m.requirement_id === reqId).map(m => m.control_id).includes(c.id))
-    return computeEffectiveStatus(statuses[reqId]?.status, mapped) === 'compliant'
+    return computeEffectiveStatus(statuses[reqId]?.status, mapped, automation[reqId]) === 'compliant'
   }).length
 
   const pct = scoreable.length > 0 ? Math.round((compliant / scoreable.length) * 100) : 0
@@ -362,7 +355,7 @@ function DomainGroup({ domainId, domainName, requirements, fw, statuses, mapping
       >
         {open ? <ChevronUp size={14} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
                : <ChevronDown size={14} style={{ color: 'var(--text-3)', flexShrink: 0 }} />}
-        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--crimson)', minWidth: 40, fontFamily: 'monospace' }}>{domainId}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--crimson)', minWidth: 40, fontFamily: 'var(--font-mono)' }}>{domainId}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{domainName}</span>
           {domainLabel && (
@@ -395,7 +388,8 @@ function DomainGroup({ domainId, domainName, requirements, fw, statuses, mapping
           {requirements.map(req => {
             const reqId = req.control_id || req.clause_id
             const mapped = controls.filter(c => mappings.filter(m => m.requirement_id === reqId).map(m => m.control_id).includes(c.id))
-            const effective = computeEffectiveStatus(statuses[reqId]?.status, mapped)
+            const auto      = automation[reqId]
+            const effective = computeEffectiveStatus(statuses[reqId]?.status, mapped, auto)
             return (
               <RequirementRow
                 key={reqId}
@@ -404,9 +398,10 @@ function DomainGroup({ domainId, domainName, requirements, fw, statuses, mapping
                 status={statuses[reqId]}
                 effectiveStatus={effective}
                 mappedControls={mapped}
+                auto={auto}
                 canManage={canManage}
                 onSetStatus={onSetStatus}
-                onOpenLink={onOpenLink}
+                onOpenControl={onOpenControl}
               />
             )
           })}
@@ -417,7 +412,7 @@ function DomainGroup({ domainId, domainName, requirements, fw, statuses, mapping
 }
 
 // ── Framework detail page ─────────────────────────────────────────────────────
-export function ComplianceFrameworkPage({ frameworkId, onBack }) {
+export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl }) {
   const fw = FRAMEWORKS.find(f => f.id === frameworkId)
   const perms = usePermissions()
   const canManage = perms.isManager || perms.isAdmin
@@ -425,17 +420,17 @@ export function ComplianceFrameworkPage({ frameworkId, onBack }) {
   const { requirements, loading: reqLoading } = useFrameworkRequirements(frameworkId)
   const { statuses, loading: statusLoading, setStatus } = useComplianceStatuses(frameworkId)
   const { mappings, controls, loading: mapLoading, linkControl, unlinkControl, mappingsFor, controlsFor } = useFrameworkMappings(frameworkId)
+  const { automation } = useRequirementAutomation(frameworkId)
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [linkTarget, setLinkTarget] = useState(null) // req being mapped
 
   const loading = reqLoading || statusLoading || mapLoading
 
   // Score
   const score = useMemo(() =>
-    computeFrameworkScore(requirements, statuses, mappings, controls, fw),
-    [requirements, statuses, mappings, controls, fw]
+    computeFrameworkScore(requirements, statuses, mappings, controls, fw, automation),
+    [requirements, statuses, mappings, controls, fw, automation]
   )
 
   // Group by domain, subdomain, or article depending on framework config
@@ -450,7 +445,7 @@ export function ComplianceFrameworkPage({ frameworkId, onBack }) {
       reqs = reqs.filter(r => {
         const reqId  = r.control_id || r.clause_id
         const mapped = controls.filter(c => mappings.filter(m => m.requirement_id === reqId).map(m => m.control_id).includes(c.id))
-        return computeEffectiveStatus(statuses[reqId]?.status, mapped) === statusFilter
+        return computeEffectiveStatus(statuses[reqId]?.status, mapped, automation[reqId]) === statusFilter
       })
     }
 
@@ -471,40 +466,32 @@ export function ComplianceFrameworkPage({ frameworkId, onBack }) {
       if (!groups[gId]) groups[gId] = { id: gId, name: gName, reqs: [], domainId: req.domain_id, domainName: req.domain_name }
       groups[gId].reqs.push(req)
     }
-    return Object.values(groups)
+
+    // Document order within each group, and across the groups themselves.
+    // Without this the rows arrive in primary-key order, which lists every
+    // main control first and strands the subcontrols at the foot of the group.
+    for (const g of Object.values(groups)) g.reqs = sortRequirements(g.reqs, fw)
+    return Object.values(groups).sort((a, b) => compareRequirementIds(a.id, b.id))
   }, [requirements, search, statusFilter, statuses, mappings, controls, fw])
 
   if (!fw) return null
 
   return (
     <>
-      {/* Link control modal */}
-      {linkTarget && (
-        <LinkControlModal
-          open={!!linkTarget}
-          requirementId={linkTarget.control_id || linkTarget.clause_id}
-          requirementText={(linkTarget.control_text || linkTarget.clause_text || '').slice(0, 120)}
-          controls={controls}
-          mappingsFor={mappingsFor}
-          onLink={linkControl}
-          onUnlink={unlinkControl}
-          onClose={() => setLinkTarget(null)}
-        />
-      )}
-
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         {/* Topbar */}
-        <header className="page-header">
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <button onClick={onBack}
-                style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-3)', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                <ArrowLeft size={13} /> Compliance
-              </button>
-              <ChevronRight size={11} style={{ color: 'var(--border-2)' }} />
-              <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{fw.label}</span>
-            </div>
-            <h1 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{fw.label} — {fw.fullName}</h1>
+        {/* Not .page-header: that is a fixed 52px single-line bar, and this
+            header carries a back link above a title. */}
+        <header style={{
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+          gap: 20, padding: 'var(--s-5) var(--gutter) var(--s-4)',
+          borderBottom: '1px solid var(--border)', background: 'var(--bg-2)', flexShrink: 0,
+        }}>
+          <div style={{ minWidth: 0 }}>
+            <BackLink to={onBack} label="Compliance" style={{ marginBottom: 8 }} />
+            <h1 style={{ fontSize: 'var(--t-page)', fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+              {fw.label} — {fw.fullName}
+            </h1>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{fw.version}</span>
@@ -568,7 +555,7 @@ export function ComplianceFrameworkPage({ frameworkId, onBack }) {
                 >
                   {statusFilter === s.filter && <span style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: '#5D0F0F' }} />}
                   <p className="eyebrow mb-1">{s.label}</p>
-                  <p style={{ fontSize: 28, fontWeight: 300, color: s.color }}>{loading ? '—' : s.value}</p>
+                  <p className="tnum" style={{ fontSize: 28, fontWeight: 300, color: s.color }}>{loading ? '—' : s.value}</p>
                 </button>
               ))}
             </div>
@@ -580,7 +567,7 @@ export function ComplianceFrameworkPage({ frameworkId, onBack }) {
               <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }} />
               <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder={`Search ${fw.label} requirements…`}
-                className="sentrix-input" style={{ paddingLeft: 30 }} />
+                className="risys-input" style={{ paddingLeft: 30 }} />
             </div>
             {statusFilter && (
               <button onClick={() => setStatusFilter('')} className="btn-secondary" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -608,9 +595,10 @@ export function ComplianceFrameworkPage({ frameworkId, onBack }) {
                 statuses={statuses}
                 mappings={mappings}
                 controls={controls}
+                automation={automation}
                 canManage={canManage}
                 onSetStatus={setStatus}
-                onOpenLink={setLinkTarget}
+                onOpenControl={onOpenControl}
               />
             ))
           )}

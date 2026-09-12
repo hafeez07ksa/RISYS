@@ -5,7 +5,9 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 import { activationLink } from '@/hooks/usePlatform'
+import { RisysLogo } from '@/components/ui/RisysLogo'
 
 export const PLANS = ['standard', 'professional', 'enterprise']
 
@@ -34,7 +36,7 @@ export function PlatformHeader() {
         <div style={{ width: 28, height: 28, borderRadius: 7, background: '#5D0F0F', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <TowerControl size={14} style={{ color: '#F3E7E4' }} />
         </div>
-        <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 16, color: '#F3E7E4' }}>Sentrix</span>
+        <RisysLogo size="sm" tone="light" />
         <span style={{ fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#A98D8C', padding: '3px 8px', border: '1px solid #3a2f30', borderRadius: 20 }}>
           Platform Console
         </span>
@@ -73,21 +75,21 @@ export function EditLimitsModal({ org, platform, onClose, onError }) {
         <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div>
             <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Plan</label>
-            <select value={form.plan} onChange={e => setForm(f => ({ ...f, plan: e.target.value }))} className="sentrix-input" style={{ textTransform: 'capitalize' }}>
+            <SelectField value={form.plan} onChange={e => setForm(f => ({ ...f, plan: e.target.value }))} className="risys-input" style={{ textTransform: 'capitalize' }}>
               {PLANS.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
+            </SelectField>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Max users</label>
               <input type="number" min={org.member_count || 1} value={form.maxMembers}
-                onChange={e => setForm(f => ({ ...f, maxMembers: e.target.value }))} className="sentrix-input" />
+                onChange={e => setForm(f => ({ ...f, maxMembers: e.target.value }))} className="risys-input" />
               <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 3 }}>{org.member_count} in use</p>
             </div>
             <div>
               <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Storage (GB)</label>
               <input type="number" min="1" value={form.storageGb}
-                onChange={e => setForm(f => ({ ...f, storageGb: e.target.value }))} className="sentrix-input" />
+                onChange={e => setForm(f => ({ ...f, storageGb: e.target.value }))} className="risys-input" />
             </div>
           </div>
         </div>
@@ -126,7 +128,7 @@ export function ReissueModal({ org, platform, onClose }) {
             <>
               <div>
                 <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Admin email</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@client.com" className="sentrix-input" autoFocus />
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@client.com" className="risys-input" autoFocus />
                 <p style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 3 }}>Fresh 14-day link as Admin — replaces any previous link for this email</p>
               </div>
               {error && <p style={{ fontSize: 12, color: '#8C1616', background: '#FBEAEA', padding: '9px 12px', borderRadius: 8 }}>{error}</p>}
@@ -134,7 +136,7 @@ export function ReissueModal({ org, platform, onClose }) {
           ) : (
             <div style={{ padding: '12px 14px', borderRadius: 10, background: 'var(--surface)', border: '1px solid var(--border)' }}>
               <p className="eyebrow" style={{ marginBottom: 6 }}>Send to {result.admin_email}</p>
-              <p style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-2)', wordBreak: 'break-all', marginBottom: 8 }}>
+              <p style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-2)', wordBreak: 'break-all', marginBottom: 8 }}>
                 {activationLink(result.activation_token)}
               </p>
               <CopyBtn text={activationLink(result.activation_token)} label="Copy activation link" />
@@ -225,10 +227,10 @@ export function DeleteCompanyModal({ org, platform, onClose, onDeleted }) {
           </p>
           <div>
             <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>
-              Type <span style={{ textTransform: 'none', fontFamily: 'monospace', color: '#8C1616' }}>{org.name}</span> to confirm
+              Type <span style={{ textTransform: 'none', fontFamily: 'var(--font-mono)', color: '#8C1616' }}>{org.name}</span> to confirm
             </label>
             <input value={typed} onChange={e => setTyped(e.target.value)} autoFocus
-              placeholder={org.name} className="sentrix-input" style={{ fontFamily: 'monospace', fontSize: 12.5 }} />
+              placeholder={org.name} className="risys-input" style={{ fontFamily: 'var(--font-mono)', fontSize: 12.5 }} />
           </div>
           {error && <p style={{ fontSize: 12, color: '#8C1616', background: '#FBEAEA', padding: '9px 12px', borderRadius: 8 }}>{error}</p>}
         </div>

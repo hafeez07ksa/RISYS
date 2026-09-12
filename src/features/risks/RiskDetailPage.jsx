@@ -26,6 +26,7 @@ import {
 } from '@/lib/risks'
 import { logAudit, AUDIT } from '@/lib/audit'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 
 const EVIDENCE_ICONS = {
   Document: FileText, Screenshot: Image, Log: ClipboardList, Attestation: PenLine,
@@ -135,7 +136,7 @@ export function RiskDetailPage() {
             {/* tag row */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
               {risk.risk_id && (
-                <span style={{ fontFamily: 'monospace', fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 4, background: 'var(--surface-2)', color: 'var(--crimson)' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 4, background: 'var(--surface-2)', color: 'var(--crimson)' }}>
                   {risk.risk_id}
                 </span>
               )}
@@ -405,22 +406,21 @@ function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organizatio
 
             {showAddCollab && perms.canEditRisk(riskWithCollabs) && (
               <div style={{ marginBottom: 10 }}>
-                <select
-                  onChange={async (e) => {
+                <SelectField onChange={async (e) => {
                     if (!e.target.value) return
                     try { await addCollaborator(e.target.value, organization.id) }
                     catch (err) { alert(err.message) }
                     e.target.value = ''; setShowAddCollab(false)
                   }}
                   defaultValue=""
-                  className="sentrix-input" style={{ fontSize: 12, width: '100%' }}>
+                  className="risys-input" style={{ fontSize: 12, width: '100%' }}>
                   <option value="" disabled>Select a person…</option>
                   {members
                     .filter(m => m.user_id !== risk.owner_id
                       && m.user_id !== risk.assigned_to
                       && !collaborators.some(c => c.user_id === m.user_id))
                     .map(m => <option key={m.user_id} value={m.user_id}>{m.full_name || m.email} ({m.role})</option>)}
-                </select>
+                </SelectField>
               </div>
             )}
 
@@ -559,8 +559,8 @@ function ControlsTab({ riskId, canManage, canTest }) {
         <Card>
           <FieldLabel>{editCtrl ? 'Edit Control' : 'New Control'}</FieldLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-            <input value={form.name} onChange={set('name')} placeholder="Control name *" className="sentrix-input" />
-            <textarea value={form.description} onChange={set('description')} placeholder="What does this control do?" rows={2} className="sentrix-input" style={{ resize: 'none' }} />
+            <input value={form.name} onChange={set('name')} placeholder="Control name *" className="risys-input" />
+            <textarea value={form.description} onChange={set('description')} placeholder="What does this control do?" rows={2} className="risys-input" style={{ resize: 'none' }} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <LS label="Control Type" value={form.control_type} onChange={set('control_type')} options={CONTROL_TYPES} />
               <LS label="Frequency" value={form.control_frequency} onChange={set('control_frequency')} options={CONTROL_FREQUENCIES} />
@@ -586,7 +586,7 @@ function ControlsTab({ riskId, canManage, canTest }) {
                   border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer',
                   background: form.framework_ref ? '#fdf5f5' : '#fff',
                   fontSize: 13, color: form.framework_ref ? 'var(--crimson)' : 'var(--text-3)',
-                  fontFamily: form.framework_ref ? 'monospace' : 'inherit',
+                  fontFamily: form.framework_ref ? 'var(--font-mono)' : 'inherit',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   transition: 'border-color 0.15s',
                 }}
@@ -628,7 +628,7 @@ function ControlsTab({ riskId, canManage, canTest }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: 10, color: 'var(--text-3)', background: 'var(--surface)', padding: '1px 5px', borderRadius: 3 }}>{ctrl.control_id}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', background: 'var(--surface)', padding: '1px 5px', borderRadius: 3 }}>{ctrl.control_id}</span>
                     <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{ctrl.name}</span>
                     {ctrl.is_automated && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: '#eff6ff', color: '#1e40af' }}>Auto</span>}
                   </div>
@@ -637,7 +637,7 @@ function ControlsTab({ riskId, canManage, canTest }) {
                     <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{ctrl.control_frequency}</span>
                     <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, border: `1px solid ${ts.border}`, background: ts.bg, color: ts.color }}>{ts.label}</span>
                     {ctrl.framework_ref && (
-                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'var(--surface)', color: 'var(--rose)', fontFamily: 'monospace', border: '1px solid var(--border)' }}>
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'var(--surface)', color: 'var(--rose)', fontFamily: 'var(--font-mono)', border: '1px solid var(--border)' }}>
                         {ctrl.framework_ref}
                       </span>
                     )}
@@ -716,12 +716,12 @@ function EvidenceTab({ riskId, canManage }) {
         <Card>
           <FieldLabel>Add Evidence</FieldLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-            <input value={form.title} onChange={set('title')} placeholder="Title *" className="sentrix-input" />
+            <input value={form.title} onChange={set('title')} placeholder="Title *" className="risys-input" />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <LS label="Type" value={form.evidence_type} onChange={set('evidence_type')} options={EVIDENCE_TYPES} />
-              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Period</p><input value={form.evidence_period} onChange={set('evidence_period')} placeholder="e.g. Q2 2025" className="sentrix-input" /></div>
+              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Period</p><input value={form.evidence_period} onChange={set('evidence_period')} placeholder="e.g. Q2 2025" className="risys-input" /></div>
             </div>
-            <textarea value={form.description} onChange={set('description')} placeholder="What does this prove?" rows={2} className="sentrix-input" style={{ resize: 'none' }} />
+            <textarea value={form.description} onChange={set('description')} placeholder="What does this prove?" rows={2} className="risys-input" style={{ resize: 'none' }} />
             <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>File (optional)</p><input type="file" onChange={e => setFile(e.target.files[0])} style={{ fontSize: 12 }} /></div>
             {saveError && <p style={{ fontSize: 12, color: '#8C1616', padding: '6px 10px', background: '#FBEAEA', borderRadius: 6 }}>{saveError}</p>}
             <div style={{ display: 'flex', gap: 8 }}>
@@ -828,17 +828,17 @@ function KRIsTab({ riskId, canManage }) {
         <Card>
           <FieldLabel>New KRI</FieldLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-            <input value={form.name} onChange={set('name')} placeholder="KRI name *" className="sentrix-input" />
-            <textarea value={form.description} onChange={set('description')} placeholder="What does this metric measure?" rows={2} className="sentrix-input" style={{ resize: 'none' }} />
+            <input value={form.name} onChange={set('name')} placeholder="KRI name *" className="risys-input" />
+            <textarea value={form.description} onChange={set('description')} placeholder="What does this metric measure?" rows={2} className="risys-input" style={{ resize: 'none' }} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Current Value</p><input value={form.current_value} onChange={set('current_value')} placeholder="42" className="sentrix-input" /></div>
-              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Unit</p><input value={form.unit} onChange={set('unit')} placeholder="%, count" className="sentrix-input" /></div>
+              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Current Value</p><input value={form.current_value} onChange={set('current_value')} placeholder="42" className="risys-input" /></div>
+              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Unit</p><input value={form.unit} onChange={set('unit')} placeholder="%, count" className="risys-input" /></div>
               <LS label="Frequency" value={form.frequency} onChange={set('frequency')} options={['Daily','Weekly','Monthly','Quarterly']} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, padding: '10px 12px', borderRadius: 8, background: 'var(--surface)' }}>
-              <div><p style={{ fontSize: 12, marginBottom: 4, color: '#2F6B3C', fontWeight: 500 }}>🟢 Green ≤</p><input value={form.green_threshold} onChange={set('green_threshold')} placeholder="5" className="sentrix-input" /></div>
-              <div><p style={{ fontSize: 12, marginBottom: 4, color: '#9C6F0F', fontWeight: 500 }}>🟡 Amber ≤</p><input value={form.amber_threshold} onChange={set('amber_threshold')} placeholder="10" className="sentrix-input" /></div>
-              <div><p style={{ fontSize: 12, marginBottom: 4, color: '#8C1616', fontWeight: 500 }}>🔴 Red &gt;</p><input value={form.red_threshold} onChange={set('red_threshold')} placeholder="10" className="sentrix-input" /></div>
+              <div><p style={{ fontSize: 12, marginBottom: 4, color: '#2F6B3C', fontWeight: 500 }}>🟢 Green ≤</p><input value={form.green_threshold} onChange={set('green_threshold')} placeholder="5" className="risys-input" /></div>
+              <div><p style={{ fontSize: 12, marginBottom: 4, color: '#9C6F0F', fontWeight: 500 }}>🟡 Amber ≤</p><input value={form.amber_threshold} onChange={set('amber_threshold')} placeholder="10" className="risys-input" /></div>
+              <div><p style={{ fontSize: 12, marginBottom: 4, color: '#8C1616', fontWeight: 500 }}>🔴 Red &gt;</p><input value={form.red_threshold} onChange={set('red_threshold')} placeholder="10" className="risys-input" /></div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setShowAdd(false)} className="btn-secondary" style={{ flex: 1, fontSize: 13 }}>Cancel</button>
@@ -923,17 +923,17 @@ function LossTab({ riskId, canManage }) {
         <Card>
           <FieldLabel>Log Loss Event</FieldLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-            <input value={form.title} onChange={set('title')} placeholder="Event title *" className="sentrix-input" />
+            <input value={form.title} onChange={set('title')} placeholder="Event title *" className="risys-input" />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Event Date *</p><input type="date" value={form.event_date} onChange={set('event_date')} className="sentrix-input" /></div>
+              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Event Date *</p><input type="date" value={form.event_date} onChange={set('event_date')} className="risys-input" /></div>
               <LS label="Root Cause" value={form.root_cause_category} onChange={set('root_cause_category')} options={['People','Process','System','External']} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Gross Loss</p><input value={form.gross_loss} onChange={set('gross_loss')} placeholder="0.00" className="sentrix-input" /></div>
-              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Net Loss</p><input value={form.net_loss} onChange={set('net_loss')} placeholder="0.00" className="sentrix-input" /></div>
+              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Gross Loss</p><input value={form.gross_loss} onChange={set('gross_loss')} placeholder="0.00" className="risys-input" /></div>
+              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Net Loss</p><input value={form.net_loss} onChange={set('net_loss')} placeholder="0.00" className="risys-input" /></div>
               <LS label="Currency" value={form.currency} onChange={set('currency')} options={['USD','SAR','EUR','GBP','AED']} />
             </div>
-            <textarea value={form.root_cause} onChange={set('root_cause')} placeholder="Root cause analysis…" rows={3} className="sentrix-input" style={{ resize: 'none' }} />
+            <textarea value={form.root_cause} onChange={set('root_cause')} placeholder="Root cause analysis…" rows={3} className="risys-input" style={{ resize: 'none' }} />
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setShowAdd(false)} className="btn-secondary" style={{ flex: 1, fontSize: 13 }}>Cancel</button>
               <button onClick={save} disabled={saving || !form.title.trim() || !form.event_date} className="btn-primary" style={{ flex: 1, fontSize: 13, opacity: (!form.title.trim() || !form.event_date) ? 0.5 : 1 }}>
@@ -951,7 +951,7 @@ function LossTab({ riskId, canManage }) {
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <span style={{ fontFamily: 'monospace', fontSize: 10, color: 'var(--text-3)', background: 'var(--surface)', padding: '1px 5px', borderRadius: 3 }}>{ev.event_id}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', background: 'var(--surface)', padding: '1px 5px', borderRadius: 3 }}>{ev.event_id}</span>
                   <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{ev.title}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -999,7 +999,7 @@ function DiscussionTab({ riskId }) {
       ))}
       <Card>
         <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Add a comment…" rows={3}
-          style={{ width: '100%', fontSize: 13, outline: 'none', resize: 'none', border: 'none', color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }} />
+          style={{ width: '100%', fontSize: 13, outline: 'none', resize: 'none', border: 'none', color: 'var(--text)', fontFamily: 'inherit' }} />
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
           <button onClick={submit} disabled={saving || !text.trim()} className="btn-primary"
             style={{ fontSize: 12, padding: '6px 16px', opacity: !text.trim() ? 0.5 : 1 }}>
@@ -1151,7 +1151,7 @@ function SideRow({ label, value, mono }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--surface)' }}>
       <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{label}</span>
-      <span style={{ fontSize: 12, color: 'var(--text)', fontFamily: mono ? 'monospace' : undefined, fontWeight: mono ? 500 : undefined }}>{value}</span>
+      <span style={{ fontSize: 12, color: 'var(--text)', fontFamily: mono ? 'var(--font-mono)' : undefined, fontWeight: mono ? 500 : undefined }}>{value}</span>
     </div>
   )
 }
@@ -1172,9 +1172,9 @@ function LS({ label, value, onChange, options }) {
     <div>
       {label && <p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>{label}</p>}
       <div style={{ position: 'relative' }}>
-        <select value={value} onChange={onChange} className="sentrix-input" style={{ appearance: 'none', paddingRight: 28, cursor: 'pointer' }}>
+        <SelectField value={value} onChange={onChange} style={{ appearance: 'none', paddingRight: 28, cursor: 'pointer' }}>
           {options.map(o => <option key={o.value||o} value={o.value||o}>{o.label||o}</option>)}
-        </select>
+        </SelectField>
         <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: 10, color: 'var(--text-3)' }}>▾</span>
       </div>
     </div>

@@ -6,3 +6,8 @@ dist
 *.log
 *.zip
 supabase/.temp/
+
+# stray nested copies
+ProjectA/
+dist/
+*.zip

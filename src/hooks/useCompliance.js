@@ -113,6 +113,17 @@ export const FRAMEWORKS = [
 
 export const getFramework = (id) => FRAMEWORKS.find(f => f.id === id)
 
+// ── ACTIVE SCOPE ──────────────────────────────────────────────────────────────
+// Only NCA ECC is being implemented. The Compliance section works against the
+// primary framework; everything else lives in the read-only Frameworks library
+// until it is brought into scope.
+export const PRIMARY_FRAMEWORK_ID = 'NCA ECC'
+
+export const PRIMARY_FRAMEWORKS   = FRAMEWORKS.filter(f => f.id === PRIMARY_FRAMEWORK_ID)
+export const SECONDARY_FRAMEWORKS = FRAMEWORKS.filter(f => f.id !== PRIMARY_FRAMEWORK_ID)
+
+export const isPrimaryFramework = (id) => id === PRIMARY_FRAMEWORK_ID
+
 // ── COMPLIANCE STATUS HELPERS ─────────────────────────────────────────────────
 export const STATUS_CONFIG = {
   compliant:      { label: 'Compliant',      color: '#166534', bg: '#f0fdf4', border: '#bbf7d0', dot: '#22c55e' },
@@ -247,19 +258,100 @@ export function useFrameworkMappings(frameworkId) {
   return { mappings, controls, loading, linkControl, unlinkControl, mappingsFor, controlsFor, refetch: fetchMappings }
 }
 
-// ── SUB-CONTROL DETECTION ─────────────────────────────────────────────────────
-// SAMA CSF uses "Sub Control" (no hyphen); all other NCA frameworks use "Sub-Control"
+// ── HOOK: automated signal state per requirement ──────────────────────────────
+//
+// Reads v_requirement_automation, which joins the signal catalogue to the
+// results the connector syncs write, and rolls subcontrol signals up to their
+// parent. This is what replaced the old arrangement where a finding carried a
+// free-text control reference that nothing ever joined on.
+//
+// Returns a map keyed by requirement_id:
+//   { automated_status, signal_count, pass_count, fail_count,
+//     unknown_count, last_computed_at, signals: [...] }
+export function useRequirementAutomation(frameworkId) {
+  const { organization } = useAuth()
+  const [automation, setAutomation] = useState({})
+  const [loading, setLoading] = useState(false)
+
+  const fetchAutomation = useCallback(async () => {
+    if (!organization?.id || !frameworkId) return
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('v_requirement_automation')
+      .select('*')
+      .eq('org_id', organization.id)
+      .eq('framework', frameworkId)
+    const map = {}
+    if (!error) for (const row of (data || [])) map[row.requirement_id] = row
+    setAutomation(map)
+    setLoading(false)
+  }, [organization?.id, frameworkId])
+
+  useEffect(() => { fetchAutomation() }, [fetchAutomation])
+
+  return { automation, loading, refetch: fetchAutomation }
+}
+
+// Is this requirement covered by at least one signal that has actually run?
+export function isAutomated(auto) {
+  return !!auto && auto.signal_count > 0
+}
+export function hasAutomatedResult(auto) {
+  return isAutomated(auto) && auto.automated_status !== 'not_started'
+}
+
+// ── REQUIREMENT ORDERING ──────────────────────────────────────────────────────
+//
+// Requirement ids are dotted paths, so they must be compared segment by segment
+// as numbers. Lexical comparison puts 1-5-10 before 1-5-2, and — the bug this
+// replaced — ordering by the table's surrogate key puts every subcontrol after
+// every main control, so 1-5-3-1 lands below 1-5-4 instead of under 1-5-3.
+//
+// Comparing numerically also nests for free: 1-5-3-1 sorts immediately after
+// 1-5-3 because it shares the prefix and has one more segment.
+export function compareRequirementIds(a, b) {
+  const pa = String(a ?? '').split('-').map(Number)
+  const pb = String(b ?? '').split('-').map(Number)
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = Number.isFinite(pa[i]) ? pa[i] : -1
+    const y = Number.isFinite(pb[i]) ? pb[i] : -1
+    if (x !== y) return x - y
+  }
+  return 0
+}
+
+// Sort requirement rows into the order they appear in the published document.
+export function sortRequirements(rows, fw) {
+  const idKey = fw?.requirementKey || 'control_id'
+  return [...rows].sort((a, b) =>
+    compareRequirementIds(a[idKey] ?? a.clause_id, b[idKey] ?? b.clause_id))
+}
+
+// ── SUB-CONTROL DETECTION ─────────────────────────────────────────────────────// SAMA CSF uses "Sub Control" (no hyphen); all other NCA frameworks use "Sub-Control"
 export function isSubControl(req) {
   const t = (req.control_type || '').toLowerCase().replace(/[\s-]/g, '')
   return t === 'subcontrol'
 }
 
 // ── SCORING HELPER ────────────────────────────────────────────────────────────
-// Given a status override and mapped controls, compute effective status
-export function computeEffectiveStatus(statusOverride, mappedControls) {
+//
+// Precedence, highest first:
+//   1. Manual override in compliance_statuses — a human has made a call
+//   2. Automated signal state — measured from connector data
+//   3. Mapped risk_controls with test results — manually maintained
+//   4. not_started
+//
+// Automated sits below the manual override deliberately: an assessor must be
+// able to record a justified position that contradicts the measurement. Where
+// that happens, `isOverridingEvidence` below flags it so the disagreement is
+// visible rather than silent.
+export function computeEffectiveStatus(statusOverride, mappedControls, auto) {
   // Manual override always wins — including 'not_started' if explicitly set
   // statusOverride is null/undefined only when no row exists in compliance_statuses
   if (statusOverride !== null && statusOverride !== undefined) return statusOverride
+
+  // Automated signals, where at least one has produced a result
+  if (hasAutomatedResult(auto)) return auto.automated_status
 
   // No manual override set → auto-compute from mapped controls
   if (!mappedControls || mappedControls.length === 0) return 'not_started'
@@ -274,9 +366,19 @@ export function computeEffectiveStatus(statusOverride, mappedControls) {
   return 'in_progress' // controls mapped but none tested
 }
 
+// True when a human status has been set that disagrees with what the
+// connectors measured. Surface this in the UI — a manual "Compliant" sitting
+// on top of a failing signal is exactly what an auditor will ask about.
+export function isOverridingEvidence(statusOverride, auto) {
+  if (statusOverride === null || statusOverride === undefined) return false
+  if (!hasAutomatedResult(auto)) return false
+  return statusOverride !== auto.automated_status
+}
+
 // ── FRAMEWORK SCORE ───────────────────────────────────────────────────────────
-export function computeFrameworkScore(requirements, statuses, mappings, controls, fw) {
+export function computeFrameworkScore(requirements, statuses, mappings, controls, fw, automation = {}) {
   let compliant = 0, partial = 0, notCompliant = 0, notStarted = 0, na = 0, inProgress = 0
+  let automated = 0, automatedWithResult = 0
 
   // If framework scores all controls (e.g. SAMA CSF), include sub-controls
   const scoreAll = fw?.scoreAllControls
@@ -287,7 +389,11 @@ export function computeFrameworkScore(requirements, statuses, mappings, controls
     const reqId = req.control_id || req.clause_id
     const override = statuses[reqId]?.status
     const mapped = controls.filter(c => mappings.filter(m => m.requirement_id === reqId).map(m => m.control_id).includes(c.id))
-    const status = computeEffectiveStatus(override, mapped)
+    const auto = automation[reqId]
+    const status = computeEffectiveStatus(override, mapped, auto)
+
+    if (isAutomated(auto))        automated++
+    if (hasAutomatedResult(auto)) automatedWithResult++
 
     if (status === 'compliant')       compliant++
     else if (status === 'partial')    partial++
@@ -300,5 +406,11 @@ export function computeFrameworkScore(requirements, statuses, mappings, controls
   const applicable = total - na
   const score = applicable > 0 ? Math.round(((compliant + partial * 0.5) / applicable) * 100) : 0
 
-  return { total, compliant, partial, notCompliant, inProgress, na, notStarted, score }
+  return {
+    total, compliant, partial, notCompliant, inProgress, na, notStarted, score,
+    // How much of the framework RISYS can measure rather than assert
+    automated,
+    automatedWithResult,
+    automationCoverage: total > 0 ? Math.round((automated / total) * 100) : 0,
+  }
 }

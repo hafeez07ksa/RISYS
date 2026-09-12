@@ -652,7 +652,7 @@ export function PeoplePage() {
                   <div className="flex gap-1 p-1 rounded-lg" style={{ background: '#f5f3f3' }}>
                     {[
                       ['all',       'All'],
-                      ['not_added', 'Not in Sentrix'],
+                      ['not_added', 'Not in RISYS'],
                       ['no_mfa',    'No MFA'],
                       ['privileged','Privileged'],
                     ].map(([val, lbl]) => (
@@ -696,7 +696,7 @@ export function PeoplePage() {
                       <span>Department / Title</span>
                       <span>MFA</span>
                       <span>Roles</span>
-                      <span>Status in Sentrix</span>
+                      <span>Status in RISYS</span>
                     </div>
                     <div style={{ background: '#fff' }}>
                       {filteredDirUsers.map((u, i) => {
@@ -773,7 +773,7 @@ export function PeoplePage() {
                               )}
                             </div>
 
-                            {/* Status in Sentrix */}
+                            {/* Status in RISYS */}
                             {isMember ? (
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 20, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', width: 'fit-content' }}>
                                 <UserCheck size={10} /> Member
@@ -849,7 +849,7 @@ function InviteModal({ onClose }) {
                 <label className="eyebrow" style={{ display: 'block', marginBottom: 6 }}>Email addresses</label>
                 <textarea value={emailsRaw} onChange={e => setEmailsRaw(e.target.value)} rows={4} autoFocus
                   placeholder={'sara@company.com\nahmed@company.com'}
-                  className="sentrix-input" style={{ resize: 'none', fontFamily: 'monospace', fontSize: 12.5 }} />
+                  className="risys-input" style={{ resize: 'none', fontFamily: 'var(--font-mono)', fontSize: 12.5 }} />
                 <p style={{ fontSize: 11, color: '#8a7070', marginTop: 4 }}>
                   Separate with commas or new lines.
                   {uniqueEmails.length > 1 && <strong style={{ color: '#895353' }}> {uniqueEmails.length} unique addresses.</strong>}

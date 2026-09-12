@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { SentrixLogo } from '@/components/ui/SentrixLogo'
+import { RisysLogo } from '@/components/ui/RisysLogo'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/hooks/useAuth'
@@ -27,9 +27,9 @@ export function SignupPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f8f7f7' }}>
       <div className="w-full max-w-md rounded-xl p-8" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
-        <div className="mb-7"><SentrixLogo /></div>
+        <div className="mb-7"><RisysLogo size="lg" tagline /></div>
         <h1 className="text-lg font-medium mb-1" style={{ color: '#1a1314' }}>Create your account</h1>
-        <p className="text-xs mb-6" style={{ color: '#8a7070' }}>Set up Sentrix for your organization</p>
+        <p className="text-xs mb-6" style={{ color: '#8a7070' }}>Set up RISYS for your organization</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <Input label="Full Name" placeholder="Jane Smith" value={form.fullName} onChange={set('fullName')} required />
           <Input label="Work Email" type="email" placeholder="you@company.com" value={form.email} onChange={set('email')} required />

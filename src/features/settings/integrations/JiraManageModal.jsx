@@ -4,6 +4,7 @@ import { useMappings } from '@/hooks/useMappings'
 import { SEVERITIES, JIRA_ISSUE_TYPES } from '@/lib/incidents'
 import { useAuth } from '@/hooks/useAuth'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 
 export function JiraManageModal({ onClose }) {
   const { organization } = useAuth()
@@ -69,7 +70,7 @@ export function JiraManageModal({ onClose }) {
               Issue Type → Severity Mapping
             </h3>
             <p className="text-xs mb-3" style={{ color: '#8a7070' }}>
-              When Jira sends an issue, Sentrix checks its type against this list to assign severity.
+              When Jira sends an issue, RISYS checks its type against this list to assign severity.
               If no match, it falls back to Jira's priority field.
             </p>
 
@@ -104,13 +105,13 @@ export function JiraManageModal({ onClose }) {
                 {/* Add new mapping */}
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
-                    <select value={newType} onChange={e => setNewType(e.target.value)}
+                    <SelectField value={newType} onChange={e => setNewType(e.target.value)}
                       className="w-full text-xs pl-3 pr-7 py-2 rounded-md border outline-none appearance-none"
                       style={{ borderColor: '#e5e0e0', color: newType ? '#1a1314' : '#8a7070' }}>
                       <option value="">Select issue type...</option>
                       {unmappedTypes.map(t => <option key={t} value={t}>{t}</option>)}
                       <option value="__custom__">Custom type...</option>
-                    </select>
+                    </SelectField>
                     <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#8a7070' }}>▾</span>
                   </div>
                   {newType === '__custom__' && (
@@ -123,11 +124,11 @@ export function JiraManageModal({ onClose }) {
                   )}
                   <span style={{ color: '#d4cccc' }}>→</span>
                   <div className="relative">
-                    <select value={newSeverity} onChange={e => setNewSeverity(e.target.value)}
+                    <SelectField value={newSeverity} onChange={e => setNewSeverity(e.target.value)}
                       className="text-xs pl-3 pr-7 py-2 rounded-md border outline-none appearance-none"
                       style={{ borderColor: '#e5e0e0', color: '#1a1314' }}>
                       {SEVERITIES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                    </select>
+                    </SelectField>
                     <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#8a7070' }}>▾</span>
                   </div>
                   <button onClick={handleAdd} disabled={!newType || newType === '__custom__' || saving}
@@ -145,7 +146,7 @@ export function JiraManageModal({ onClose }) {
           <div className="rounded-lg p-4" style={{ background: '#f8f7f7', border: '1px solid #e5e0e0' }}>
             <h3 className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: '#8a7070' }}>n8n Webhook Setup</h3>
             <p className="text-xs mb-3" style={{ color: '#8a7070' }}>
-              Use this endpoint in your n8n workflow to send Jira issues to Sentrix.
+              Use this endpoint in your n8n workflow to send Jira issues to RISYS.
             </p>
 
             <div className="mb-3">

@@ -21,6 +21,7 @@ import {
 import { getRiskLevel } from '@/lib/risks'
 import { ControlModal } from './ControlModal'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 const TABS = [
@@ -59,25 +60,25 @@ function TestTab({ control, canTest, onTested }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 10 }}>
             <div>
               <label style={{ fontSize: 11, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>Test Type</label>
-              <select value={form.test_type} onChange={set('test_type')} className="sentrix-select">
+              <SelectField value={form.test_type} onChange={set('test_type')}>
                 <option>Design</option><option>Operating</option>
-              </select>
+              </SelectField>
             </div>
             <div>
               <label style={{ fontSize: 11, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>Result</label>
-              <select value={form.result} onChange={set('result')} className="sentrix-select">
+              <SelectField value={form.result} onChange={set('result')}>
                 <option>Pass</option><option>Fail</option><option>Partial</option>
-              </select>
+              </SelectField>
             </div>
             <div>
               <label style={{ fontSize: 11, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>Effectiveness</label>
-              <select value={form.effectiveness} onChange={set('effectiveness')} className="sentrix-select">
+              <SelectField value={form.effectiveness} onChange={set('effectiveness')}>
                 {[1,2,3,4,5].map(v => <option key={v} value={v}>{v}/5 — {getEffectivenessLabel(v)}</option>)}
-              </select>
+              </SelectField>
             </div>
             <div>
               <label style={{ fontSize: 11, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>Test Date</label>
-              <input type="date" value={form.test_date} onChange={set('test_date')} className="sentrix-input" />
+              <input type="date" value={form.test_date} onChange={set('test_date')} className="risys-input" />
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -85,7 +86,7 @@ function TestTab({ control, canTest, onTested }) {
               value={form.notes}
               onChange={set('notes')}
               placeholder="Test notes — sample size, exceptions found, method used…"
-              className="sentrix-input"
+              className="risys-input"
               style={{ flex: 1 }}
             />
             <button onClick={save} disabled={saving} className="btn-primary">
@@ -176,14 +177,14 @@ function EvidenceTab({ control, canManage }) {
               <p className="eyebrow mb-4">Add Evidence</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px', gap: 10 }}>
-                  <input value={form.title} onChange={set('title')} placeholder="Evidence title *" className="sentrix-input" />
-                  <select value={form.evidence_type} onChange={set('evidence_type')} className="sentrix-select">
+                  <input value={form.title} onChange={set('title')} placeholder="Evidence title *" className="risys-input" />
+                  <SelectField value={form.evidence_type} onChange={set('evidence_type')}>
                     {['Document','Screenshot','Log','Attestation','Test Result','Policy','Certificate','Report'].map(t => (
                       <option key={t}>{t}</option>
                     ))}
-                  </select>
+                  </SelectField>
                 </div>
-                <input value={form.description} onChange={set('description')} placeholder="Description (optional)" className="sentrix-input" />
+                <input value={form.description} onChange={set('description')} placeholder="Description (optional)" className="risys-input" />
                 <label style={{
                   display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
                   fontSize: 13, color: 'var(--text-2)', padding: '10px 12px',

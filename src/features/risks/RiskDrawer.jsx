@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { usePeople } from '@/hooks/usePeople'
 import { useComments } from '@/hooks/useComments'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 
 const TABS = [
   { id: 'overview',   label: 'Overview',     icon: Shield },
@@ -296,8 +297,8 @@ function ControlForm({ form, setForm, set, onSave, onCancel, saving, isEdit }) {
   return (
     <div className="p-4 rounded-lg flex flex-col gap-3" style={{ background: '#f6eeec', border: '1px solid #e9dad7' }}>
       <p className="text-xs font-medium" style={{ color: '#292021' }}>{isEdit ? 'Edit Control' : 'New Control'}</p>
-      <input value={form.name} onChange={set('name')} placeholder="Control name *" className="sentrix-input text-xs" />
-      <textarea value={form.description} onChange={set('description')} placeholder="Description..." rows={2} className="sentrix-input text-xs resize-none" />
+      <input value={form.name} onChange={set('name')} placeholder="Control name *" className="risys-input text-xs" />
+      <textarea value={form.description} onChange={set('description')} placeholder="Description..." rows={2} className="risys-input text-xs resize-none" />
       <div className="grid grid-cols-2 gap-2">
         <MiniSelect label="Type" value={form.control_type} onChange={set('control_type')} options={CONTROL_TYPES} />
         <MiniSelect label="Frequency" value={form.control_frequency} onChange={set('control_frequency')} options={CONTROL_FREQUENCIES} />
@@ -313,7 +314,7 @@ function ControlForm({ form, setForm, set, onSave, onCancel, saving, isEdit }) {
           onChange={e => setForm(f => ({ ...f, is_automated: e.target.checked }))} />
         <label htmlFor="automated" className="text-xs" style={{ color: '#4d3e3e' }}>Automated control</label>
       </div>
-      <input value={form.framework_ref} onChange={set('framework_ref')} placeholder="Framework reference (optional)" className="sentrix-input text-xs" />
+      <input value={form.framework_ref} onChange={set('framework_ref')} placeholder="Framework reference (optional)" className="risys-input text-xs" />
       <div className="flex gap-2">
         <button onClick={onCancel} className="flex-1 btn-secondary text-xs py-1.5">Cancel</button>
         <button onClick={onSave} disabled={saving || !form.name.trim()}
@@ -364,12 +365,12 @@ function EvidenceTab({ riskId }) {
 
       {showAdd && (
         <div className="p-4 rounded-lg flex flex-col gap-3" style={{ background: '#f6eeec', border: '1px solid #e9dad7' }}>
-          <input value={form.title} onChange={set('title')} placeholder="Evidence title *" className="sentrix-input text-xs" />
+          <input value={form.title} onChange={set('title')} placeholder="Evidence title *" className="risys-input text-xs" />
           <div className="grid grid-cols-2 gap-2">
             <MiniSelect label="Type" value={form.evidence_type} onChange={set('evidence_type')} options={EVIDENCE_TYPES} />
-            <input value={form.evidence_period} onChange={set('evidence_period')} placeholder="Period (e.g. Q1 2025)" className="sentrix-input text-xs" />
+            <input value={form.evidence_period} onChange={set('evidence_period')} placeholder="Period (e.g. Q1 2025)" className="risys-input text-xs" />
           </div>
-          <textarea value={form.description} onChange={set('description')} placeholder="Description..." rows={2} className="sentrix-input text-xs resize-none" />
+          <textarea value={form.description} onChange={set('description')} placeholder="Description..." rows={2} className="risys-input text-xs resize-none" />
           <div>
             <label className="text-[11px] block mb-1" style={{ color: '#97817d' }}>Attachment (optional)</label>
             <input type="file" onChange={e => setFile(e.target.files[0])} className="text-xs" />
@@ -455,17 +456,17 @@ function KRIsTab({ riskId }) {
 
       {showAdd && (
         <div className="p-4 rounded-lg flex flex-col gap-3" style={{ background: '#f6eeec', border: '1px solid #e9dad7' }}>
-          <input value={form.name} onChange={set('name')} placeholder="KRI name *" className="sentrix-input text-xs" />
-          <textarea value={form.description} onChange={set('description')} placeholder="What does this measure?" rows={2} className="sentrix-input text-xs resize-none" />
+          <input value={form.name} onChange={set('name')} placeholder="KRI name *" className="risys-input text-xs" />
+          <textarea value={form.description} onChange={set('description')} placeholder="What does this measure?" rows={2} className="risys-input text-xs resize-none" />
           <div className="grid grid-cols-3 gap-2">
-            <div><label className="text-[11px] block mb-1" style={{ color: '#97817d' }}>Current Value</label><input value={form.current_value} onChange={set('current_value')} placeholder="e.g. 42" className="sentrix-input text-xs" /></div>
-            <div><label className="text-[11px] block mb-1" style={{ color: '#97817d' }}>Unit</label><input value={form.unit} onChange={set('unit')} placeholder="%, count, $" className="sentrix-input text-xs" /></div>
+            <div><label className="text-[11px] block mb-1" style={{ color: '#97817d' }}>Current Value</label><input value={form.current_value} onChange={set('current_value')} placeholder="e.g. 42" className="risys-input text-xs" /></div>
+            <div><label className="text-[11px] block mb-1" style={{ color: '#97817d' }}>Unit</label><input value={form.unit} onChange={set('unit')} placeholder="%, count, $" className="risys-input text-xs" /></div>
             <MiniSelect label="Frequency" value={form.frequency} onChange={set('frequency')} options={['Daily', 'Weekly', 'Monthly', 'Quarterly']} />
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <div><label className="text-[11px] block mb-1" style={{ color: '#2F6B3C' }}>🟢 Green ≤</label><input value={form.green_threshold} onChange={set('green_threshold')} placeholder="e.g. 5" className="sentrix-input text-xs" /></div>
-            <div><label className="text-[11px] block mb-1" style={{ color: '#9C6F0F' }}>🟡 Amber ≤</label><input value={form.amber_threshold} onChange={set('amber_threshold')} placeholder="e.g. 10" className="sentrix-input text-xs" /></div>
-            <div><label className="text-[11px] block mb-1" style={{ color: '#8C1616' }}>🔴 Red &gt;</label><input value={form.red_threshold} onChange={set('red_threshold')} placeholder="e.g. 10" className="sentrix-input text-xs" /></div>
+            <div><label className="text-[11px] block mb-1" style={{ color: '#2F6B3C' }}>🟢 Green ≤</label><input value={form.green_threshold} onChange={set('green_threshold')} placeholder="e.g. 5" className="risys-input text-xs" /></div>
+            <div><label className="text-[11px] block mb-1" style={{ color: '#9C6F0F' }}>🟡 Amber ≤</label><input value={form.amber_threshold} onChange={set('amber_threshold')} placeholder="e.g. 10" className="risys-input text-xs" /></div>
+            <div><label className="text-[11px] block mb-1" style={{ color: '#8C1616' }}>🔴 Red &gt;</label><input value={form.red_threshold} onChange={set('red_threshold')} placeholder="e.g. 10" className="risys-input text-xs" /></div>
           </div>
           <div className="flex gap-2">
             <button onClick={() => setShowAdd(false)} className="flex-1 btn-secondary text-xs py-1.5">Cancel</button>
@@ -559,17 +560,17 @@ function LossEventsTab({ riskId }) {
 
       {showAdd && (
         <div className="p-4 rounded-lg flex flex-col gap-3" style={{ background: '#f6eeec', border: '1px solid #e9dad7' }}>
-          <input value={form.title} onChange={set('title')} placeholder="Event title *" className="sentrix-input text-xs" />
+          <input value={form.title} onChange={set('title')} placeholder="Event title *" className="risys-input text-xs" />
           <div className="grid grid-cols-2 gap-2">
-            <div><label className="text-[11px] block mb-1" style={{ color: '#97817d' }}>Event Date *</label><input type="date" value={form.event_date} onChange={set('event_date')} className="sentrix-input text-xs" /></div>
+            <div><label className="text-[11px] block mb-1" style={{ color: '#97817d' }}>Event Date *</label><input type="date" value={form.event_date} onChange={set('event_date')} className="risys-input text-xs" /></div>
             <MiniSelect label="Root Cause Category" value={form.root_cause_category} onChange={set('root_cause_category')} options={['People', 'Process', 'System', 'External']} />
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <div><label className="text-[11px] block mb-1" style={{ color: '#97817d' }}>Gross Loss</label><input value={form.gross_loss} onChange={set('gross_loss')} placeholder="0.00" className="sentrix-input text-xs" /></div>
-            <div><label className="text-[11px] block mb-1" style={{ color: '#97817d' }}>Net Loss</label><input value={form.net_loss} onChange={set('net_loss')} placeholder="0.00" className="sentrix-input text-xs" /></div>
+            <div><label className="text-[11px] block mb-1" style={{ color: '#97817d' }}>Gross Loss</label><input value={form.gross_loss} onChange={set('gross_loss')} placeholder="0.00" className="risys-input text-xs" /></div>
+            <div><label className="text-[11px] block mb-1" style={{ color: '#97817d' }}>Net Loss</label><input value={form.net_loss} onChange={set('net_loss')} placeholder="0.00" className="risys-input text-xs" /></div>
             <MiniSelect label="Currency" value={form.currency} onChange={set('currency')} options={['USD', 'SAR', 'EUR', 'GBP', 'AED']} />
           </div>
-          <textarea value={form.root_cause} onChange={set('root_cause')} placeholder="Root cause analysis..." rows={2} className="sentrix-input text-xs resize-none" />
+          <textarea value={form.root_cause} onChange={set('root_cause')} placeholder="Root cause analysis..." rows={2} className="risys-input text-xs resize-none" />
           <div className="flex gap-2">
             <button onClick={() => setShowAdd(false)} className="flex-1 btn-secondary text-xs py-1.5">Cancel</button>
             <button onClick={handleSave} disabled={saving || !form.title.trim() || !form.event_date}
@@ -637,7 +638,7 @@ function CommentsTab({ riskId, user }) {
           </div>
           <div className="flex gap-2">
             <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Add a comment..." rows={2}
-              className="flex-1 sentrix-input text-xs resize-none" />
+              className="flex-1 risys-input text-xs resize-none" />
             <button onClick={handleSubmit} disabled={saving || !text.trim()}
               className="px-3 py-2 rounded-md text-xs"
               style={{ background: '#5D0F0F', color: '#fff', border: 'none', opacity: !text.trim() ? 0.5 : 1 }}>
@@ -690,9 +691,9 @@ function MiniSelect({ label, value, onChange, options }) {
     <div>
       {label && <label className="text-[11px] block mb-1" style={{ color: '#97817d' }}>{label}</label>}
       <div className="relative">
-        <select value={value} onChange={onChange} className="w-full sentrix-input text-xs appearance-none pr-6 cursor-pointer">
+        <SelectField value={value} onChange={onChange} className="w-full">
           {options.map(o => <option key={o.value || o} value={o.value || o}>{o.label || o}</option>)}
-        </select>
+        </SelectField>
         <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#97817d' }}>▾</span>
       </div>
     </div>

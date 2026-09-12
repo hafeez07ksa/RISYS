@@ -101,7 +101,7 @@ export function WorkflowBar({ risk, member, onChanged, perms }) {
           </p>
           <textarea value={comment} onChange={e => setComment(e.target.value)} rows={2} autoFocus
             placeholder={confirming.action === 'rejected' ? 'e.g. Inherent impact appears understated; please re-assess against the Q2 incident data.' : 'e.g. Risk fully treated — all remediation actions complete and verified.'}
-            className="sentrix-input" style={{ width: '100%', fontSize: 13, resize: 'vertical' }} />
+            className="risys-input" style={{ width: '100%', fontSize: 13, resize: 'vertical' }} />
           {error && <p style={{ fontSize: 12, color: '#8C1616', marginTop: 6 }}>{error}</p>}
           <div style={{ display: 'flex', gap: 8, marginTop: 8, justifyContent: 'flex-end' }}>
             <button onClick={() => setConfirming(null)} className="btn-secondary" style={{ fontSize: 12 }}>Cancel</button>

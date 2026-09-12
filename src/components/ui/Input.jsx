@@ -1,24 +1,29 @@
 import clsx from 'clsx'
 
-export function Input({ label, error, className, ...props }) {
+/* Input keeps its own markup — a text field has no reason to be anything but
+ * a native <input>. Only the label and error treatment changed, to the shared
+ * field tokens so a label here matches a label on a Combobox. */
+export function Input({ label, error, help, required, className, ...props }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      {label && <label className="text-xs uppercase tracking-wider" style={{ color: '#8a7070' }}>{label}</label>}
-      <input className={clsx('sentrix-input', error && 'border-red-400', className)} {...props} />
-      {error && <p className="text-xs text-red-600">{error}</p>}
+    <div className="flex flex-col">
+      {label && (
+        <label className="field-label">
+          {label}{required && <span className="field-req">*</span>}
+        </label>
+      )}
+      <input
+        className={clsx('risys-input', className)}
+        aria-invalid={error ? 'true' : undefined}
+        {...props}
+      />
+      {help && !error && <p className="field-help">{help}</p>}
+      {error && <p className="field-error">{error}</p>}
     </div>
   )
 }
 
-export function Select({ label, error, children, className, ...props }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      {label && <label className="text-xs uppercase tracking-wider" style={{ color: '#8a7070' }}>{label}</label>}
-      <div className="relative">
-        <select className={clsx('sentrix-select pr-8', error && 'border-red-400', className)} {...props}>{children}</select>
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none" style={{ color: '#8a7070' }}>▾</span>
-      </div>
-      {error && <p className="text-xs text-red-600">{error}</p>}
-    </div>
-  )
-}
+/* Select is no longer a native <select>. It forwards to SelectField, which is
+ * the Combobox underneath, so the two remaining call sites that import Select
+ * from here get the same control as everywhere else without being edited.
+ * The <option> children they pass are read by SelectField. */
+export { SelectField as Select } from './Combobox'

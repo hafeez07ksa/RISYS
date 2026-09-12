@@ -1,6 +1,7 @@
 {
-  "name": "sentrix",
+  "name": "risys",
   "version": "0.1.0",
+  "description": "RISYS — Risk Intelligence System. Automated GRC for Saudi regulatory frameworks.",
   "private": true,
   "type": "module",
   "scripts": {

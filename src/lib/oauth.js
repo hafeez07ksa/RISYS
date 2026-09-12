@@ -40,7 +40,7 @@ export async function buildOAuthUrl(connector) {
 //
 // OAuthCallbackPage reads this state when the provider redirects back.
 
-const STORAGE_KEY = 'sentrix_oauth_pending'
+const STORAGE_KEY = 'risys_oauth_pending'
 
 export async function startOAuthRedirect(connector, orgId) {
   const { url, codeVerifier } = await buildOAuthUrl(connector)

@@ -12,6 +12,7 @@ import { CreateTaskModal } from './CreateTaskModal'
 import { TASK_STATUSES, TASK_PRIORITIES, getTaskStatus, getTaskPriority } from '@/lib/sla'
 import { logAudit, AUDIT } from '@/lib/audit'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 
 function DueLabel({ dueAt, status }) {
   if (!dueAt || status === 'done' || status === 'cancelled') return null
@@ -148,12 +149,11 @@ function ListView({ tasks, memberName, onUpdate, onNavigate }) {
               </div>
               <span style={{ fontSize: 11, fontWeight: 600, color: p.color }}>{p.label}</span>
               <div onClick={e => e.stopPropagation()}>
-                <select value={task.status}
-                  onChange={async e => { await onUpdate(task.id, { status: e.target.value }) }}
+                <SelectField value={task.status} onChange={async e => { await onUpdate(task.id, { status: e.target.value }) }}
                   className="text-xs px-2 py-1 rounded border outline-none appearance-none cursor-pointer"
                   style={{ borderColor: s.border, color: s.color, background: s.bg }}>
                   {TASK_STATUSES.map(ts => <option key={ts.value} value={ts.value}>{ts.label}</option>)}
-                </select>
+                </SelectField>
               </div>
               <div><DueLabel dueAt={task.due_at} status={task.status} /></div>
               <div className="flex items-center gap-2 min-w-0">
@@ -293,12 +293,12 @@ export function TasksPage() {
               style={{ borderColor: '#e5e0e0', color: '#1a1314' }} />
           </div>
           <div className="relative">
-            <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}
+            <SelectField value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}
               className="text-xs pl-3 pr-7 py-2 rounded-md border appearance-none outline-none cursor-pointer"
               style={{ borderColor: '#e5e0e0', color: priorityFilter ? '#1a1314' : '#8a7070' }}>
               <option value="">All priorities</option>
               {TASK_PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-            </select>
+            </SelectField>
             <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#8a7070' }}>▾</span>
           </div>
           {(search || priorityFilter || statusFilter) && (

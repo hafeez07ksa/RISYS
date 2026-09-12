@@ -2,10 +2,12 @@ import { useEffect } from 'react'
 import { Outlet, Navigate } from 'react-router-dom'
 import { ShieldAlert, LogOut } from 'lucide-react'
 import { Sidebar } from '@/components/layout/Sidebar'
+import { AppTopbar } from '@/components/layout/Topbar'
+import { CommandSearch, useCommandSearch } from '@/components/layout/CommandSearch'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuthStore } from '@/store/authStore'
 import { Spinner } from '@/components/ui/Spinner'
-import { SentrixLogo } from '@/components/ui/SentrixLogo'
+import { RisysLogo } from '@/components/ui/RisysLogo'
 
 // Shown when a signed-in user has no workspace membership —
 // i.e. they were removed, their org was suspended, or they never joined one.
@@ -13,7 +15,7 @@ function AccessGate() {
   const signOut = useAuthStore(s => s.signOut)
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div style={{ marginBottom: 26 }}><SentrixLogo size="md" /></div>
+      <div style={{ marginBottom: 26 }}><RisysLogo size="md" /></div>
       <div style={{ width: '100%', maxWidth: 420, background: '#fff', border: '1px solid var(--border)', borderRadius: 16, padding: '36px 32px', textAlign: 'center', boxShadow: '0 8px 32px rgba(41,32,33,0.07)' }}>
         <div style={{ width: 44, height: 44, borderRadius: 12, background: '#FBEAEA', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
           <ShieldAlert size={20} style={{ color: '#8C1616' }} />
@@ -27,7 +29,7 @@ function AccessGate() {
           <LogOut size={13} /> Sign out
         </button>
         <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 14 }}>
-          Workspaces are provisioned by Sentrix — contact our team to set one up.
+          Workspaces are provisioned by RISYS — contact our team to set one up.
         </p>
       </div>
     </div>
@@ -36,6 +38,7 @@ function AccessGate() {
 
 export function AppLayout() {
   const { user, organization, loading } = useAuth()
+  const search = useCommandSearch()
   const validateAccess = useAuthStore(s => s.validateAccess)
 
   // Active enforcement: re-prove the session and membership against the
@@ -70,10 +73,12 @@ export function AppLayout() {
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
+        <AppTopbar onOpenSearch={() => search.setOpen(true)} />
         <div className="flex-1 overflow-y-auto">
           <Outlet />
         </div>
       </main>
+      <CommandSearch open={search.open} onClose={() => search.setOpen(false)} />
     </div>
   )
 }

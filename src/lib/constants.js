@@ -3,7 +3,7 @@ export const CONNECTORS = [
     id: 'google',
     name: 'Google Workspace',
     shortName: 'Google',
-    description: 'Sync users, groups, calendar events, and Drive activity into Sentrix for identity and access risk tracking.',
+    description: 'Sync users, groups, calendar events, and Drive activity into RISYS for identity and access risk tracking.',
     category: 'Identity & Productivity',
     logoColor: '#4285F4',
     logoText: 'G',
@@ -123,7 +123,7 @@ export const CONNECTORS = [
     id: 'slack',
     name: 'Slack',
     shortName: 'Slack',
-    description: 'Receive Sentrix alerts, risk notifications, and incident updates directly in your Slack channels.',
+    description: 'Receive RISYS alerts, risk notifications, and incident updates directly in your Slack channels.',
     category: 'Communication',
     logoColor: '#4A154B',
     logoText: 'S',
@@ -150,6 +150,9 @@ export const NAV_ITEMS = [
   { id: 'people',     label: 'People',         icon: 'Users',           section: 'workspace' },
   { id: 'audit',      label: 'Audit Log',      icon: 'ScrollText',      section: 'workspace' },
   { id: 'settings',   label: 'Settings',       icon: 'Settings',        section: 'system'    },
+  // Reference library — sits at the foot of the sidebar, below System.
+  // Holds every loaded framework; only the in-scope one is assessed.
+  { id: 'frameworks', label: 'Frameworks',     icon: 'Library',         section: 'library'   },
 ]
 
 export const ROLES = [

@@ -52,7 +52,7 @@ export function OAuthModal({ connector, onClose }) {
               Connect {connector.name}
             </h2>
             <p className="text-xs mb-5 leading-relaxed max-w-xs" style={{ color: '#8a7070' }}>
-              Sentrix will request the following permissions via OAuth.
+              RISYS will request the following permissions via OAuth.
             </p>
             <div className="w-full rounded-lg p-4 mb-5 text-left" style={{ background: '#f8f7f7', border: '1px solid #e5e0e0' }}>
               <p className="text-[10px] uppercase tracking-wider mb-3" style={{ color: '#8a7070' }}>

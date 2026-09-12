@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, ExternalLink, Clock, Send, Trash2, UserPlus, AlertCircle, ShieldAlert, CheckCircle } from 'lucide-react'
 import { SeverityBadge, StatusBadge } from '@/components/ui/IncidentBadges'
+import { SelectField } from '@/components/ui/Combobox'
 import { useComments } from '@/hooks/useComments'
 import { usePeople } from '@/hooks/usePeople'
 import { useAuth } from '@/hooks/useAuth'
@@ -215,23 +216,23 @@ function EscalateModal({ incident, onClose, onCreated }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[11px] uppercase tracking-wider block mb-1.5" style={{ color: '#8a7070' }}>Category</label>
-              <select value={form.category} onChange={e => set('category', e.target.value)}
+              <SelectField value={form.category} onChange={e => set('category', e.target.value)}
                 className="w-full text-xs px-3 py-2 rounded-lg border outline-none appearance-none"
                 style={{ borderColor: '#e5e0e0', color: '#1a1314' }}>
                 {['Cybersecurity','Compliance & Regulatory','Operational','Data Privacy','Technology / IT','Third Party / Vendor'].map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}
-              </select>
+              </SelectField>
             </div>
             <div>
               <label className="text-[11px] uppercase tracking-wider block mb-1.5" style={{ color: '#8a7070' }}>Type</label>
-              <select value={form.risk_type} onChange={e => set('risk_type', e.target.value)}
+              <SelectField value={form.risk_type} onChange={e => set('risk_type', e.target.value)}
                 className="w-full text-xs px-3 py-2 rounded-lg border outline-none appearance-none"
                 style={{ borderColor: '#e5e0e0', color: '#1a1314' }}>
                 {['Operational','Strategic','Financial','Compliance','Reputational','Technology'].map(t => (
                   <option key={t} value={t}>{t}</option>
                 ))}
-              </select>
+              </SelectField>
             </div>
           </div>
 
@@ -241,21 +242,21 @@ function EscalateModal({ incident, onClose, onCreated }) {
               <label className="text-[11px] uppercase tracking-wider block mb-1.5" style={{ color: '#8a7070' }}>
                 Likelihood (1–5)
               </label>
-              <select value={form.inherent_likelihood} onChange={e => set('inherent_likelihood', Number(e.target.value))}
+              <SelectField value={form.inherent_likelihood} onChange={e => set('inherent_likelihood', Number(e.target.value))}
                 className="w-full text-xs px-3 py-2 rounded-lg border outline-none appearance-none"
                 style={{ borderColor: '#e5e0e0', color: '#1a1314' }}>
                 {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
+              </SelectField>
             </div>
             <div>
               <label className="text-[11px] uppercase tracking-wider block mb-1.5" style={{ color: '#8a7070' }}>
                 Impact (1–5)
               </label>
-              <select value={form.inherent_impact} onChange={e => set('inherent_impact', Number(e.target.value))}
+              <SelectField value={form.inherent_impact} onChange={e => set('inherent_impact', Number(e.target.value))}
                 className="w-full text-xs px-3 py-2 rounded-lg border outline-none appearance-none"
                 style={{ borderColor: '#e5e0e0', color: '#1a1314' }}>
                 {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
+              </SelectField>
             </div>
           </div>
 
@@ -363,7 +364,7 @@ export function IncidentDrawer({ incident, onClose, onUpdate }) {
 
             {/* Status dropdown */}
             <div className="relative">
-              <select value={incident.status} onChange={e => handleStatusChange(e.target.value)}
+              <SelectField value={incident.status} onChange={e => handleStatusChange(e.target.value)}
                 disabled={updatingStatus}
                 className="text-xs pl-2.5 pr-6 py-1 rounded-full border appearance-none outline-none cursor-pointer font-medium"
                 style={{
@@ -372,7 +373,7 @@ export function IncidentDrawer({ incident, onClose, onUpdate }) {
                   borderColor: STATUSES.find(s => s.value === incident.status)?.border || '#e5e0e0',
                 }}>
                 {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-              </select>
+              </SelectField>
               <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[9px]">▾</span>
             </div>
 
@@ -413,7 +414,7 @@ export function IncidentDrawer({ incident, onClose, onUpdate }) {
           <div className="px-5 py-4 grid grid-cols-2 gap-4">
             <div>
               <p className="text-[11px] uppercase tracking-wider mb-1.5" style={{ color: '#8a7070' }}>Assignee</p>
-              <select value={incident.assigned_to || ''} onChange={e => handleAssigneeChange(e.target.value)}
+              <SelectField value={incident.assigned_to || ''} onChange={e => handleAssigneeChange(e.target.value)}
                 disabled={updatingAssignee}
                 className="w-full text-xs px-2.5 py-2 rounded-lg border outline-none appearance-none cursor-pointer"
                 style={{ borderColor: '#e5e0e0', color: incident.assigned_to ? '#1a1314' : '#8a7070' }}>
@@ -423,7 +424,7 @@ export function IncidentDrawer({ incident, onClose, onUpdate }) {
                     {m.full_name || m.email || m.user_id?.slice(0, 8)}
                   </option>
                 ))}
-              </select>
+              </SelectField>
             </div>
 
             <div>

@@ -17,6 +17,7 @@ import {
 } from '@/hooks/useControls'
 import { ControlModal } from './ControlModal'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 
 // ── Stat segment ──────────────────────────────────────────────────────────────
 function Segment({ label, value, color, barColor, sub, onClick, active, last }) {
@@ -164,20 +165,20 @@ export function ControlsPage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search controls…"
-              className="sentrix-input"
+              className="risys-input"
               style={{ paddingLeft: 30 }}
             />
           </div>
 
-          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="sentrix-select" style={{ width: 160 }}>
+          <SelectField value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={{ width: 160 }}>
             <option value="">All Types</option>
             {CONTROL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
+          </SelectField>
 
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="sentrix-select" style={{ width: 160 }}>
+          <SelectField value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ width: 160 }}>
             <option value="">All Statuses</option>
             {TESTING_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          </SelectField>
 
           <button onClick={refetch} className="btn-ghost" title="Refresh">
             <RefreshCw size={14} />

@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, ChevronRight, ChevronDown, ChevronUp, Search, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { PRIMARY_FRAMEWORK_ID } from '@/hooks/useCompliance'
 
-// ── Framework registry (same as useCompliance but self-contained) ─────────────
-const FRAMEWORKS = [
+// ── Framework registry ────────────────────────────────────────────────────────
+// Column keys differ per framework table, so this picker keeps its own shape.
+// Scope, however, is taken from the shared registry — a control can only be
+// mapped to a framework that is actually being assessed.
+const ALL_FRAMEWORKS = [
   { id: 'NCA ECC',    label: 'NCA ECC',    fullName: 'Essential Cybersecurity Controls',         table: 'nca_ecc',     color: '#5D0F0F', bg: '#fdf5f5', tag: 'Critical Sector',  idKey: 'control_id',  textKey: 'control_text',  groupKey: 'domain_id',    groupName: 'domain_name'    },
   { id: 'SAMA CSF',   label: 'SAMA CSF',   fullName: 'Cybersecurity Framework',                  table: 'sama_csf',    color: '#1e40af', bg: '#eff6ff', tag: 'Financial Sector', idKey: 'control_id',  textKey: 'control_text',  groupKey: 'subdomain_id', groupName: 'subdomain_name' },
   { id: 'SDAIA PDPL', label: 'SDAIA PDPL', fullName: 'Personal Data Protection Law',             table: 'sdaia_pdpl',  color: '#166534', bg: '#f0fdf4', tag: 'Data Privacy',     idKey: 'clause_id',   textKey: 'clause_text',   groupKey: 'article_id',   groupName: 'article_title'  },
@@ -13,6 +17,8 @@ const FRAMEWORKS = [
   { id: 'NCA CSCC',   label: 'NCA CSCC',   fullName: 'Cybersecurity Controls for Comms Sector', table: 'nca_cscc',    color: '#be185d', bg: '#fdf2f8', tag: 'Telecom',          idKey: 'control_id',  textKey: 'control_text',  groupKey: 'domain_id',    groupName: 'domain_name'    },
   { id: 'NCA NCNICC', label: 'NCA NCNICC', fullName: 'Non-CNI Private Sector Controls',         table: 'nca_ncnicc',  color: '#b45309', bg: '#fffbeb', tag: 'Private Sector',   idKey: 'control_id',  textKey: 'control_text',  groupKey: 'domain_id',    groupName: 'domain_name'    },
 ]
+
+const FRAMEWORKS = ALL_FRAMEWORKS.filter(f => f.id === PRIMARY_FRAMEWORK_ID)
 
 // ── Clause drill-down within a framework ──────────────────────────────────────
 function ClauseList({ fw, onSelect, selected, search }) {
@@ -74,7 +80,7 @@ function ClauseList({ fw, onSelect, selected, search }) {
               {isOpen
                 ? <ChevronDown size={13} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
                 : <ChevronRight size={13} style={{ color: 'var(--text-3)', flexShrink: 0 }} />}
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--crimson)', fontFamily: 'monospace', minWidth: 40 }}>{g.id}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--crimson)', fontFamily: 'var(--font-mono)', minWidth: 40 }}>{g.id}</span>
               <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{g.name}</span>
               <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{g.rows.length}</span>
             </button>
@@ -100,7 +106,7 @@ function ClauseList({ fw, onSelect, selected, search }) {
                   onMouseLeave={e => { e.currentTarget.style.background = isSelected ? '#fdf5f5' : '#fff' }}
                 >
                   <span style={{
-                    fontSize: 11, fontFamily: 'monospace', fontWeight: 600,
+                    fontSize: 11, fontFamily: 'var(--font-mono)', fontWeight: 600,
                     color: isSelected ? 'var(--crimson)' : 'var(--rose)',
                     flexShrink: 0, minWidth: 80, marginTop: 1,
                   }}>
@@ -199,7 +205,7 @@ export function FrameworkClausePicker({ open, onClose, onSelect, currentValue })
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder={`Search ${activeFw?.label} requirements…`}
-                className="sentrix-input"
+                className="risys-input"
                 style={{ paddingLeft: 30, fontSize: 12 }}
               />
             </div>
@@ -243,7 +249,7 @@ export function FrameworkClausePicker({ open, onClose, onSelect, currentValue })
                   </div>
 
                   {currentValue?.startsWith(fw.id) && (
-                    <span style={{ fontSize: 11, color: fw.color, fontWeight: 600, fontFamily: 'monospace', flexShrink: 0 }}>
+                    <span style={{ fontSize: 11, color: fw.color, fontWeight: 600, fontFamily: 'var(--font-mono)', flexShrink: 0 }}>
                       {currentValue}
                     </span>
                   )}

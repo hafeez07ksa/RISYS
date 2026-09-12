@@ -5,6 +5,7 @@ import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
 import { useIncidents } from '@/hooks/useIncidents'
 import { SeverityBadge, StatusBadge } from '@/components/ui/IncidentBadges'
+import { SelectField } from '@/components/ui/Combobox'
 import { RaiseIncidentModal } from './RaiseIncidentModal'
 import { SEVERITIES, STATUSES } from '@/lib/incidents'
 import { getSLAStatus, formatTimeRemaining } from '@/lib/sla'
@@ -13,12 +14,12 @@ import { Spinner } from '@/components/ui/Spinner'
 function FilterSelect({ value, onChange, options, placeholder }) {
   return (
     <div className="relative">
-      <select value={value} onChange={e => onChange(e.target.value)}
+      <SelectField value={value} onChange={e => onChange(e.target.value)}
         className="text-xs pl-3 pr-7 py-2 rounded-md border appearance-none outline-none transition-colors cursor-pointer"
         style={{ background: '#fff', borderColor: '#e5e0e0', color: value ? '#1a1314' : '#8a7070' }}>
         <option value="">{placeholder}</option>
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
+      </SelectField>
       <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#8a7070' }}>▾</span>
     </div>
   )

@@ -58,7 +58,7 @@ export function InviteMemberModal({ onClose }) {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="colleague@company.com"
-                  className="sentrix-input"
+                  className="risys-input"
                   onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                   autoFocus
                 />

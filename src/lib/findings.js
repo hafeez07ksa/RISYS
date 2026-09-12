@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 
 /*
  * ─────────────────────────────────────────────────────────────────────────────
- *  Sentrix — Findings Engine (single source of truth)
+ *  RISYS — Findings Engine (single source of truth)
  * ─────────────────────────────────────────────────────────────────────────────
  *  Every connector contributes "security findings" derived from the data it
  *  syncs. This module is the one place those findings are defined and the one

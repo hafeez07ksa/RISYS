@@ -46,14 +46,14 @@ export function CreateGroupModal({ onClose, editGroup }) {
             <label className="text-xs uppercase tracking-wider" style={{ color: '#8a7070' }}>Group name</label>
             <input value={name} onChange={e => setName(e.target.value)}
               placeholder="e.g. IT Security, Finance, Legal"
-              className="sentrix-input" autoFocus />
+              className="risys-input" autoFocus />
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs uppercase tracking-wider" style={{ color: '#8a7070' }}>Description (optional)</label>
             <input value={description} onChange={e => setDescription(e.target.value)}
               placeholder="What does this group do?"
-              className="sentrix-input" />
+              className="risys-input" />
           </div>
 
           <div className="flex flex-col gap-1.5">

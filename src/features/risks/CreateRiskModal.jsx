@@ -10,6 +10,7 @@ import {
   LIKELIHOOD_LABELS, IMPACT_LABELS, getRiskLevel
 } from '@/lib/risks'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectField } from '@/components/ui/Combobox'
 
 function ScoreSelector({ label, value, onChange, labels }) {
   const level = getRiskLevel(value * value)
@@ -172,27 +173,27 @@ export function CreateRiskModal({ onClose, editRisk }) {
           {tab === 'basic' && (
             <>
               <Field label="Title *">
-                <input value={form.title} onChange={set('title')} placeholder="e.g. Unauthorized access to customer data" className="sentrix-input" autoFocus />
+                <input value={form.title} onChange={set('title')} placeholder="e.g. Unauthorized access to customer data" className="risys-input" autoFocus />
               </Field>
               <Field label="Risk Statement" hint="There is a risk that... resulting in...">
                 <textarea value={form.risk_statement} onChange={set('risk_statement')} rows={2}
                   placeholder="There is a risk that [event] occurs due to [cause], resulting in [impact]..."
-                  className="sentrix-input resize-none" />
+                  className="risys-input resize-none" />
               </Field>
               <Field label="Description">
                 <textarea value={form.description} onChange={set('description')} rows={2}
-                  placeholder="Additional context and details..." className="sentrix-input resize-none" />
+                  placeholder="Additional context and details..." className="risys-input resize-none" />
               </Field>
               <Field label="Risk Drivers / Root Causes">
                 <textarea value={form.risk_drivers} onChange={set('risk_drivers')} rows={2}
-                  placeholder="Contributing factors and root causes..." className="sentrix-input resize-none" />
+                  placeholder="Contributing factors and root causes..." className="risys-input resize-none" />
               </Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Risk Type">
                   <SelectField value={form.risk_type} onChange={set('risk_type')} options={RISK_TYPES.map(v => ({ value: v, label: v }))} />
                 </Field>
                 <Field label="Business Unit">
-                  <input value={form.business_unit} onChange={set('business_unit')} placeholder="e.g. Finance, IT, Operations" className="sentrix-input" />
+                  <input value={form.business_unit} onChange={set('business_unit')} placeholder="e.g. Finance, IT, Operations" className="risys-input" />
                 </Field>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -201,26 +202,23 @@ export function CreateRiskModal({ onClose, editRisk }) {
                     options={RISK_CATEGORIES.map(c => ({ value: c, label: c }))} placeholder="Select category" />
                 </Field>
                 <Field label="Subcategory">
-                  <SelectField value={form.subcategory} onChange={set('subcategory')}
-                    options={subcats.map(c => ({ value: c, label: c }))} placeholder="Select subcategory" disabled={!subcats.length} />
+                  <SelectField value={form.subcategory} onChange={set('subcategory')} options={subcats.map(c => ({ value: c, label: c }))} placeholder="Select subcategory" disabled={!subcats.length} />
                 </Field>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Risk Source" hint="how it was identified">
-                  <SelectField value={form.source} onChange={set('source')}
-                    options={RISK_SOURCES.map(s => ({ value: s, label: s }))} placeholder="Select source" />
+                  <SelectField value={form.source} onChange={set('source')} options={RISK_SOURCES.map(s => ({ value: s, label: s }))} placeholder="Select source" />
                 </Field>
                 <Field label="Identified Date">
-                  <input type="date" value={form.identified_date} onChange={set('identified_date')} className="sentrix-input" />
+                  <input type="date" value={form.identified_date} onChange={set('identified_date')} className="risys-input" />
                 </Field>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Framework Reference">
-                  <input value={form.framework_ref} onChange={set('framework_ref')} placeholder="e.g. NCA-ECC-1.1.2, ISO27001-A.9" className="sentrix-input" />
+                  <input value={form.framework_ref} onChange={set('framework_ref')} placeholder="e.g. NCA-ECC-1.1.2, ISO27001-A.9" className="risys-input" />
                 </Field>
                 <Field label="Risk Direction">
-                  <SelectField value={form.risk_direction} onChange={set('risk_direction')}
-                    options={RISK_DIRECTIONS.map(d => ({ value: d.value, label: d.label }))} />
+                  <SelectField value={form.risk_direction} onChange={set('risk_direction')} options={RISK_DIRECTIONS.map(d => ({ value: d.value, label: d.label }))} />
                 </Field>
               </div>
             </>
@@ -302,7 +300,7 @@ export function CreateRiskModal({ onClose, editRisk }) {
               <Field label="Treatment Plan / Notes">
                 <textarea value={form.treatment_notes} onChange={set('treatment_notes')} rows={4}
                   placeholder="Describe the treatment plan, specific actions, timelines, and responsible parties..."
-                  className="sentrix-input resize-none" />
+                  className="risys-input resize-none" />
               </Field>
               <Field label="Status">
                 <div className="grid grid-cols-3 gap-2">
@@ -330,7 +328,7 @@ export function CreateRiskModal({ onClose, editRisk }) {
                   {editRisk ? (
                     <UserSelect value={form.owner_id} onChange={v => setVal('owner_id', v)} members={members} />
                   ) : (
-                    <div className="sentrix-input flex items-center" style={{ background: 'var(--surface)', color: 'var(--text-2)', cursor: 'not-allowed' }}>
+                    <div className="risys-input flex items-center" style={{ background: 'var(--surface)', color: 'var(--text-2)', cursor: 'not-allowed' }}>
                       {(() => {
                         const me = members.find(m => m.user_id === user?.id)
                         return me?.full_name || me?.email || 'You'
@@ -352,11 +350,10 @@ export function CreateRiskModal({ onClose, editRisk }) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Review Frequency">
-                  <SelectField value={form.review_frequency} onChange={set('review_frequency')}
-                    options={REVIEW_FREQUENCIES.map(v => ({ value: v, label: v }))} />
+                  <SelectField value={form.review_frequency} onChange={set('review_frequency')} options={REVIEW_FREQUENCIES.map(v => ({ value: v, label: v }))} />
                 </Field>
                 <Field label="Next Review Date">
-                  <input type="date" value={form.review_date} onChange={set('review_date')} className="sentrix-input" />
+                  <input type="date" value={form.review_date} onChange={set('review_date')} className="risys-input" />
                 </Field>
               </div>
               <div className="p-3 rounded-lg flex items-start gap-2" style={{ background: 'var(--surface)', border: '1px solid #e9dad7' }}>
@@ -400,31 +397,17 @@ function Field({ label, hint, children }) {
   )
 }
 
-function SelectField({ value, onChange, options, placeholder = 'Select...', disabled }) {
-  return (
-    <div className="relative">
-      <select value={value} onChange={onChange} disabled={disabled}
-        className="w-full sentrix-input appearance-none pr-7 cursor-pointer disabled:opacity-50">
-        <option value="">{placeholder}</option>
-        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#97817d' }}>▾</span>
-    </div>
-  )
-}
-
 function UserSelect({ value, onChange, members }) {
   return (
     <div className="relative">
-      <select value={value} onChange={e => onChange(e.target.value)} className="w-full sentrix-input appearance-none pr-7 cursor-pointer">
+      <SelectField value={value} onChange={e => onChange(e.target.value)}>
         <option value="">Unassigned</option>
         {members.map(m => (
           <option key={m.user_id} value={m.user_id}>
             {m.full_name || m.email || m.user_id?.slice(0, 8) + '...'} ({m.role})
           </option>
         ))}
-      </select>
-      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#97817d' }}>▾</span>
+      </SelectField>
     </div>
   )
 }
