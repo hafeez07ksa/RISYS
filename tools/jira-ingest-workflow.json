@@ -1,0 +1,75 @@
+{
+  "name": "RISYS - Jira Incident Ingest",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerOn": "issueCreated",
+        "additionalFields": {}
+      },
+      "name": "Jira Trigger",
+      "type": "n8n-nodes-base.jiraTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "credentials": {
+        "jiraApi": {
+          "name": "Jira account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cfyjfmlhquyxgwrekswe.supabase.co/functions/v1/ingest-incident",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "org_id",
+              "value": "REPLACE_WITH_YOUR_ORG_ID"
+            },
+            {
+              "name": "connector_id",
+              "value": "jira"
+            },
+            {
+              "name": "secret",
+              "value": "REPLACE_WITH_YOUR_INGEST_SECRET"
+            },
+            {
+              "name": "issue",
+              "value": "={{ $json }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "name": "Send to RISYS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [500, 300]
+    }
+  ],
+  "connections": {
+    "Jira Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send to RISYS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
