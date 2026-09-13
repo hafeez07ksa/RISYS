@@ -1,33 +1,48 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
-import { LIKELIHOOD_LABELS, IMPACT_LABELS, getRiskLevel } from '@/lib/risks'
+import { DEFAULT_MATRIX, bandFor, bandMeta, matrixAxes, scalePoint, BAND_ORDER } from '@/lib/matrix'
 
-function getCellColor(l, i) {
-  const score = l * i
-  if (score >= 20) return '#F0CECE'
-  if (score >= 12) return '#F0D4C2'
-  if (score >= 6)  return '#EBDCB6'
-  return '#C8DECD'
-}
+/**
+ * The 5x5 heatmap.
+ *
+ * Cell colour comes from the org's band lookup, never from l * i. That
+ * matters because the lookup can be asymmetric on purpose: a tenant may
+ * band L=1 x I=5 as High while L=5 x I=1 stays Medium, even though both
+ * score 5. Deriving the colour from the product would quietly overrule
+ * that configuration.
+ */
 
-// Plot position: residual if assessed, otherwise inherent, otherwise legacy fields
-function plotCoords(r) {
-  const l = r.residual_likelihood || r.inherent_likelihood || r.likelihood
-  const i = r.residual_impact || r.inherent_impact || r.impact
+// Plot position. Residual is the honest position once it exists, because
+// that is the risk actually being carried; inherent is the fallback.
+function plotCoords(r, mode) {
+  const l = mode === 'inherent'
+    ? (r.inherent_likelihood || r.likelihood)
+    : (r.residual_likelihood || r.inherent_likelihood || r.likelihood)
+  const i = mode === 'inherent'
+    ? (r.inherent_impact || r.impact)
+    : (r.residual_impact || r.inherent_impact || r.impact)
   return (l >= 1 && i >= 1) ? [l, i] : null
 }
 
-export function RiskMatrix({ risks = [], onRiskClick, onCellClick }) {
+export function RiskMatrix({ risks = [], onRiskClick, onCellClick, matrix = DEFAULT_MATRIX }) {
   const [selectedCell, setSelectedCell] = useState(null) // { l, i, risks }
+  const [mode, setMode] = useState('residual')
+
+  const { rows, cols } = matrixAxes(matrix)
+  const likelihoodScale = matrix?.likelihood_scale || DEFAULT_MATRIX.likelihood_scale
+  const impactScale = matrix?.impact_scale || DEFAULT_MATRIX.impact_scale
 
   const riskMap = {}
   risks.forEach(r => {
-    const coords = plotCoords(r)
+    const coords = plotCoords(r, mode)
     if (!coords) return
     const key = `${coords[0]}-${coords[1]}`
     if (!riskMap[key]) riskMap[key] = []
     riskMap[key].push(r)
   })
+
+  const plotted = Object.values(riskMap).reduce((n, list) => n + list.length, 0)
+  const unplotted = risks.length - plotted
 
   const handleCell = (l, i, cellRisks) => {
     if (!cellRisks.length) return
@@ -36,46 +51,68 @@ export function RiskMatrix({ risks = [], onRiskClick, onCellClick }) {
     setSelectedCell({ l, i, risks: cellRisks })
   }
 
+  const pointLabel = (scale, v) => scalePoint(scale, v)?.label || String(v)
+
   return (
-    <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #e9dad7' }}>
-      <div className="px-4 py-3" style={{ borderBottom: '1px solid #e9dad7', background: '#f6eeec' }}>
-        <p className="text-xs font-medium" style={{ color: '#292021' }}>Risk Matrix</p>
-        <p className="text-[11px]" style={{ color: '#97817d' }}>Likelihood × Impact — plotted on residual scores where assessed, otherwise inherent</p>
+    <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+      <div className="px-4 py-3 flex items-center justify-between gap-3"
+        style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
+        <div>
+          <p style={{ fontSize: 'var(--t-sm)', fontWeight: 500, color: 'var(--text)' }}>Risk Matrix</p>
+          <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>
+            Likelihood × Impact · bands from matrix v{matrix?.version || 1}
+            {unplotted > 0 && ` · ${unplotted} unscored`}
+          </p>
+        </div>
+        <div className="flex rounded-md overflow-hidden" style={{ border: '1px solid var(--border-2)' }}>
+          {[['residual', 'Residual'], ['inherent', 'Inherent']].map(([v, label]) => (
+            <button key={v} onClick={() => { setMode(v); setSelectedCell(null) }}
+              style={{
+                fontSize: 'var(--t-meta)', padding: '4px 10px', border: 'none', cursor: 'pointer',
+                background: mode === v ? 'var(--crimson)' : 'var(--bg-2)',
+                color: mode === v ? '#fff' : 'var(--text-2)',
+              }}>
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="p-4" style={{ background: '#fff' }}>
+
+      <div className="p-4" style={{ background: 'var(--bg-2)' }}>
         <div className="flex gap-1">
-          {/* Y axis label */}
           <div className="flex flex-col justify-center items-center" style={{ width: 20 }}>
-            <span className="text-[10px] uppercase tracking-widest" style={{ color: '#97817d', writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+            <span className="eyebrow" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
               Likelihood
             </span>
           </div>
 
           <div className="flex flex-col gap-1 flex-1">
-            {/* Grid — likelihood 5 to 1 (top to bottom) */}
-            {[5, 4, 3, 2, 1].map(l => (
+            {rows.map(l => (
               <div key={l} className="flex gap-1 items-center">
-                <span className="text-[10px] w-16 text-right pr-2 flex-shrink-0" style={{ color: '#97817d' }}>
-                  {LIKELIHOOD_LABELS[l]}
+                <span className="text-right pr-2 flex-shrink-0"
+                  style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)', width: 76 }}>
+                  {pointLabel(likelihoodScale, l)}
                 </span>
-                {[1, 2, 3, 4, 5].map(i => {
+                {cols.map(i => {
                   const key = `${l}-${i}`
                   const cellRisks = riskMap[key] || []
                   const isSelected = selectedCell && selectedCell.l === l && selectedCell.i === i
+                  const meta = bandMeta(bandFor(l, i, matrix))
                   return (
                     <div key={i}
                       onClick={() => handleCell(l, i, cellRisks)}
-                      className="flex-1 h-10 rounded flex items-center justify-center text-xs font-medium transition-transform hover:scale-105"
+                      title={`${pointLabel(likelihoodScale, l)} × ${pointLabel(impactScale, i)} — ${meta.label} · ${l * i}`}
+                      className="flex-1 h-10 rounded flex items-center justify-center transition-transform hover:scale-105"
                       style={{
-                        background: getCellColor(l, i),
+                        background: meta.border,
                         cursor: cellRisks.length ? 'pointer' : 'default',
                         minWidth: 40,
-                        outline: isSelected ? '2px solid #5D0F0F' : 'none',
+                        outline: isSelected ? '2px solid var(--crimson)' : 'none',
                         outlineOffset: -2,
                       }}>
                       {cellRisks.length > 0 && (
-                        <span className="w-5 h-5 rounded-full bg-white/80 flex items-center justify-center text-[11px] font-semibold"
-                          style={{ color: '#292021' }}>
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center tnum"
+                          style={{ background: 'rgba(255,255,255,0.85)', fontSize: 'var(--t-meta)', fontWeight: 600, color: 'var(--text)' }}>
                           {cellRisks.length}
                         </span>
                       )}
@@ -85,42 +122,56 @@ export function RiskMatrix({ risks = [], onRiskClick, onCellClick }) {
               </div>
             ))}
 
-            {/* X axis labels */}
             <div className="flex gap-1 items-center mt-1">
-              <div className="w-16" />
-              {[1, 2, 3, 4, 5].map(i => (
+              <div style={{ width: 76 }} />
+              {cols.map(i => (
                 <div key={i} className="flex-1 text-center" style={{ minWidth: 40 }}>
-                  <span className="text-[10px]" style={{ color: '#97817d' }}>{IMPACT_LABELS[i].split(' ')[0]}</span>
+                  <span style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)' }}>
+                    {pointLabel(impactScale, i)}
+                  </span>
                 </div>
               ))}
             </div>
             <div className="text-center mt-1">
-              <span className="text-[10px] uppercase tracking-widest" style={{ color: '#97817d' }}>Impact →</span>
+              <span className="eyebrow">Impact →</span>
             </div>
           </div>
         </div>
 
-        {/* Cell drill-down panel */}
-        {selectedCell && (
-          <div className="mt-3 rounded-lg" style={{ border: '1px solid #e9dad7', background: 'var(--surface)' }}>
-            <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid #e9dad7' }}>
-              <span className="text-[11px] font-medium" style={{ color: '#292021' }}>
-                {LIKELIHOOD_LABELS[selectedCell.l]} × {IMPACT_LABELS[selectedCell.i]} — {selectedCell.risks.length} risk{selectedCell.risks.length > 1 ? 's' : ''}
+        {/* Band legend — the matrix is meaningless without it */}
+        <div className="flex items-center gap-3 mt-3 pt-3 flex-wrap" style={{ borderTop: '1px solid var(--border-3)' }}>
+          {BAND_ORDER.slice().reverse().map(b => {
+            const meta = bandMeta(b)
+            return (
+              <span key={b} className="flex items-center gap-1.5" style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)' }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: meta.border, display: 'inline-block' }} />
+                {meta.label}
               </span>
-              <button onClick={() => setSelectedCell(null)} style={{ color: '#97817d' }}><X size={13} /></button>
+            )
+          })}
+        </div>
+
+        {selectedCell && (
+          <div className="mt-3 rounded-lg" style={{ border: '1px solid var(--border)', background: 'var(--surface)' }}>
+            <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
+              <span style={{ fontSize: 'var(--t-meta)', fontWeight: 500, color: 'var(--text)' }}>
+                {pointLabel(likelihoodScale, selectedCell.l)} × {pointLabel(impactScale, selectedCell.i)}
+                {' — '}{selectedCell.risks.length} risk{selectedCell.risks.length > 1 ? 's' : ''}
+              </span>
+              <button onClick={() => setSelectedCell(null)} style={{ color: 'var(--text-3)' }}><X size={13} /></button>
             </div>
             {selectedCell.risks.map(r => {
-              const score = (r.residual_score ?? r.inherent_score ?? (r.likelihood * r.impact)) || 0
-              const level = getRiskLevel(score)
+              const meta = bandMeta(bandFor(selectedCell.l, selectedCell.i, matrix))
+              const score = selectedCell.l * selectedCell.i
               return (
                 <button key={r.id} onClick={() => onRiskClick?.(r)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-white"
-                  style={{ borderBottom: '1px solid #f0ecec', background: 'transparent', border: 'none', cursor: onRiskClick ? 'pointer' : 'default' }}>
-                  <span className="text-[10px] font-mono flex-shrink-0" style={{ color: '#97817d' }}>{r.risk_id}</span>
-                  <span className="text-xs flex-1 truncate" style={{ color: '#292021' }}>{r.title}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full border font-medium flex-shrink-0"
-                    style={{ color: level.color, background: level.bg, borderColor: level.border }}>
-                    {level.label} {score}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-left row-hover"
+                  style={{ borderBottom: '1px solid var(--border-3)', background: 'transparent', border: 'none', cursor: onRiskClick ? 'pointer' : 'default' }}>
+                  <span className="mono flex-shrink-0" style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)' }}>{r.risk_id}</span>
+                  <span className="flex-1 truncate" style={{ fontSize: 'var(--t-sm)', color: 'var(--text)' }}>{r.title}</span>
+                  <span className="rounded-full border flex-shrink-0 tnum"
+                    style={{ fontSize: 'var(--t-micro)', padding: '2px 7px', fontWeight: 500, color: meta.color, background: meta.bg, borderColor: meta.border }}>
+                    {meta.label} · {score}
                   </span>
                 </button>
               )
