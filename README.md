@@ -77,19 +77,46 @@ VITE_NOTION_CLIENT_ID=...
 VITE_SLACK_CLIENT_ID=...
 ```
 
-### 3. Run the Supabase migration
+### 3. Run the Supabase migrations
 
-In your Supabase project → SQL Editor, paste and run:
+In your Supabase project → SQL Editor, paste and run each file **in order**:
 
 ```
 supabase/migrations/001_initial_schema.sql
+supabase/migrations/002_risk_gate.sql
+supabase/migrations/003_treatment_acceptance_triage.sql
 ```
 
-This creates:
+**003** adds finding triage (attach / create / close with a reason code), the treatment decision (all four options with reasons, linked plans with target residual scores, tasks that state what they move), and the acceptance authority ladder (risk owner → CISO → committee → board; above tolerance an acceptance is an exception).
+
+**001** creates:
 - `organizations` table
 - `organization_members` table (multi-tenancy join)
 - `org_connectors` table (OAuth connections per org)
 - Row Level Security policies (each org is fully isolated)
+
+**002** adds the risk tolerance gate — the step that turns the register from a
+record into a system. It is entirely additive; nothing is dropped:
+- `risks` gains `cause` / `event` / `impact_statement` (the three-part statement)
+  and the gate verdict columns (`tolerance_status`, `gate_failed_rules`,
+  `breach_since`, `treatment_due_at`)
+- `risk_control_mappings` gains `coverage`, `coverage_note` and `reduces` —
+  coverage is a property of the risk↔control *link*, not of the control
+- `risk_matrix_config` — the band lookup per cell, so a tenant can band
+  asymmetrically without changing the arithmetic
+- `risk_score_history` — append-only, with justification and matrix version
+- `risk_tolerances` — the evaluable rules the gate reads, seeded per category
+- migrates `workflow_state` to the eight-state lifecycle
+  (`draft → registered → assessed → treatment_required | monitored → …`)
+
+Until 002 is applied the UI still runs: the gate reports "not evaluated" and
+banding falls back to the defaults in `src/lib/matrix.js`.
+
+Verify the gate engine itself at any time, with no database and no build step:
+
+```bash
+npm run test:gate
+```
 
 ### 4. Start the dev server
 
