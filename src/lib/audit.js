@@ -38,6 +38,23 @@ export const AUDIT = {
   RISK_APPROVED:      'risk.approved',
   RISK_REJECTED:      'risk.rejected',
   RISK_CLOSED:        'risk.closed',
+  // Risk scoring & the tolerance gate.
+  // Every score change is auditable on its own, separately from the
+  // gate verdict it triggers — an auditor asks "who moved the number"
+  // and "what did the system do about it" as two different questions.
+  RISK_SCORED:          'risk.scored',
+  RISK_GATE_BREACHED:   'risk.gate_breached',
+  RISK_GATE_CLEARED:    'risk.gate_cleared',
+  RISK_REOPENED_AUTO:   'risk.reopened_auto',
+  RISK_ACCEPT_BLOCKED:  'risk.accept_blocked',
+  RISK_TOLERANCE_SET:   'risk.tolerance_updated',
+  RISK_TREATMENT_OPTION:  'risk.treatment_option_decided',
+  RISK_PLAN_CREATED:      'risk.treatment_plan_created',
+  RISK_EXCEPTION_DECIDED: 'risk.exception_decided',
+  AUTHORITY_ASSIGNED:     'risk.authority_assigned',
+  AUTHORITY_REMOVED:      'risk.authority_removed',
+  FINDING_TRIAGED:        'finding.triaged',
+  FINDING_TRIAGE_REOPENED:'finding.triage_reopened',
   // Incidents
   INC_CREATED:        'incident.created',
   INC_UPDATED:        'incident.updated',

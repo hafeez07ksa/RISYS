@@ -75,6 +75,7 @@ export function useRiskControls(riskId) {
   const { organization } = useAuth()
   const [controls, setControls]       = useState([])
   const [allControls, setAllControls] = useState([])
+  const [mappings, setMappings]       = useState([])
   const [loading, setLoading]         = useState(true)
 
   const fetchControls = useCallback(async () => {
@@ -90,13 +91,18 @@ export function useRiskControls(riskId) {
       setAllControls(all || [])
 
       if (riskId) {
+        // The full mapping row, not just the id — coverage scope and
+        // what the control reduces live on the LINK, and the gate reads
+        // them from here.
         const { data: mappings } = await supabase
           .from('risk_control_mappings')
-          .select('control_id')
+          .select('*')
           .eq('risk_id', riskId)
         const ids = (mappings || []).map(m => m.control_id)
+        setMappings(mappings || [])
         setControls((all || []).filter(c => ids.includes(c.id)))
       } else {
+        setMappings([])
         setControls([])
       }
     } finally {
@@ -131,10 +137,31 @@ export function useRiskControls(riskId) {
     await fetchControls()
   }
 
-  const linkControl = async (controlId) => {
+  const linkControl = async (controlId, attrs = {}) => {
     const { error } = await supabase
       .from('risk_control_mappings')
-      .upsert({ risk_id: riskId, control_id: controlId, org_id: organization.id }, { onConflict: 'risk_id,control_id' })
+      .upsert({
+        risk_id: riskId, control_id: controlId, org_id: organization.id,
+        coverage: attrs.coverage || 'full',
+        coverage_note: attrs.coverage_note || null,
+        reduces: attrs.reduces || 'both',
+      }, { onConflict: 'risk_id,control_id' })
+    if (error) throw error
+    await fetchControls()
+  }
+
+  /**
+   * Coverage and what the control reduces are properties of this link,
+   * not of the control. The same control can fully cover one risk and
+   * miss another entirely — which is exactly the gap a register has to
+   * be able to show.
+   */
+  const updateMapping = async (controlId, attrs) => {
+    const { error } = await supabase
+      .from('risk_control_mappings')
+      .update(attrs)
+      .eq('risk_id', riskId)
+      .eq('control_id', controlId)
     if (error) throw error
     await fetchControls()
   }
@@ -144,7 +171,13 @@ export function useRiskControls(riskId) {
     await fetchControls()
   }
 
-  return { controls, allControls, loading, createControl, updateControl, linkControl, unlinkControl, refetch: fetchControls }
+  const mappingFor = (controlId) => mappings.find(m => m.control_id === controlId) || null
+
+  return {
+    controls, allControls, mappings, loading,
+    createControl, updateControl, linkControl, updateMapping, unlinkControl, mappingFor,
+    refetch: fetchControls,
+  }
 }
 
 // ── EVIDENCE ──────────────────────────────────────────────────────────────────
@@ -407,7 +440,9 @@ export function useRiskWorkflow(risk, onChanged) {
     setBusy(true)
     try {
       const updates = { workflow_state: to, updated_at: new Date().toISOString() }
-      if (action === 'approved') {
+      // Admission is the reviewer's act: it validates the record and
+      // makes the risk ID permanent.
+      if (action === 'admitted') {
         updates.approved_at = new Date().toISOString()
         updates.approved_by = user?.id
       }
@@ -416,10 +451,13 @@ export function useRiskWorkflow(risk, onChanged) {
         updates.closure_reason = comment || null
         updates.status = 'closed'
       }
-      if (action === 'reopened') {
+      if (action === 'reopened' || action === 'acceptance_revoked') {
         updates.closed_at = null
         updates.closure_reason = null
-        if (risk.status === 'closed') updates.status = 'open'
+        if (risk.status === 'closed' || risk.status === 'accepted') updates.status = 'open'
+      }
+      if (action === 'treatment_approved') {
+        updates.status = 'mitigating'
       }
       const { error } = await supabase.from('risks').update(updates).eq('id', risk.id)
       if (error) throw error
@@ -432,11 +470,13 @@ export function useRiskWorkflow(risk, onChanged) {
 
       // Audit log — map workflow action to audit constant
       const WORKFLOW_AUDIT = {
-        submitted: AUDIT.RISK_SUBMITTED,
-        approved:  AUDIT.RISK_APPROVED,
-        rejected:  AUDIT.RISK_REJECTED,
-        closed:    AUDIT.RISK_CLOSED,
-        reopened:  AUDIT.RISK_UPDATED,
+        admitted:           AUDIT.RISK_APPROVED,
+        returned:           AUDIT.RISK_REJECTED,
+        treatment_approved: AUDIT.RISK_STATUS,
+        treatment_complete: AUDIT.RISK_STATUS,
+        acceptance_revoked: AUDIT.RISK_STATUS,
+        closed:             AUDIT.RISK_CLOSED,
+        reopened:           AUDIT.RISK_UPDATED,
       }
       await logAudit(
         organization.id,
@@ -448,16 +488,22 @@ export function useRiskWorkflow(risk, onChanged) {
       // Notify the right party
       const ref = risk.risk_id || ''
       const link = `/app/risks/${risk.id}`
-      if (action === 'submitted' && risk.reviewer_id) {
-        await notify(organization.id, risk.reviewer_id, {
-          type: 'workflow', title: `Review requested: ${ref}`,
-          body: `"${risk.title}" was submitted for your review.`, link,
+      if (action === 'admitted' && risk.owner_id) {
+        await notify(organization.id, risk.owner_id, {
+          type: 'workflow', title: `Admitted to register: ${ref}`,
+          body: `"${risk.title}" is now on the register and ready to score.`, link,
         })
       }
-      if ((action === 'approved' || action === 'rejected') && risk.owner_id) {
+      if (action === 'returned' && risk.owner_id) {
         await notify(organization.id, risk.owner_id, {
-          type: 'workflow', title: `Risk ${action}: ${ref}`,
-          body: `"${risk.title}" was ${action}${comment ? ` — ${comment}` : ''}.`, link,
+          type: 'workflow', title: `Returned to draft: ${ref}`,
+          body: `"${risk.title}" was sent back${comment ? ` — ${comment}` : ''}.`, link,
+        })
+      }
+      if (action === 'treatment_approved' && risk.assigned_to) {
+        await notify(organization.id, risk.assigned_to, {
+          type: 'workflow', title: `Treatment approved: ${ref}`,
+          body: `"${risk.title}" is under treatment. Deliver the plan against its target residual score.`, link,
         })
       }
 
@@ -590,18 +636,39 @@ export function useRiskExceptions(riskId) {
 
   // Approve / reject / revoke. Approving marks the risk accepted;
   // expiry is enforced by the expire_risk_exceptions() DB function.
-  const decideException = async (id, decision, comment, risk) => {
+  const decideException = async (id, decision, comment, risk, authority) => {
     const patch = {
       status: decision, decision_comment: comment || null,
       decided_at: new Date().toISOString(),
     }
     if (decision === 'approved') patch.granted_at = new Date().toISOString()
+    if (decision === 'approved' && authority) patch.decided_authority = authority
     const { error } = await supabase.from('risk_exceptions').update(patch).eq('id', id)
     if (error) throw new Error(error.message)
 
-    if (decision === 'approved' && riskId) {
-      await supabase.from('risks').update({ status: 'accepted', treatment: 'accept' }).eq('id', riskId)
+    // An approved acceptance is a decision of record: it moves the risk into
+    // the Accepted lifecycle state, which the gate leaves alone until the
+    // acceptance is revoked or expires. Revoking puts it back before the gate.
+    if (riskId && (decision === 'approved' || (decision === 'revoked' && risk?.workflow_state === 'accepted'))) {
+      const to = decision === 'approved' ? 'accepted' : 'assessed'
+      const now = new Date().toISOString()
+      const riskPatch = decision === 'approved'
+        ? { status: 'accepted', treatment: 'accept', workflow_state: to, updated_at: now }
+        : { status: 'open', workflow_state: to, updated_at: now }
+      await supabase.from('risks').update(riskPatch).eq('id', riskId)
+      if (risk?.workflow_state !== to) {
+        await supabase.from('risk_workflow_history').insert({
+          org_id: organization.id, risk_id: riskId,
+          from_state: risk?.workflow_state || null, to_state: to,
+          action: decision === 'approved' ? 'acceptance_approved' : 'acceptance_revoked',
+          comment: comment || null, performed_by: user?.id,
+        })
+      }
     }
+    const decidedRow = exceptions.find(e => e.id === id)
+    await logAudit(organization.id, AUDIT.RISK_EXCEPTION_DECIDED, 'risk', riskId, risk?.title ?? null, {
+      decision, type: decidedRow?.exception_type || null, authority: authority || null, comment: comment || null,
+    })
     const exc = exceptions.find(e => e.id === id)
     if (exc?.requested_by) {
       await notify(organization.id, exc.requested_by, {

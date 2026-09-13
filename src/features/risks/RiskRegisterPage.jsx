@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Plus, Search, ShieldAlert, RefreshCw, LayoutGrid, List, Filter,
-  Download, Trash2, ChevronUp, ChevronDown, AlertTriangle, User
+  Download, Trash2, ChevronUp, ChevronDown, AlertTriangle, User, SlidersHorizontal
 } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
@@ -10,9 +10,12 @@ import { usePeople } from '@/hooks/usePeople'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useRisks, runExceptionExpiry } from '@/hooks/useRisks'
 import { RiskMatrix } from './RiskMatrix'
-import { CreateRiskModal } from './CreateRiskModal'
+import { ToleranceChip } from './GatePanel'
+import { PostureOverview, LifecyclePipeline, ScoreTransition, OwnerCell, currentBand } from './RegisterOverview'
+import { useRiskMatrix } from '@/hooks/useRiskGate'
+import { daysInBreach, treatmentSLA } from '@/lib/gate'
 import {
-  getRiskLevel, getRiskStatus, getWorkflowState, isReviewOverdue,
+  getRiskLevel, getRiskStatus, getWorkflowState, isReviewOverdue, normalizeWorkflowState,
   risksToCSV, downloadCSV,
   RISK_CATEGORIES, RISK_STATUSES, WORKFLOW_STATES, RISK_TREATMENTS,
 } from '@/lib/risks'
@@ -59,21 +62,28 @@ const SORTS = {
   risk_id:   (a, b) => (a.risk_id || '').localeCompare(b.risk_id || ''),
   review:    (a, b) => new Date(a.review_date || '2999-01-01') - new Date(b.review_date || '2999-01-01'),
   created:   (a, b) => new Date(b.created_at) - new Date(a.created_at),
+  // Longest in breach first: the register's most useful default when
+  // something has been sitting outside tolerance for weeks.
+  breach:    (a, b) => (daysInBreach(b) ?? -1) - (daysInBreach(a) ?? -1),
 }
 
 export function RiskRegisterPage() {
   const { organization, user } = useAuth()
   const { members } = usePeople()
+  // The heatmap must band cells the same way the gate does, or the grid
+  // and the verdict disagree on screen.
+  const { matrix } = useRiskMatrix()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
   const [workflowFilter, setWorkflowFilter] = useState('')
   const [treatmentFilter, setTreatmentFilter] = useState('')
-  const [quickFilter, setQuickFilter] = useState('') // '' | 'mine' | 'overdue' | 'pending_review'
+  const [quickFilter, setQuickFilter] = useState('') // '' | 'mine' | 'overdue' | 'pending_review' | 'breached' | 'sla' | 'band:<band>'
+  // Lifecycle filter is applied client-side so the pipeline can keep
+  // showing counts for every state while one is selected.
+  const [stateFilter, setStateFilter] = useState('')
   const perms = usePermissions()
-  const [showCreate, setShowCreate] = useState(false)
-  const [editRisk, setEditRisk] = useState(null)
   const [view, setView] = useState('list')
   const [sortKey, setSortKey] = useState('inherent')
   const [sortAsc, setSortAsc] = useState(false)
@@ -103,21 +113,27 @@ export function RiskRegisterPage() {
     if (treatmentFilter) list = list.filter(r => r.treatment === treatmentFilter)
     if (quickFilter === 'mine')           list = list.filter(r => r.owner_id === user?.id || r.reviewer_id === user?.id || r.approver_id === user?.id)
     if (quickFilter === 'overdue')        list = list.filter(isReviewOverdue)
-    if (quickFilter === 'pending_review') list = list.filter(r => r.workflow_state === 'under_review')
+    if (quickFilter === 'pending_review') list = list.filter(r => r.workflow_state === 'draft')
+    if (quickFilter === 'breached')       list = list.filter(r => r.tolerance_status === 'breached')
+    if (quickFilter === 'sla')            list = list.filter(r => treatmentSLA(r)?.overdue)
+    if (quickFilter.startsWith('band:'))  list = list.filter(r => currentBand(r, matrix) === quickFilter.slice(5))
+    if (stateFilter)                      list = list.filter(r => normalizeWorkflowState(r.workflow_state) === stateFilter)
     if (quickFilter === 'critical')       list = list.filter(r => (r.inherent_score || r.risk_score || 0) >= 20)
     if (quickFilter === 'high')           list = list.filter(r => { const s = r.inherent_score || r.risk_score || 0; return s >= 12 && s < 20 })
     const sorter = SORTS[sortKey] || SORTS.inherent
     list.sort(sorter)
     if (sortAsc) list.reverse()
     return list
-  }, [risks, treatmentFilter, quickFilter, sortKey, sortAsc, user?.id])
+  }, [risks, treatmentFilter, quickFilter, stateFilter, matrix, sortKey, sortAsc, user?.id])
 
   const counts = useMemo(() => ({
     total:    risks.length,
     critical: risks.filter(r => (r.inherent_score || r.risk_score) >= 20).length,
     high:     risks.filter(r => { const s = r.inherent_score || r.risk_score; return s >= 12 && s < 20 }).length,
     overdue:  risks.filter(isReviewOverdue).length,
-    pending:  risks.filter(r => r.workflow_state === 'under_review').length,
+    pending:  risks.filter(r => r.workflow_state === 'draft').length,
+    breached: risks.filter(r => r.tolerance_status === 'breached').length,
+    slaLate:  risks.filter(r => treatmentSLA(r)?.overdue).length,
     avgResidual: risks.length ? Math.round(risks.reduce((sum, r) => sum + (r.residual_score || r.inherent_score || r.risk_score || 0), 0) / risks.length) : 0,
   }), [risks])
 
@@ -163,9 +179,9 @@ export function RiskRegisterPage() {
 
   const clearFilters = () => {
     setSearch(''); setStatusFilter(''); setCategoryFilter(''); setWorkflowFilter('')
-    setTreatmentFilter(''); setQuickFilter('')
+    setTreatmentFilter(''); setQuickFilter(''); setStateFilter('')
   }
-  const hasFilters = search || statusFilter || categoryFilter || workflowFilter || treatmentFilter || quickFilter
+  const hasFilters = search || statusFilter || categoryFilter || workflowFilter || treatmentFilter || quickFilter || stateFilter
 
   const SortHeader = ({ k, children }) => (
     <button onClick={() => handleSort(k)}
@@ -176,7 +192,7 @@ export function RiskRegisterPage() {
     </button>
   )
 
-  const GRID = '28px 90px 2fr 90px 90px 110px 110px 110px 100px'
+  const GRID = '26px 76px minmax(0,1.6fr) 124px 108px 88px 136px 132px 92px'
 
   return (
     <div className="h-full flex flex-col">
@@ -203,7 +219,14 @@ export function RiskRegisterPage() {
               style={{ borderColor: '#e9dad7', color: '#97817d' }}>
               <RefreshCw size={13} />
             </button>
-            {perms.canCreateRisk && <button onClick={() => setShowCreate(true)}
+            {perms.isManager && (
+              <button onClick={() => navigate('/app/risks/tolerances')} title="Set the tolerance rules the gate evaluates"
+                className="flex items-center gap-1.5 text-xs px-2.5 py-2 rounded-md border transition-colors hover:bg-[#f6eeec]"
+                style={{ borderColor: '#e9dad7', color: 'var(--text-2)' }}>
+                <SlidersHorizontal size={13} /> Tolerances
+              </button>
+            )}
+            {perms.canCreateRisk && <button onClick={() => navigate('/app/risks/new')}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md"
               style={{ background: '#5D0F0F', color: '#fff', border: 'none' }}>
               <Plus size={13} /> Add Risk
@@ -212,31 +235,17 @@ export function RiskRegisterPage() {
         }
       />
 
-      {(showCreate || editRisk) && (
-        <CreateRiskModal editRisk={editRisk} onClose={() => { setShowCreate(false); setEditRisk(null); refetch() }} />
-      )}
 
       <div className="flex-1 overflow-y-auto page-content">
-        {/* Risk posture strip — every segment filters or sorts the register */}
-        <div className="grid grid-cols-6 mb-5 rounded-xl overflow-hidden"
-          style={{ background: '#fff', border: '1px solid var(--border)' }}>
-          <Segment label="Total Risks" value={counts.total} barColor="var(--taupe)" sub="in register"
-            onClick={clearFilters} />
-          <Segment label="Critical" value={counts.critical} color={counts.critical ? '#8C1616' : undefined} barColor="#8C1616" sub="inherent ≥ 20"
-            onClick={() => setQuickFilter(q => q === 'critical' ? '' : 'critical')} active={quickFilter === 'critical'} />
-          <Segment label="High" value={counts.high} color={counts.high ? '#B5491B' : undefined} barColor="#B5491B" sub="inherent 12–19"
-            onClick={() => setQuickFilter(q => q === 'high' ? '' : 'high')} active={quickFilter === 'high'} />
-          <Segment label="Overdue Review" value={counts.overdue} color={counts.overdue ? '#8C1616' : undefined} barColor="#9C6F0F" sub="needs recertification"
-            onClick={() => setQuickFilter(q => q === 'overdue' ? '' : 'overdue')} active={quickFilter === 'overdue'} />
-          <Segment label="Awaiting Approval" value={counts.pending} barColor="var(--rose)" sub="in review"
-            onClick={() => setQuickFilter(q => q === 'pending_review' ? '' : 'pending_review')} active={quickFilter === 'pending_review'} />
-          <Segment label="Avg Residual" value={counts.avgResidual} color={getRiskLevel(counts.avgResidual).color} barColor={getRiskLevel(counts.avgResidual).color} sub="after controls — sort"
-            onClick={() => { setSortKey(k => k === 'residual' ? 'inherent' : 'residual'); setSortAsc(false) }} active={sortKey === 'residual'} last />
-        </div>
+        {/* How much risk, is any of it outside the line, and what needs doing */}
+        <PostureOverview risks={risks} matrix={matrix} quickFilter={quickFilter} onQuickFilter={setQuickFilter} />
+
+        {/* Where every risk sits in the process — doubles as the lifecycle filter */}
+        <LifecyclePipeline risks={risks} value={stateFilter} onChange={setStateFilter} />
 
         {view === 'matrix' && (
           <div className="mb-5">
-            <RiskMatrix risks={filtered} onRiskClick={r => navigate(`/app/risks/${r.id}`)} />
+            <RiskMatrix risks={filtered} matrix={matrix} onRiskClick={r => navigate(`/app/risks/${r.id}`)} />
           </div>
         )}
 
@@ -260,7 +269,6 @@ export function RiskRegisterPage() {
           {[
             { value: statusFilter, onChange: setStatusFilter, options: RISK_STATUSES, placeholder: 'All statuses' },
             { value: categoryFilter, onChange: setCategoryFilter, options: RISK_CATEGORIES.map(c => ({ value: c, label: c })), placeholder: 'All categories' },
-            { value: workflowFilter, onChange: setWorkflowFilter, options: WORKFLOW_STATES, placeholder: 'All workflow states' },
             { value: treatmentFilter, onChange: setTreatmentFilter, options: RISK_TREATMENTS, placeholder: 'All treatments' },
           ].map((f, i) => (
             <div key={i} className="relative">
@@ -312,13 +320,15 @@ export function RiskRegisterPage() {
           <div className="rounded-xl py-16 text-center" style={{ background: '#fff', border: '1px dashed #e9dad7' }}>
             <ShieldAlert size={32} strokeWidth={1} className="mx-auto mb-4" style={{ color: '#d9c5c1' }} />
             <p className="text-sm font-medium mb-1" style={{ color: '#4d3e3e' }}>
-              {hasFilters ? 'No risks match your filters' : 'No risks yet'}
+              {quickFilter === 'breached' ? 'Nothing is outside tolerance'
+                : hasFilters ? 'No risks match your filters' : 'No risks yet'}
             </p>
             <p className="text-xs mb-4" style={{ color: '#97817d' }}>
-              {hasFilters ? 'Try adjusting your filters' : 'Start building your risk register'}
+              {quickFilter === 'breached' ? 'Every scored risk is currently within the line set for its category'
+                : hasFilters ? 'Try adjusting your filters' : 'Start building your risk register'}
             </p>
             {!hasFilters && perms.canCreateRisk && (
-              <button onClick={() => setShowCreate(true)} className="text-xs px-4 py-2 rounded-md"
+              <button onClick={() => navigate('/app/risks/new')} className="text-xs px-4 py-2 rounded-md"
                 style={{ background: '#5D0F0F', color: '#fff', border: 'none' }}>
                 Add first risk
               </button>
@@ -332,10 +342,10 @@ export function RiskRegisterPage() {
                 style={{ cursor: 'pointer', accentColor: '#5D0F0F' }} />
               <SortHeader k="risk_id">ID</SortHeader>
               <SortHeader k="title">Risk</SortHeader>
-              <SortHeader k="inherent">Inherent</SortHeader>
-              <SortHeader k="residual">Residual</SortHeader>
+              <SortHeader k="residual">Inherent → Residual</SortHeader>
+              <SortHeader k="breach">Tolerance</SortHeader>
               <span className="uppercase" style={{ fontSize: 10.5, letterSpacing: '0.1em', fontWeight: 500, color: '#895353' }}>Status</span>
-              <span className="uppercase" style={{ fontSize: 10.5, letterSpacing: '0.1em', fontWeight: 500, color: '#895353' }}>Workflow</span>
+              <span className="uppercase" style={{ fontSize: 10.5, letterSpacing: '0.1em', fontWeight: 500, color: '#895353' }}>Lifecycle</span>
               <span className="uppercase" style={{ fontSize: 10.5, letterSpacing: '0.1em', fontWeight: 500, color: '#895353' }}>Owner</span>
               <SortHeader k="review">Next Review</SortHeader>
             </div>
@@ -359,17 +369,13 @@ export function RiskRegisterPage() {
                         {risk.category}{risk.subcategory ? ` · ${risk.subcategory}` : ''}{risk.business_unit ? ` — ${risk.business_unit}` : ''}
                       </p>
                     </div>
-                    <RiskBadge score={inherentScore} />
-                    {residualScore !== inherentScore ? (
-                      <span className="text-xs" style={{ color: '#2F6B3C' }}>↓ {residualScore}</span>
-                    ) : <span className="text-xs" style={{ color: '#97817d' }}>—</span>}
+                    <ScoreTransition risk={risk} matrix={matrix} />
+                    <ToleranceChip risk={risk} />
                     <span className="text-xs px-2 py-0.5 rounded-full border w-fit"
                       style={{ color: s.color, background: s.bg, borderColor: s.border }}>{s.label}</span>
                     <span className="text-xs px-2 py-0.5 rounded-full border w-fit"
                       style={{ color: w.color, background: w.bg, borderColor: w.border }}>{w.label}</span>
-                    <span className="text-xs truncate pr-2" style={{ color: risk.owner_id ? '#4d3e3e' : '#d9c5c1' }}>
-                      {memberName(risk.owner_id) || 'Unassigned'}
-                    </span>
+                    <span className="pr-2 min-w-0"><OwnerCell name={memberName(risk.owner_id)} /></span>
                     {risk.review_date ? (
                       <span className="flex items-center gap-1 text-xs" style={{ color: overdue ? '#8C1616' : '#97817d', fontWeight: overdue ? 600 : 400 }}>
                         {overdue && <AlertTriangle size={11} />}

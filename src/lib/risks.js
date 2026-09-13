@@ -3,6 +3,9 @@
 // Archer GRC parity
 // ============================================================
 
+import { levelForScore } from './matrix'
+import { daysInBreach } from './gate'
+
 export const RISK_CATEGORIES = [
   'Cybersecurity',
   'Compliance & Regulatory',
@@ -54,12 +57,87 @@ export const RISK_STATUSES = [
   { value: 'closed',      label: 'Closed',      color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
 ]
 
+// ============================================================
+// LIFECYCLE
+//
+// The states a risk moves through, per the risk process:
+//
+//   draft -> registered -> assessed -> [GATE] -> monitored
+//                                             \-> treatment_required
+//                                                   -> under_treatment
+//                                                   -> accepted
+//   monitored -> closed
+//
+// Three things reopen a risk automatically: a KRI breach, a failed
+// control test, and expired evidence. A fourth is an accepted exception
+// reaching its expiry. Those arrows are the difference between a living
+// register and a spreadsheet with a nicer UI.
+//
+// Note what is NOT here: nothing goes directly from treatment to closed.
+// A risk closes when the cause can no longer occur, not when the score
+// drops. Low risk is monitored, not closed.
+// ============================================================
+
 export const WORKFLOW_STATES = [
-  { value: 'draft',       label: 'Draft',       color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
-  { value: 'under_review',label: 'Under Review', color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
-  { value: 'approved',    label: 'Approved',    color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  { value: 'closed',      label: 'Closed',      color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
+  { value: 'draft',              label: 'Draft',              color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb',
+    desc: 'Being written. Not yet admitted to the register.' },
+  { value: 'registered',         label: 'Registered',         color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe',
+    desc: 'Admitted by a reviewer. The ID is now permanent.' },
+  { value: 'assessed',           label: 'Assessed',           color: '#6b21a8', bg: '#faf5ff', border: '#e9d5ff',
+    desc: 'Inherent and residual scored. Awaiting the gate.' },
+  { value: 'treatment_required', label: 'Treatment Required', color: '#b91c1c', bg: '#fef2f2', border: '#fecaca',
+    desc: 'Outside tolerance. Treatment is mandatory, not optional.' },
+  { value: 'under_treatment',    label: 'Under Treatment',    color: '#c2410c', bg: '#fff7ed', border: '#fed7aa',
+    desc: 'A treatment plan is approved and running.' },
+  { value: 'accepted',           label: 'Accepted',           color: '#92400e', bg: '#fffbeb', border: '#fde68a',
+    desc: 'Time-bound acceptance on record. Reopens on expiry.' },
+  { value: 'monitored',          label: 'Monitored',          color: '#166534', bg: '#f0fdf4', border: '#bbf7d0',
+    desc: 'Within tolerance. KRIs, control tests and reviews running.' },
+  { value: 'closed',             label: 'Closed',             color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb',
+    desc: 'The cause can no longer occur. History retained forever.' },
 ]
+
+/** Whether the gate governs this state. Draft and registered are pre-measurement. */
+export const GATED_STATES = ['assessed', 'treatment_required', 'under_treatment', 'accepted', 'monitored']
+
+export const TOLERANCE_STATUSES = [
+  { value: 'within',        label: 'Within tolerance',  color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  { value: 'breached',      label: 'Outside tolerance', color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
+  { value: 'not_evaluated', label: 'Not evaluated',     color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
+]
+
+export function getToleranceStatus(v) {
+  return TOLERANCE_STATUSES.find(s => s.value === v) || TOLERANCE_STATUSES[2]
+}
+
+// ============================================================
+// Risk-to-control link attributes
+//
+// Coverage belongs on the LINK, not on the control. A control can be
+// well designed and operating effectively and still be irrelevant to a
+// given risk because its scope excludes the asset. Without this, a
+// dashboard shows "MFA control: Effective" while 47 people log in with
+// a password.
+// ============================================================
+
+export const COVERAGE_OPTIONS = [
+  { value: 'full',    label: 'Full coverage',    desc: 'Applies to every asset and process in this risk’s scope',
+    color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  { value: 'partial', label: 'Partial coverage', desc: 'Covers part of the scope — record what it excludes',
+    color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
+  { value: 'none',    label: 'No coverage',      desc: 'Scope excludes this risk entirely — the gap IS the risk',
+    color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
+]
+
+export const REDUCES_OPTIONS = [
+  { value: 'likelihood', label: 'Likelihood', desc: 'Makes the event less likely to happen' },
+  { value: 'impact',     label: 'Impact',     desc: 'Makes the event less damaging when it does' },
+  { value: 'both',       label: 'Both',       desc: 'Reduces likelihood and impact' },
+]
+
+export function getCoverage(v) {
+  return COVERAGE_OPTIONS.find(c => c.value === v) || COVERAGE_OPTIONS[0]
+}
 
 export const RISK_APPETITES = [
   { value: 'Averse',   label: 'Averse',   desc: 'Zero tolerance',       color: '#b91c1c' },
@@ -122,19 +200,39 @@ export const EFFECTIVENESS_LABELS = {
   5: 'Fully Effective — Control is robust',
 }
 
-export function getRiskLevel(score) {
-  if (score >= 20) return { label: 'Critical', color: '#8C1616', bg: '#FBEAEA', border: '#F0CECE' }
-  if (score >= 12) return { label: 'High',     color: '#B5491B', bg: '#FBEFE7', border: '#F0D4C2' }
-  if (score >= 6)  return { label: 'Medium',   color: '#9C6F0F', bg: '#FAF3E2', border: '#EBDCB6' }
-  return                   { label: 'Low',      color: '#2F6B3C', bg: '#ECF4EE', border: '#C8DECD' }
+/**
+ * Band for a score. Delegates to the matrix so a tenant's configured
+ * band lookup wins over the arithmetic — see lib/matrix.js for why the
+ * product alone is not a safe answer. Pass the org's matrix config when
+ * it is to hand; without it the shipped 5x5 defaults apply.
+ */
+export function getRiskLevel(score, config) {
+  return levelForScore(score, config)
 }
 
 export function getRiskStatus(value) {
   return RISK_STATUSES.find(s => s.value === value) || RISK_STATUSES[0]
 }
 
+/**
+ * Map the pre-gate vocabulary onto the lifecycle. 002_risk_gate.sql does
+ * this in the database; until it has been applied, rows still carry the
+ * old values, and without this they would silently read as Draft and
+ * drop out of the lifecycle pipeline.
+ */
+const LEGACY_WORKFLOW_STATES = { under_review: 'registered', approved: 'assessed' }
+
+export function normalizeWorkflowState(value) {
+  const v = LEGACY_WORKFLOW_STATES[value] || value
+  // Anything the lifecycle does not know is treated as a draft — the
+  // same answer getWorkflowState() gives — so a stray value can never
+  // show one state in a row and be missing from the pipeline count.
+  return WORKFLOW_STATES.some(s => s.value === v) ? v : 'draft'
+}
+
 export function getWorkflowState(value) {
-  return WORKFLOW_STATES.find(s => s.value === value) || WORKFLOW_STATES[0]
+  const v = normalizeWorkflowState(value)
+  return WORKFLOW_STATES.find(s => s.value === v) || WORKFLOW_STATES[0]
 }
 
 export function getControlTestingStatus(value) {
@@ -162,30 +260,70 @@ export const RISK_SOURCES = [
   'Incident', 'Regulatory Finding', 'Penetration Test', 'Vendor Assessment', 'Threat Intelligence'
 ]
 
-// Workflow state machine: which actions are available from each state
-// (mirrors Archer advanced workflow: draft → under review → approved → closed)
+// Workflow state machine — the MANUAL transitions only.
+//
+// The interesting transitions are not in this table. Moving out of
+// `assessed` is the gate's decision, not a button, and four separate
+// events reopen a monitored risk on their own. Those live in
+// AUTO_TRANSITIONS below. Only the gate's own two transitions are applied
+// today, by runGate() in useRiskGate.js when a score is saved. The reopen
+// paths (KRI breach, test failure, evidence and acceptance expiry) are
+// documented here but not yet automated.
 export const WORKFLOW_ACTIONS = {
   draft: [
-    { action: 'submitted', to: 'under_review', label: 'Submit for Review', style: 'primary',
-      hint: 'Sends the risk to the assigned reviewer for sign-off' },
+    { action: 'admitted', to: 'registered', label: 'Admit to Register', style: 'primary',
+      hint: 'The reviewer validates the record and admits it. The risk ID becomes permanent.' },
   ],
-  under_review: [
-    { action: 'approved', to: 'approved', label: 'Approve', style: 'success',
-      hint: 'Approves the risk record and publishes it' },
-    { action: 'rejected', to: 'draft', label: 'Reject / Request Changes', style: 'danger', requireComment: true,
-      hint: 'Returns the risk to draft with comments' },
+  registered: [
+    { action: 'returned', to: 'draft', label: 'Return to Draft', style: 'danger', requireComment: true,
+      hint: 'Send back for rework before scoring' },
   ],
-  approved: [
+  assessed: [
+    { action: 'returned', to: 'draft', label: 'Return to Draft', style: 'neutral', requireComment: true,
+      hint: 'Withdraw the assessment and rework the record' },
+  ],
+  treatment_required: [
+    { action: 'treatment_approved', to: 'under_treatment', label: 'Approve Treatment Plan', style: 'primary',
+      hint: 'A plan is agreed and owned. Starts execution against the target residual score.' },
+  ],
+  under_treatment: [
+    { action: 'treatment_complete', to: 'assessed', label: 'Plan Complete — Re-score', style: 'success',
+      hint: 'Re-scores and re-runs the gate. Passing moves to Monitored; failing returns here.' },
+  ],
+  accepted: [
+    { action: 'acceptance_revoked', to: 'assessed', label: 'Revoke Acceptance', style: 'danger', requireComment: true,
+      hint: 'Withdraws the acceptance and puts the risk back in front of the gate' },
+  ],
+  monitored: [
     { action: 'closed', to: 'closed', label: 'Close Risk', style: 'neutral', requireComment: true,
-      hint: 'Risk is no longer relevant or fully treated' },
-    { action: 'reopened', to: 'draft', label: 'Reopen for Re-assessment', style: 'neutral',
-      hint: 'Send back to draft for re-assessment' },
+      hint: 'Only when the cause can no longer occur — not because the score dropped' },
+    { action: 'reopened', to: 'assessed', label: 'Reopen for Re-assessment', style: 'neutral',
+      hint: 'Re-open scoring and put the risk back through the gate' },
   ],
   closed: [
-    { action: 'reopened', to: 'draft', label: 'Reopen Risk', style: 'neutral',
+    { action: 'reopened', to: 'assessed', label: 'Reopen Risk', style: 'neutral',
       hint: 'Re-activate this risk in the register' },
   ],
 }
+
+/**
+ * The transitions no human performs. Each is a timer or a measurement
+ * turning into a state change, which is what keeps the register alive
+ * between audits.
+ */
+export const AUTO_TRANSITIONS = [
+  { from: 'assessed',           to: 'monitored',          trigger: 'Gate: within tolerance' },
+  { from: 'assessed',           to: 'treatment_required', trigger: 'Gate: outside tolerance' },
+  { from: 'under_treatment',    to: 'monitored',          trigger: 'Re-scored, gate passes' },
+  { from: 'under_treatment',    to: 'treatment_required', trigger: 'Plan complete, gate still fails' },
+  { from: 'monitored',          to: 'assessed',           trigger: 'KRI breach' },
+  { from: 'monitored',          to: 'assessed',           trigger: 'Control test failure' },
+  { from: 'monitored',          to: 'assessed',           trigger: 'Evidence expiry' },
+  { from: 'accepted',           to: 'assessed',           trigger: 'Acceptance expired' },
+]
+
+/** States from which the gate may move a risk on its own. */
+export const GATE_MOVABLE_STATES = ['assessed', 'treatment_required', 'under_treatment', 'monitored']
 
 export const TREATMENT_ACTION_TYPES = ['Remediation', 'Mitigation', 'Corrective', 'Improvement']
 
@@ -254,6 +392,10 @@ export function risksToCSV(risks, memberName = () => '') {
     ['Inherent Score', r => r.inherent_score],
     ['Residual Likelihood', r => r.residual_likelihood], ['Residual Impact', r => r.residual_impact],
     ['Residual Score', r => r.residual_score],
+    ['Tolerance', r => getToleranceStatus(r.tolerance_status).label],
+    ['Days In Breach', r => daysInBreach(r) ?? ''],
+    ['Treatment Due', r => r.treatment_due_at?.split?.('T')[0] || ''],
+    ['Failed Tolerance Rules', r => (r.gate_failed_rules || []).map(f => f.label).join(' | ')],
     ['Appetite', r => r.risk_appetite], ['Direction', r => r.risk_direction],
     ['Owner', r => memberName(r.owner_id)], ['Reviewer', r => memberName(r.reviewer_id)],
     ['Approver', r => memberName(r.approver_id)],
