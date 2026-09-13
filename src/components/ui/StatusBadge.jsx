@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { bandForScore } from '@/lib/matrix'
 
 /* ── Status system (§28) ──────────────────────────────────────────────────────
  *
@@ -119,13 +120,13 @@ export function StatusBadge({ status, tone, label, dot = true, className, ...res
 
 /* Risk and finding scores band identically across the product (§28). Kept
  * beside the badge so the thresholds and the colours cannot drift apart. */
-export function scoreBand(score) {
-  const n = Number(score)
-  if (!Number.isFinite(n)) return 'neutral'
-  if (n >= 20) return 'critical'
-  if (n >= 12) return 'high'
-  if (n >= 6)  return 'medium'
-  return 'low'
+/**
+ * Band for a score. The thresholds are not defined here — they come from
+ * the org's matrix config via lib/matrix, because a tenant may band the
+ * same score differently depending on the cell it came from.
+ */
+export function scoreBand(score, config) {
+  return bandForScore(score, config) || 'neutral'
 }
 
 /** Compact score chip: the number and its band together, e.g. `Critical · 25`. */

@@ -10,7 +10,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { useConnectors } from '@/hooks/useConnectors'
 import { Spinner } from '@/components/ui/Spinner'
 import { FINDING_PROVIDERS, SEVERITY_CONFIG } from '@/lib/findings'
-import { CreateFindingRiskModal, CreateFindingIncidentModal } from '@/features/findings/FindingActionModals'
+import { CreateFindingIncidentModal } from '@/features/findings/FindingActionModals'
+import { toTriageState } from '@/lib/triage'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -275,10 +276,10 @@ export function M365FindingsPlatformPage() {
                   {/* Actions */}
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setModal({ type: 'risk', finding })}
+                      onClick={() => navigate('/app/risks/triage', { state: { finding: toTriageState(finding) } })}
                       className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:bg-[#fef2f2]"
                       style={{ borderColor: '#fecaca', color: '#b91c1c' }}>
-                      + Add to Risk Register
+                      Triage finding
                     </button>
                     <button
                       onClick={() => setModal({ type: 'incident', finding })}
@@ -295,13 +296,6 @@ export function M365FindingsPlatformPage() {
       </div>
 
       {/* Action modals */}
-      {modal?.type === 'risk' && (
-        <CreateFindingRiskModal
-          finding={modal.finding}
-          onClose={() => setModal(null)}
-          onCreated={() => setModal(null)}
-        />
-      )}
       {modal?.type === 'incident' && (
         <CreateFindingIncidentModal
           finding={modal.finding}

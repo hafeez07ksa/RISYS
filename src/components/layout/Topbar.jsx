@@ -36,7 +36,7 @@ const SEGMENT_LABELS = {
   dashboard: 'Dashboard', incidents: 'Incidents', findings: 'Findings',
   risks: 'Risk Register', controls: 'Controls', compliance: 'Compliance',
   tasks: 'Tasks', people: 'People', audit: 'Audit Log', settings: 'Settings',
-  frameworks: 'Frameworks', new: 'New',
+  frameworks: 'Frameworks', new: 'New', tolerances: 'Tolerances', edit: 'Edit', assess: 'Assessment', triage: 'Triage',
 }
 
 /* A dotted requirement id encodes its own ancestry: 1-5-3-1 is a child of
@@ -82,7 +82,12 @@ function useRouteBreadcrumb() {
       continue
     }
 
-    items.push({ label: label ?? decodeURIComponent(p), to: acc })
+    // A record id is meaningless to a reader. Name the kind of record
+    // instead; the page itself carries the human reference (e.g. RSK-0002).
+    const isRecordId = label === undefined && /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(p)
+    const RECORD_KIND = { risks: 'Risk', controls: 'Control', incidents: 'Incident', tasks: 'Task' }
+    const recordLabel = isRecordId ? (RECORD_KIND[parts[i - 1]] || 'Details') : null
+    items.push({ label: recordLabel ?? label ?? decodeURIComponent(p), to: acc })
   }
   return items
 }

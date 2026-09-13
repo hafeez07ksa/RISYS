@@ -13,16 +13,22 @@ import { usePermissions } from '@/hooks/usePermissions'
 import { usePeople } from '@/hooks/usePeople'
 import { useRisks, useRiskControls, useRiskEvidence, useRiskKRIs, useRiskLossEvents, useRiskAuditLog, useRiskWorkflow, useRiskCollaborators } from '@/hooks/useRisks'
 import { useComments } from '@/hooks/useComments'
-import { CreateRiskModal } from './CreateRiskModal'
+import { useGateVerdict } from '@/hooks/useRiskGate'
+import { useTreatmentOptions, useTreatmentPlans } from '@/hooks/useTreatment'
+import { treatmentReadiness } from '@/lib/treatment'
+import { coverageGaps } from '@/lib/gate'
 import { WorkflowBar } from './WorkflowBar'
-import { TreatmentTab } from './TreatmentTab'
+import { GatePanel, CoverageGapNotice } from './GatePanel'
+import { ScoreHistoryTab } from './ScoreHistoryTab'
+import { LinkedFindings } from './LinkedFindings'
+import { TreatmentTab } from './TreatmentWorkspace'
 import { ReviewsTab } from './ReviewsTab'
 import { ControlTestsPanel } from './ControlTestsPanel'
 import { FrameworkClausePicker } from '../controls/FrameworkClausePicker'
 import {
   getRiskLevel, getRiskStatus, getWorkflowState, getControlTestingStatus, getRAGStatus,
   LIKELIHOOD_LABELS, IMPACT_LABELS, EFFECTIVENESS_LABELS, CONTROL_TYPES, CONTROL_FREQUENCIES, EVIDENCE_TYPES,
-  isReviewOverdue
+  isReviewOverdue, COVERAGE_OPTIONS, REDUCES_OPTIONS, getCoverage
 } from '@/lib/risks'
 import { logAudit, AUDIT } from '@/lib/audit'
 import { Spinner } from '@/components/ui/Spinner'
@@ -35,6 +41,7 @@ const EVIDENCE_ICONS = {
 
 const TABS = [
   { id: 'overview',  label: 'Overview',    icon: Shield },
+  { id: 'scoring',   label: 'Scoring',     icon: TrendingDown },
   { id: 'controls',  label: 'Controls',    icon: Check },
   { id: 'treatment', label: 'Treatment',   icon: Wrench },
   { id: 'evidence',  label: 'Evidence',    icon: FileText },
@@ -54,7 +61,6 @@ export function RiskDetailPage() {
   const [risk, setRisk] = useState(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('overview')
-  const [editing, setEditing] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [showAddCollab, setShowAddCollab] = useState(false)
   const { deleteRisk } = useRisks()
@@ -62,6 +68,23 @@ export function RiskDetailPage() {
 
   // Attach collaborator user-ids so permission checks (canWorkRisk) see them
   const riskWithCollabs = risk ? { ...risk, collaborator_ids: collaborators.map(c => c.user_id) } : risk
+
+  // Read at page level so the gate verdict and the coverage callout are
+  // available above the tabs, not just inside whichever tab is open.
+  const { controls: linkedControls, mappings } = useRiskControls(id)
+  const { kris } = useRiskKRIs(id)
+  const { evidence: riskEvidence } = useRiskEvidence(id)
+  const verdict = useGateVerdict({
+    risk: riskWithCollabs, mappings, controls: linkedControls, kris, evidence: riskEvidence,
+  })
+  const gaps = coverageGaps(mappings, linkedControls)
+
+  // Step 9 readiness is read at page level because it gates a workflow
+  // button that sits above the tabs.
+  const { options: treatmentOptions, refetch: refetchOptions } = useTreatmentOptions(id)
+  const { plans: treatmentPlans, refetch: refetchPlans } = useTreatmentPlans(id)
+  const readiness = treatmentReadiness({ options: treatmentOptions, plans: treatmentPlans })
+  const refetchTreatment = () => { refetchOptions(); refetchPlans() }
 
   const reload = () =>
     supabase.from('risks').select('*').eq('id', id).single()
@@ -98,10 +121,14 @@ export function RiskDetailPage() {
   )
 
   const iScore = risk.inherent_score || risk.risk_score || 0
-  const rScore = risk.residual_score || iScore
+  // Residual is scored only when both coordinates exist. The generated
+  // residual_score column echoes the inherent score otherwise, which would
+  // show an unassessed risk as if its controls had been judged worthless.
+  const rScored = !!(risk.residual_likelihood && risk.residual_impact)
+  const rScore = rScored ? risk.residual_score : null
   const iLevel = getRiskLevel(iScore)
   const rLevel = getRiskLevel(rScore)
-  const reduction = iScore > 0 ? Math.round((1 - rScore / iScore) * 100) : 0
+  const reduction = iScore > 0 && rScored ? Math.round((1 - rScore / iScore) * 100) : 0
   const status   = getRiskStatus(risk.status)
   const wf       = getWorkflowState(risk.workflow_state)
   const DirIcon  = risk.risk_direction === 'Increasing' ? TrendingUp
@@ -111,9 +138,6 @@ export function RiskDetailPage() {
 
   return (
     <>
-      {editing && (
-        <CreateRiskModal editRisk={risk} onClose={() => { setEditing(false); reload() }} />
-      )}
 
       {/* ── BREADCRUMB ── */}
       <div style={{ padding: '14px 28px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -182,7 +206,7 @@ export function RiskDetailPage() {
               {/* Residual chip */}
               <div style={{ textAlign: 'center', padding: '8px 14px', borderRadius: 10, background: rLevel.bg, border: `1px solid ${rLevel.border}` }}>
                 <p style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Residual</p>
-                <p style={{ fontSize: 22, fontWeight: 400, color: rLevel.color, lineHeight: 1 }}>{rScore}</p>
+                <p style={{ fontSize: 22, fontWeight: 400, color: rLevel.color, lineHeight: 1 }}>{rScore ?? '—'}</p>
                 <p style={{ fontSize: 10, color: rLevel.color, marginTop: 2, fontWeight: 600 }}>{rLevel.label}</p>
               </div>
 
@@ -197,7 +221,14 @@ export function RiskDetailPage() {
             {/* Action buttons — gated by role & ownership */}
             <div style={{ display: 'flex', gap: 8 }}>
               {perms.canEditRisk(riskWithCollabs) && (
-                <button onClick={() => setEditing(true)}
+                <button onClick={() => navigate(`/app/risks/${id}/assess`)}
+                  title="Walk the assessment: statement, inherent score, controls, residual score, then the gate"
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '6px 14px', borderRadius: 7, background: 'var(--bg-2)', color: 'var(--crimson)', border: '1px solid var(--crimson)', cursor: 'pointer', fontWeight: 500 }}>
+                  <ShieldAlert size={12} /> Run assessment
+                </button>
+              )}
+              {perms.canEditRisk(riskWithCollabs) && (
+                <button onClick={() => navigate(`/app/risks/${id}/edit`)}
                   style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '6px 14px', borderRadius: 7, background: 'var(--crimson)', color: '#fff', border: 'none', cursor: 'pointer' }}>
                   <Edit2 size={12} /> Edit
                 </button>
@@ -248,7 +279,19 @@ export function RiskDetailPage() {
       )}
 
       {/* ── WORKFLOW ── */}
-      <WorkflowBar risk={riskWithCollabs} member={member} onChanged={reload} perms={perms} />
+      <WorkflowBar risk={riskWithCollabs} member={member} onChanged={reload} perms={perms} treatmentReadiness={readiness} />
+
+      {/* ── THE GATE ──
+          Everything above this is measurement. This is the step that
+          decides whether the register generates work. */}
+      <GatePanel
+        verdict={verdict}
+        risk={risk}
+        onOpenTreatment={() => setTab('treatment')}
+        onOpenScoring={() => navigate(`/app/risks/${id}/assess`)}
+      />
+
+      <LinkedFindings riskId={id} member={member} />
 
       {isReviewOverdue(risk) && (
         <div style={{ margin: '10px 28px 0', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 14px', borderRadius: 10, background: '#FBEAEA', border: '1px solid #F0CECE' }}>
@@ -286,9 +329,11 @@ export function RiskDetailPage() {
         {tab === 'overview'  && <OverviewTab  risk={risk} member={member} iScore={iScore}
           perms={perms} riskWithCollabs={riskWithCollabs} organization={organization} members={members}
           collaborators={collaborators} addCollaborator={addCollaborator} removeCollaborator={removeCollaborator}
-          showAddCollab={showAddCollab} setShowAddCollab={setShowAddCollab} />}
-        {tab === 'controls'  && <ControlsTab  riskId={risk.id} canManage={perms.canManageRiskChildren(riskWithCollabs)} canTest={perms.canLogControlTest} />}
-        {tab === 'treatment' && <TreatmentTab risk={riskWithCollabs} member={member} members={members} onRiskChanged={reload} perms={perms} />}
+          showAddCollab={showAddCollab} setShowAddCollab={setShowAddCollab}
+          onAssess={perms.canEditRisk(riskWithCollabs) ? () => navigate(`/app/risks/${id}/assess`) : null} />}
+        {tab === 'scoring'   && <ScoreHistoryTab risk={risk} memberName={member} />}
+        {tab === 'controls'  && <ControlsTab  riskId={risk.id} canManage={perms.canManageRiskChildren(riskWithCollabs)} canTest={perms.canLogControlTest} gaps={gaps} />}
+        {tab === 'treatment' && <TreatmentTab risk={riskWithCollabs} member={member} members={members} onRiskChanged={reload} perms={perms} verdict={verdict} onTreatmentChanged={refetchTreatment} />}
         {tab === 'evidence'  && <EvidenceTab  riskId={risk.id} canManage={perms.canManageRiskChildren(riskWithCollabs)} />}
         {tab === 'kris'      && <KRIsTab      riskId={risk.id} canManage={perms.canManageRiskChildren(riskWithCollabs)} />}
         {tab === 'loss'      && <LossTab      riskId={risk.id} canManage={perms.canManageRiskChildren(riskWithCollabs)} />}
@@ -296,6 +341,7 @@ export function RiskDetailPage() {
         {tab === 'comments'  && <DiscussionTab riskId={risk.id} />}
         {tab === 'audit'     && <AuditTab     riskId={risk.id} member={member} />}
       </div>
+
     </>
   )
 }
@@ -304,11 +350,62 @@ export function RiskDetailPage() {
    OVERVIEW
 ═══════════════════════════════════════════════════ */
 function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organization, members,
-  collaborators, addCollaborator, removeCollaborator, showAddCollab, setShowAddCollab }) {
+  collaborators, addCollaborator, removeCollaborator, showAddCollab, setShowAddCollab, onAssess }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 16 }}>
       {/* Main column */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+        {/* Cause → Event → Impact.
+            Three parts, not one paragraph, because each is used for a
+            different job: the cause is what treatment fixes, the event
+            is what controls prevent, the impact is what gets scored.
+            A risk where one of the three cannot be pointed at is a risk
+            nobody can act on. */}
+        {(risk.cause || risk.event || risk.impact_statement) ? (
+          <Card>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <FieldLabel>Cause → Event → Impact</FieldLabel>
+              {onAssess && (
+                <button onClick={onAssess} className="btn-ghost" style={{ fontSize: 11, padding: '2px 6px' }}>Revise</button>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {[
+                ['Cause', risk.cause, 'What is wrong today — this is what the mitigation fixes'],
+                ['Event', risk.event, 'What happens as a result — this is what the control prevents'],
+                ['Impact', risk.impact_statement, 'What it costs — this is what you score'],
+              ].map(([label, value, hint], idx) => (
+                <div key={label} style={{
+                  display: 'grid', gridTemplateColumns: '72px 1fr', gap: 12, padding: '10px 0',
+                  borderTop: idx === 0 ? 'none' : '1px solid var(--border-3)',
+                }}>
+                  <div>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--crimson)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      {label}
+                    </p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6 }}>
+                      {value || <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>Not stated — {hint.toLowerCase()}</span>}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        ) : onAssess ? (
+          <Card>
+            <FieldLabel>Cause → Event → Impact</FieldLabel>
+            <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginTop: 6 }}>
+              This risk is still written as a single statement. Splitting it into cause, event and impact makes it
+              testable — and makes it obvious whether the treatment plan is aimed at the right thing.
+            </p>
+            <button onClick={onAssess} className="btn-secondary" style={{ fontSize: 12, marginTop: 10 }}>
+              Run assessment
+            </button>
+          </Card>
+        ) : null}
 
         {(risk.risk_drivers || risk.description) && (
           <Card>
@@ -364,8 +461,24 @@ function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organizatio
                 </div>
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface)', borderRadius: 8 }}>
-                <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', lineHeight: 1.6 }}>Residual not assessed yet.<br />Add controls to see reduction.</p>
+              // Residual is an assessor's judgement, not a number the
+              // system can derive on its own — so this prompts the act
+              // rather than claiming controls will do it automatically.
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                background: 'var(--surface)', borderRadius: 8, padding: 16, gap: 8, textAlign: 'center',
+              }}>
+                <p style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6 }}>
+                  Residual risk has not been scored.
+                </p>
+                <p style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6, maxWidth: 220 }}>
+                  Until it is, the gate has nothing to judge and this risk carries its inherent score.
+                </p>
+                {onAssess && (
+                  <button className="btn-secondary" style={{ fontSize: 12, marginTop: 2 }} onClick={onAssess}>
+                    Run assessment
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -494,8 +607,8 @@ function ScoreDim({ label, value, desc }) {
 /* ═══════════════════════════════════════════════════
    CONTROLS
 ═══════════════════════════════════════════════════ */
-function ControlsTab({ riskId, canManage, canTest }) {
-  const { controls, allControls, loading, createControl, updateControl, linkControl, unlinkControl, refetch: fetchControlsRefetch } = useRiskControls(riskId)
+function ControlsTab({ riskId, canManage, canTest, gaps = [] }) {
+  const { controls, allControls, loading, createControl, updateControl, linkControl, updateMapping, unlinkControl, mappingFor, refetch: fetchControlsRefetch } = useRiskControls(riskId)
   const [showAdd, setShowAdd] = useState(false)
   const [showLink, setShowLink] = useState(false)
   const [editCtrl, setEditCtrl] = useState(null)
@@ -616,9 +729,13 @@ function ControlsTab({ riskId, canManage, canTest }) {
         </Card>
       )}
 
+      {/* The callout the risk-to-control model exists to make possible. */}
+      {gaps.length > 0 && <CoverageGapNotice gaps={gaps} />}
+
       {controls.length === 0 && !showAdd
         ? <EmptyBox icon={Check} title="No controls linked" sub="Add preventive, detective, or corrective controls to reduce exposure" />
         : controls.map(ctrl => {
+          const mapping = mappingFor(ctrl.id) || {}
           const ts = getControlTestingStatus(ctrl.testing_status)
           const eff = ctrl.effectiveness || 1
           const ec = eff >= 4 ? '#2F6B3C' : eff >= 3 ? '#9C6F0F' : '#8C1616'
@@ -652,6 +769,46 @@ function ControlsTab({ riskId, canManage, canTest }) {
                       <div style={{ height: '100%', borderRadius: 2, background: ec, width: `${((eff-1)/4)*100}%` }} />
                     </div>
                   </div>
+                  {/* Coverage of THIS risk.
+                      Effectiveness above is a property of the control and
+                      is the same everywhere it is used. Coverage is a
+                      property of this link, and it is what decides whether
+                      the control earns any credit here at all. */}
+                  <div style={{
+                    marginTop: 12, padding: '10px 12px', borderRadius: 8,
+                    background: mapping.coverage === 'none' ? 'var(--critical-bg)'
+                      : mapping.coverage === 'partial' ? 'var(--medium-bg)' : 'var(--surface)',
+                    border: `1px solid ${mapping.coverage === 'none' ? 'var(--critical-bd)'
+                      : mapping.coverage === 'partial' ? 'var(--medium-bd)' : 'var(--border)'}`,
+                  }}>
+                    <p className="eyebrow" style={{ marginBottom: 7 }}>Coverage of this risk</p>
+                    {canManage ? (
+                      <>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                          <SelectField size="sm" value={mapping.coverage || 'full'}
+                            onChange={e => updateMapping(ctrl.id, { coverage: e.target.value })}>
+                            {COVERAGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          </SelectField>
+                          <SelectField size="sm" value={mapping.reduces || 'both'}
+                            onChange={e => updateMapping(ctrl.id, { reduces: e.target.value })}>
+                            {REDUCES_OPTIONS.map(o => <option key={o.value} value={o.value}>Reduces {o.label.toLowerCase()}</option>)}
+                          </SelectField>
+                        </div>
+                        {(mapping.coverage === 'partial' || mapping.coverage === 'none') && (
+                          <input className="risys-input" style={{ width: '100%', marginTop: 8, fontSize: 12 }}
+                            defaultValue={mapping.coverage_note || ''}
+                            onBlur={e => updateMapping(ctrl.id, { coverage_note: e.target.value })}
+                            placeholder="What does it exclude? e.g. SaaS apps only — excludes the VPN" />
+                        )}
+                      </>
+                    ) : (
+                      <p style={{ fontSize: 12, color: 'var(--text-2)' }}>
+                        {getCoverage(mapping.coverage).label}
+                        {mapping.coverage_note ? ` — ${mapping.coverage_note}` : ''}
+                      </p>
+                    )}
+                  </div>
+
                   <ControlTestsPanel control={ctrl} onTestLogged={fetchControlsRefetch} canTest={canTest} />
                 </div>
                 {canManage && <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
