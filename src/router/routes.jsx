@@ -15,6 +15,10 @@ import { FindingsPage } from '@/features/findings/FindingsPage'
 import { FindingsPlatformPage } from '@/features/findings/FindingsPlatformPage'
 import { RiskRegisterPage } from '@/features/risks/RiskRegisterPage'
 import { RiskDetailPage } from '@/features/risks/RiskDetailPage'
+import { TolerancePage } from '@/features/risks/TolerancePage'
+import { RiskFormPage } from '@/features/risks/RiskFormPage'
+import { TriagePage } from '@/features/risks/TriagePage'
+import { AssessmentPage } from '@/features/risks/AssessmentFlow'
 import { TasksPage } from '@/features/tasks/TasksPage'
 import { PeoplePage } from '@/features/people/PeoplePage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
@@ -52,7 +56,18 @@ export const router = createBrowserRouter([
       { path: 'incidents',      element: <IncidentsPage /> },
       { path: 'incidents/:id',  element: <IncidentDetailPage /> },
       { path: 'risks',        element: <RiskRegisterPage /> },
-      { path: 'risks/:id',    element: <RiskDetailPage /> },
+      // Declared before ':id' so the literal segment is not swallowed by the param.
+      { path: 'risks/tolerances', element: (
+        <RequireRole roles={['admin', 'owner', 'risk_manager']}>
+          <TolerancePage />
+        </RequireRole>
+      ) },
+      // Literal segments come before ':id' so they are not swallowed by the param.
+      { path: 'risks/triage',     element: <TriagePage /> },
+      { path: 'risks/new',        element: <RiskFormPage /> },
+      { path: 'risks/:id',        element: <RiskDetailPage /> },
+      { path: 'risks/:id/edit',   element: <RiskFormPage /> },
+      { path: 'risks/:id/assess', element: <AssessmentPage /> },
       { path: 'controls',     element: <ControlsPage /> },
       { path: 'controls/:id', element: <ControlDetailPage /> },
       { path: 'compliance',   element: <CompliancePage /> },

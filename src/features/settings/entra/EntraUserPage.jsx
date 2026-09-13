@@ -9,7 +9,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { Spinner } from '@/components/ui/Spinner'
 import { getEntraFindings as getFindings, SEVERITY_CONFIG } from '@/lib/findings'
-import { CreateFindingRiskModal, CreateFindingIncidentModal } from '@/features/findings/FindingActionModals'
+import { CreateFindingIncidentModal } from '@/features/findings/FindingActionModals'
+import { toTriageState } from '@/lib/triage'
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 function Avatar({ name, size = 56 }) {
@@ -58,7 +59,6 @@ export function EntraUserPage() {
 
   const [user, setUser]       = useState(null)
   const [loading, setLoading] = useState(true)
-  const [riskModal, setRiskModal]         = useState(null)  // normalised finding
   const [incidentModal, setIncidentModal] = useState(null)  // normalised finding
 
   useEffect(() => {
@@ -100,13 +100,6 @@ export function EntraUserPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Shared modals — receive a normalised finding object */}
-      {riskModal && (
-        <CreateFindingRiskModal
-          finding={riskModal}
-          onClose={() => setRiskModal(null)}
-          onCreated={() => {}}
-        />
-      )}
       {incidentModal && (
         <CreateFindingIncidentModal
           finding={incidentModal}
@@ -244,9 +237,9 @@ export function EntraUserPage() {
                           <p style={{ fontSize: 12.5, color: '#1a1314', lineHeight: 1.65 }}>{finding.recommendation}</p>
                         </div>
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <button onClick={() => setRiskModal(normFinding)}
+                          <button onClick={() => navigate('/app/risks/triage', { state: { finding: toTriageState(normFinding) } })}
                             style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, padding: '10px 16px', borderRadius: 8, cursor: 'pointer', background: '#5D0F0F', color: '#fff', border: 'none' }}>
-                            <ShieldAlert size={14} /> Add to Risk Register
+                            <ShieldAlert size={14} /> Triage finding
                           </button>
                           <button onClick={() => setIncidentModal(normFinding)}
                             style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, padding: '10px 16px', borderRadius: 8, cursor: 'pointer', background: '#fff', color: '#4a3a3a', border: '1px solid #e5e0e0' }}>
