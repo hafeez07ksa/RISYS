@@ -436,8 +436,10 @@ function DomainGroup({ domainId, domainName, requirements, fw, statuses, mapping
 
   const pct = scoreable.length > 0 ? Math.round((compliant / scoreable.length) * 100) : 0
 
+  // Keep status-picker menus free to extend below a row. Hidden overflow
+  // clipped the menu as soon as its chevron was clicked.
   return (
-    <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', marginBottom: 10 }}>
+    <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'visible', marginBottom: 10 }}>
       {/* Domain header */}
       <button
         onClick={() => setOpen(o => !o)}
