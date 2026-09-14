@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
-  Zap, ShieldCheck, BookOpen, FileText, Link2, Info, ChevronRight,
+  Zap, ShieldCheck, BookOpen, FileText, Link2, Info, ChevronRight, ClipboardList,
   CheckCircle2, XCircle, MinusCircle, HelpCircle, AlertTriangle, Clock,
 } from 'lucide-react'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -15,6 +15,17 @@ import {
   isAutomated, hasAutomatedResult, isOverridingEvidence,
 } from '@/hooks/useCompliance'
 import { LinkControlModal } from './ComplianceFrameworkPage'
+import { ManualCompliancePanel } from './ManualCompliancePanel'
+import { AUTOMATION_META, automationClassFor, mainControlId } from '@/data/eccAutomation'
+import { manualRequirementFor } from '@/data/eccManualRequirements'
+
+const GUIDE_SECTIONS = [
+  { key: 'plain',     label: 'In plain terms' },
+  { key: 'how',       label: 'How to implement' },
+  { key: 'evidence',  label: 'Evidence to keep' },
+  { key: 'platforms', label: 'Platforms' },
+  { key: 'in_risys',  label: 'In RISYS' },
+]
 
 /*
  * ── Control detail ──────────────────────────────────────────────────────────
@@ -54,15 +65,6 @@ import { LinkControlModal } from './ComplianceFrameworkPage'
  * where the alternative was that empty band. On a laptop nothing is capped. */
 const MEASURE_MAX = 1040     // ~95ch at 14px; only engages above ~1500px viewport
 const RAIL        = 340
-
-const AUTOMATION_LABELS = {
-  automated:       { label: 'Automated',       tone: 'var(--info)',    bg: 'var(--info-bg)',    border: 'var(--info-bd)',
-                     note: 'Scoreable from connector data rather than asserted.' },
-  semi_automated:  { label: 'Semi-automated',  tone: 'var(--medium)',  bg: 'var(--medium-bg)',  border: 'var(--medium-bd)',
-                     note: 'Partly measurable; the rest needs documented evidence.' },
-  manual_evidence: { label: 'Manual evidence', tone: 'var(--text-2)',  bg: 'var(--surface-2)',  border: 'var(--border)',
-                     note: 'Cannot be measured from a system. Evidence must be uploaded and reviewed.' },
-}
 
 const SIGNAL_TONES = {
   pass:           { color: 'var(--low)',      bg: 'var(--low-bg)',      label: 'Pass',         Icon: CheckCircle2 },
@@ -212,12 +214,13 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
   const canManage = perms.isManager || perms.isAdmin
 
   const { requirements, loading: reqLoading } = useFrameworkRequirements(frameworkId)
-  const { statuses, setStatus } = useComplianceStatuses(frameworkId)
+  const { statuses, setStatus, refetch: refetchStatuses } = useComplianceStatuses(frameworkId)
   const { controls, mappingsFor, controlsFor, linkControl, unlinkControl } = useFrameworkMappings(frameworkId)
   const { automation } = useRequirementAutomation(frameworkId)
 
   const [guidance, setGuidance] = useState(null)
   const [guidanceError, setGuidanceError] = useState(false)
+  const [implGuide, setImplGuide] = useState(null)
   const [showMap, setShowMap] = useState(false)
   const [notes, setNotes] = useState('')
   const [savingNotes, setSavingNotes] = useState(false)
@@ -230,6 +233,16 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
       .catch(() => { if (!cancelled) setGuidanceError(true) })
     return () => { cancelled = true }
   }, [])
+
+  // The implementation guide covers every ECC main control; subcontrols read their parent's entry.
+  useEffect(() => {
+    if (frameworkId !== 'NCA ECC') return
+    let cancelled = false
+    import('@/data/eccImplementationGuide.json')
+      .then(m => { if (!cancelled) setImplGuide(m.default ?? m) })
+      .catch(() => { /* optional reference content */ })
+    return () => { cancelled = true }
+  }, [frameworkId])
 
   const idKey   = fw?.requirementKey || 'control_id'
   const textKey = fw?.textKey || 'control_text'
@@ -256,8 +269,16 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
   useEffect(() => { setNotes(statusRow?.notes || '') }, [statusRow?.notes, requirementId])
 
   const node = guidance?.controls?.[requirementId]
-  const automationClass = node?.automation_class
-  const cls = automationClass ? AUTOMATION_LABELS[automationClass] : null
+  // Same source as the list filter, covering all 108 main controls (the guidance file carried 20).
+  const cls = fw?.id === 'NCA ECC' ? AUTOMATION_META[automationClassFor(requirementId)] ?? null : null
+
+  const isEcc = fw?.id === 'NCA ECC'
+  const isSub = isSubControl(req || {})
+  const manualDef = isEcc && !isSub ? manualRequirementFor(requirementId) : null
+  const manualParent = isEcc && isSub && manualRequirementFor(mainControlId(requirementId)) ? mainControlId(requirementId) : null
+  const guideEntry = isEcc ? implGuide?.controls?.[mainControlId(requirementId)] : null
+  // Manual-evidence controls reach Compliant only through the evidenced Comply flow.
+  const statusOptions = manualDef ? STATUS_OPTIONS.filter(o => o.value !== 'compliant') : STATUS_OPTIONS
 
   const childrenWithGuidance = useMemo(
     () => children
@@ -452,6 +473,38 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
               </div>
             </Source>
 
+            {manualDef && (
+              <ManualCompliancePanel
+                key={requirementId}
+                frameworkId={frameworkId}
+                requirementId={requirementId}
+                def={manualDef}
+                statusRow={statusRow}
+                canManage={canManage}
+                onComplied={refetchStatuses}
+              />
+            )}
+
+            {manualParent && (
+              <Panel style={{ marginBottom: 30, background: 'var(--surface)' }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <ShieldCheck size={14} style={{ color: 'var(--taupe)', flexShrink: 0, marginTop: 2 }} />
+                  <p style={{ fontSize: 'var(--t-body)', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
+                    Evidence for this subcontrol is recorded once, against its main control{' '}
+                    <button
+                      onClick={() => onOpenControl(manualParent)}
+                      className="mono"
+                      style={{
+                        background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                        color: 'var(--crimson)', fontSize: 'var(--t-sm)', fontWeight: 500,
+                      }}>
+                      {manualParent}
+                    </button>.
+                  </p>
+                </div>
+              </Panel>
+            )}
+
             {/* Guidance, by source, attributed */}
             {guidanceError && (
               <Panel style={{ marginBottom: 30 }}>
@@ -503,7 +556,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
               )
             })}
 
-            {guidance && !node?.nca_official && !node?.risys && childrenWithGuidance.length === 0 && (
+            {guidance && !node?.nca_official && !node?.risys && !guideEntry && childrenWithGuidance.length === 0 && (
               <Panel style={{ marginBottom: 30 }}>
                 <RailEmpty>No implementation guidance loaded for this control.</RailEmpty>
               </Panel>
@@ -537,6 +590,38 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                   </p>
                 </div>
               </Panel>
+            )}
+            {guideEntry && (
+              <Source
+                icon={ClipboardList}
+                title={implGuide.source.label}
+                attribution={`${implGuide.source.publisher} · ${implGuide.source.version}${isSub ? ` · from main control ${mainControlId(requirementId)}` : ''}`}
+                badge={
+                  <span style={{
+                    fontSize: 'var(--t-micro)', padding: '2px 8px', borderRadius: 'var(--r-full)',
+                    fontWeight: 600, flexShrink: 0,
+                    color: 'var(--text-3)', background: 'var(--surface-2)', border: '1px solid var(--border)',
+                  }}>
+                    Internal
+                  </span>
+                }
+              >
+                <Panel>
+                  {GUIDE_SECTIONS.filter(s => guideEntry[s.key]).map((s, i) => (
+                    <div key={s.key} style={{
+                      marginTop: i === 0 ? 0 : 20,
+                      paddingTop: i === 0 ? 0 : 18,
+                      borderTop: i === 0 ? 'none' : '1px solid var(--border-3)',
+                    }}>
+                      <SubHead>{s.label}</SubHead>
+                      <p style={{ fontSize: 'var(--t-body)', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
+                        {guideEntry[s.key]}
+                      </p>
+                    </div>
+                  ))}
+                  {implGuide.source.caveat && <Caveat>{implGuide.source.caveat}</Caveat>}
+                </Panel>
+              </Source>
             )}
           </div>
 
@@ -623,7 +708,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                 <option value="">
                   {hasAutomatedResult(auto) ? 'Use measured result' : 'Not set'}
                 </option>
-                {STATUS_OPTIONS.map(o => (
+                {statusOptions.map(o => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </SelectField>

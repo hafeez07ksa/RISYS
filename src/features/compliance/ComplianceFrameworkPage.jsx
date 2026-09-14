@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import {
   ArrowLeft, ChevronRight, ChevronDown, ChevronUp,
   Search, Check, X, Plus, Link2, Trash2, SlidersHorizontal,
-  ShieldCheck, AlertTriangle, Minus, Loader2, Zap,
+  ShieldCheck, AlertTriangle, Minus, Loader2, Zap, Layers, Contrast, FileText,
 } from 'lucide-react'
 import {
   FRAMEWORKS, STATUS_CONFIG, STATUS_OPTIONS,
@@ -15,6 +15,87 @@ import {
 import { usePermissions } from '@/hooks/usePermissions'
 import { Spinner } from '@/components/ui/Spinner'
 import { BackLink } from '@/components/ui/BackLink'
+import { AUTOMATION_CLASSES, AUTOMATION_META, automationClassFor } from '@/data/eccAutomation'
+
+const AUTOMATION_ICONS = { automated: Zap, semi_automated: Contrast, manual_evidence: FileText }
+
+// ── Automation class chip ─────────────────────────────────────────────────────
+function AutomationChip({ cls }) {
+  const meta = AUTOMATION_META[cls]
+  if (!meta) return null
+  const Icon = AUTOMATION_ICONS[cls]
+  return (
+    <span title={`${meta.label} — ${meta.note}`} style={{
+      display: 'inline-flex', alignItems: 'center', gap: 3, flexShrink: 0,
+      fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 99,
+      fontFamily: 'var(--font-sans)', letterSpacing: 0,
+      color: meta.tone, background: meta.bg, border: `1px solid ${meta.border}`,
+    }}>
+      <Icon size={9} /> {meta.short}
+    </span>
+  )
+}
+
+// ── Evidence-type filter ──────────────────────────────────────────────────────
+// One segmented control rather than a dropdown: the three classes and their
+// counts are the point, so they stay visible instead of hiding behind a click.
+function EvidenceTypeFilter({ value, onChange, counts }) {
+  const options = [
+    { value: '', label: 'All controls', Icon: Layers, count: counts ? counts.all : '—', meta: null },
+    ...AUTOMATION_CLASSES.map(c => ({
+      value: c, label: AUTOMATION_META[c].label, Icon: AUTOMATION_ICONS[c], count: counts ? counts[c] : '—', meta: AUTOMATION_META[c],
+    })),
+  ]
+  const active = value ? AUTOMATION_META[value] : null
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <span className="eyebrow">Evidence type</span>
+        <div role="radiogroup" aria-label="Filter by evidence type" style={{
+          display: 'inline-flex', flexWrap: 'wrap', gap: 2, padding: 3,
+          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
+        }}>
+          {options.map(o => {
+            const selected = value === o.value
+            const tone = o.meta?.tone || 'var(--crimson)'
+            return (
+              <button key={o.value || 'all'} type="button" role="radio" aria-checked={selected}
+                onClick={() => onChange(o.value)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '6px 11px', borderRadius: 'var(--r)', cursor: 'pointer',
+                  fontSize: 12, fontWeight: selected ? 600 : 500,
+                  color: selected ? tone : 'var(--text-2)',
+                  background: selected ? 'var(--bg-2)' : 'transparent',
+                  border: `1px solid ${selected ? (o.meta?.border || 'var(--border-2)') : 'transparent'}`,
+                  boxShadow: selected ? 'var(--e-1)' : 'none',
+                  transition: 'background var(--dur-2) var(--ease), color var(--dur-2) var(--ease)',
+                }}
+                onMouseEnter={e => { if (!selected) e.currentTarget.style.background = 'var(--hover)' }}
+                onMouseLeave={e => { if (!selected) e.currentTarget.style.background = 'transparent' }}
+              >
+                <o.Icon size={12} style={{ color: o.meta ? o.meta.tone : 'var(--text-3)' }} />
+                {o.label}
+                <span className="tnum" style={{
+                  fontSize: 10.5, fontWeight: 600, minWidth: 18, textAlign: 'center',
+                  padding: '0 5px', borderRadius: 99,
+                  color: selected ? tone : 'var(--text-3)',
+                  background: selected ? (o.meta?.bg || 'var(--crimson-wash)') : 'var(--surface-2)',
+                }}>{o.count}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      {active && (
+        <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', marginTop: 6 }}>
+          {active.note} Subcontrols follow their main control.
+        </p>
+      )}
+    </div>
+  )
+}
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status, size = 'sm' }) {
@@ -35,7 +116,9 @@ function StatusBadge({ status, size = 'sm' }) {
 }
 
 // ── Status picker dropdown ────────────────────────────────────────────────────
-function StatusPicker({ currentStatus, onSet, disabled }) {
+function StatusPicker({ currentStatus, onSet, disabled, hideCompliant }) {
+  // Manual-evidence controls reach Compliant only through the evidenced Comply flow.
+  const options = hideCompliant ? STATUS_OPTIONS.filter(o => o.value !== 'compliant') : STATUS_OPTIONS
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -72,7 +155,7 @@ function StatusPicker({ currentStatus, onSet, disabled }) {
             background: '#fff', border: '1px solid var(--border)', borderRadius: 8,
             boxShadow: '0 4px 16px rgba(26,19,20,0.12)', minWidth: 180, overflow: 'hidden',
           }}>
-            {STATUS_OPTIONS.map(opt => (
+            {options.map(opt => (
               <button key={opt.value} onClick={() => handle(opt.value)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8, width: '100%',
@@ -217,6 +300,7 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto
   const reqId = req.control_id || req.clause_id || req.requirement_id
   const text  = req.control_text || req.clause_text || req.requirement_text || ''
   const isSubCtrl = isSubControl(req)
+  const automationClass = fw?.id === 'NCA ECC' ? automationClassFor(reqId) : null
 
   return (
     <div style={{
@@ -247,14 +331,17 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto
           <ChevronRight size={13} />
         </span>
 
-        {/* ID */}
-        <span style={{
-          fontSize: isSubCtrl ? 11 : 12, fontWeight: isSubCtrl ? 400 : 600,
-          color: isSubCtrl ? 'var(--text-3)' : 'var(--crimson)',
-          fontFamily: 'var(--font-mono)', letterSpacing: '0.02em',
-          paddingLeft: isSubCtrl ? 22 : 0,
-        }}>
-          {isSubCtrl ? String(reqId).replace(/-/g, '.') : reqId}
+        {/* ID, with the automation class beside main controls */}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          <span style={{
+            fontSize: isSubCtrl ? 11 : 12, fontWeight: isSubCtrl ? 400 : 600,
+            color: isSubCtrl ? 'var(--text-3)' : 'var(--crimson)',
+            fontFamily: 'var(--font-mono)', letterSpacing: '0.02em',
+            paddingLeft: isSubCtrl ? 22 : 0,
+          }}>
+            {isSubCtrl ? String(reqId).replace(/-/g, '.') : reqId}
+          </span>
+          {!isSubCtrl && automationClass && <AutomationChip cls={automationClass} />}
         </span>
 
         {/* Text preview */}
@@ -308,12 +395,21 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto
         </div>
 
         {/* Status */}
-        <div onClick={e => e.stopPropagation()}>
+        <div onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           <StatusPicker
             currentStatus={effectiveStatus}
             onSet={(s) => onSetStatus(reqId, s)}
             disabled={!canManage}
+            hideCompliant={automationClass === 'manual_evidence' && !isSubCtrl}
           />
+          {status?.review_overdue && (
+            <span title={`Evidence review was due ${status.review_due_at}`} style={{
+              fontSize: 10, padding: '1px 6px', borderRadius: 99, fontWeight: 600, whiteSpace: 'nowrap',
+              color: 'var(--critical)', background: 'var(--critical-bg)', border: '1px solid var(--critical-bd)',
+            }}>
+              Review overdue
+            </span>
+          )}
         </div>
 
         {/* Everything else — guidance, evidence, mapping, signal detail —
@@ -412,7 +508,7 @@ function DomainGroup({ domainId, domainName, requirements, fw, statuses, mapping
 }
 
 // ── Framework detail page ─────────────────────────────────────────────────────
-export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl }) {
+export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, evidenceFilter: evidenceProp, onEvidenceFilterChange }) {
   const fw = FRAMEWORKS.find(f => f.id === frameworkId)
   const perms = usePermissions()
   const canManage = perms.isManager || perms.isAdmin
@@ -425,6 +521,13 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl }) 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
 
+  // Only ECC carries an automation class; local state covers rendering without a router.
+  const hasClassification = fw?.id === 'NCA ECC'
+  const [localEvidence, setLocalEvidence] = useState('')
+  const rawEvidence = evidenceProp ?? localEvidence
+  const evidenceFilter = hasClassification && AUTOMATION_CLASSES.includes(rawEvidence) ? rawEvidence : ''
+  const setEvidenceFilter = onEvidenceFilterChange ?? setLocalEvidence
+
   const loading = reqLoading || statusLoading || mapLoading
 
   // Score
@@ -433,8 +536,8 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl }) 
     [requirements, statuses, mappings, controls, fw, automation]
   )
 
-  // Group by domain, subdomain, or article depending on framework config
-  const grouped = useMemo(() => {
+  // Search and status first; the evidence tabs count from this set, so each shows what it would leave.
+  const baseReqs = useMemo(() => {
     let reqs = requirements
     if (search) reqs = reqs.filter(r => {
       const text = r.control_text || r.clause_text || ''
@@ -448,6 +551,25 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl }) 
         return computeEffectiveStatus(statuses[reqId]?.status, mapped, automation[reqId]) === statusFilter
       })
     }
+    return reqs
+  }, [requirements, search, statusFilter, statuses, mappings, controls, automation])
+
+  const evidenceCounts = useMemo(() => {
+    const counts = { all: 0, automated: 0, semi_automated: 0, manual_evidence: 0 }
+    if (!hasClassification) return counts
+    for (const r of baseReqs) {
+      if (isSubControl(r)) continue
+      counts.all++
+      const cls = automationClassFor(r.control_id)
+      if (cls) counts[cls]++
+    }
+    return counts
+  }, [baseReqs, hasClassification])
+
+  // Group by domain, subdomain, or article depending on framework config
+  const grouped = useMemo(() => {
+    let reqs = baseReqs
+    if (evidenceFilter) reqs = reqs.filter(r => automationClassFor(r.control_id) === evidenceFilter)
 
     const groups = {}
     for (const req of reqs) {
@@ -472,7 +594,7 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl }) 
     // main control first and strands the subcontrols at the foot of the group.
     for (const g of Object.values(groups)) g.reqs = sortRequirements(g.reqs, fw)
     return Object.values(groups).sort((a, b) => compareRequirementIds(a.id, b.id))
-  }, [requirements, search, statusFilter, statuses, mappings, controls, fw])
+  }, [baseReqs, evidenceFilter, fw])
 
   if (!fw) return null
 
@@ -562,6 +684,9 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl }) 
           </div>
 
           {/* Filters */}
+          {hasClassification && (
+            <EvidenceTypeFilter value={evidenceFilter} onChange={setEvidenceFilter} counts={loading ? null : evidenceCounts} />
+          )}
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
             <div style={{ position: 'relative', flex: 1 }}>
               <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }} />
@@ -569,9 +694,9 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl }) 
                 placeholder={`Search ${fw.label} requirements…`}
                 className="risys-input" style={{ paddingLeft: 30 }} />
             </div>
-            {statusFilter && (
-              <button onClick={() => setStatusFilter('')} className="btn-secondary" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <X size={13} /> Clear filter
+            {(statusFilter || search || evidenceFilter) && (
+              <button onClick={() => { setStatusFilter(''); setSearch(''); setEvidenceFilter('') }} className="btn-secondary" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <X size={13} /> Clear filters
               </button>
             )}
           </div>
@@ -581,7 +706,11 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl }) 
             <div style={{ padding: '80px 0', display: 'flex', justifyContent: 'center' }}><Spinner /></div>
           ) : grouped.length === 0 ? (
             <div style={{ padding: '60px 0', textAlign: 'center' }}>
-              <p style={{ fontSize: 13, color: 'var(--text-3)' }}>No requirements match your filters.</p>
+              <p style={{ fontSize: 13, color: 'var(--text-3)' }}>
+                {evidenceFilter
+                  ? `No ${AUTOMATION_META[evidenceFilter].label.toLowerCase()} controls match your search or status filter.`
+                  : 'No requirements match your filters.'}
+              </p>
             </div>
           ) : (
             grouped.map(g => (
