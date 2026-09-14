@@ -1,0 +1,982 @@
+{
+ "source": {
+  "label": "RISYS implementation guide",
+  "publisher": "RISYS",
+  "version": "NCA ECC-2:2024 Implementation & Integration Guide · 9 Sep 2026",
+  "caveat": "Internal guidance. The official NCA control text above is authoritative."
+ },
+ "controls": {
+  "1-1-1": {
+   "title": "Strategy documented and approved",
+   "class": "manual_evidence",
+   "plain": "A written cybersecurity strategy must exist, be formally approved, and be supported by the head of the entity or a documented delegate — the person ECC calls the Authorized Official. Its goals must trace back to the regulations the entity answers to.",
+   "how": "Produce a three to five year strategy covering objectives, initiatives and target state. Route it through formal approval by the CEO or head of entity. If a delegate signs, document the delegation itself. Show each goal tracing to a regulatory driver — ECC, the sector regulator, Vision 2030 alignment.",
+   "evidence": "The signed strategy document, the approval record — board or committee minutes, a signature page, or an approval memo — and the delegation letter where someone signed on the head of entity's behalf.",
+   "platforms": "Document management only: SharePoint, a DMS, or the RISYS evidence store. Approval may sit in DocuSign or in committee minutes.",
+   "in_risys": "Evidence upload against the control, with attestation fields for approver, approval date and document version. No connector applies."
+  },
+  "1-1-2": {
+   "title": "Action plan executed",
+   "class": "semi_automated",
+   "plain": "The verb is execute, not have. An assessor is checking that the strategy is not shelfware. This is the control in 1-1 that fails most often in real assessments.",
+   "how": "Break the strategy into initiatives with named owners, budgets, timelines and milestones. Show demonstrable movement — completed milestones, spend against budget, status reported to the cybersecurity supervisory committee.",
+   "evidence": "The roadmap, project status reports, steering committee minutes showing progress being reviewed, and budget approvals.",
+   "platforms": "Project and portfolio management: Jira, Azure DevOps, Microsoft Project, Planner, Smartsheet, Monday.",
+   "in_risys": "A strong automation opportunity using the existing Jira connector. The client tags cybersecurity strategy initiatives as a Jira epic or project; RISYS reads epic status, completion percentage and milestone dates, and the control status moves as the roadmap moves. This turns a governance control into a live one."
+  },
+  "1-1-3": {
+   "title": "Strategy reviewed at planned intervals",
+   "class": "semi_automated",
+   "plain": "Two separate triggers: a defined calendar interval, and any change to relevant legislative or regulatory requirements. Most organisations honour the first and forget the second — a regulatory change with no corresponding strategy review is a finding.",
+   "how": "Define the review interval in the strategy document itself, annual being the norm. Hold the reviews and minute them. Re-review whenever NCA issues something new — the ECC-1 to ECC-2 transition in 2024 is exactly such a trigger.",
+   "evidence": "Review minutes, dated document version history, and a record showing the ECC-2 update prompted a review.",
+   "platforms": "RISYS itself, plus the document repository holding version history.",
+   "in_risys": "The best demonstration in this subdomain. RISYS schedules the review, assigns the owner, notifies them, records completion and timestamps it in the audit log. The control is satisfied by using the platform — nothing to integrate."
+  },
+  "1-2-1": {
+   "title": "Independent cybersecurity department",
+   "class": "manual_evidence",
+   "plain": "A cybersecurity department must exist and must be organisationally independent of the IT and communications department, under High Order No. 37140. NCA recommends it report directly to the head of entity, provided that creates no conflict of interest.",
+   "how": "Establish the department as a distinct organisational unit with its own reporting line. Where a client currently has security sitting under the IT director, that structure fails this control and needs restructuring, not documentation.",
+   "evidence": "The organisation chart showing the reporting line, the establishment decision, and role descriptions.",
+   "platforms": "HR systems: SAP SuccessFactors, Oracle HCM, Workday, Microsoft Entra ID organisational attributes, or a local Saudi HRMS.",
+   "in_risys": "Semi-automatable in principle — Entra ID holds department and manager attributes, so reporting lines can be read. In practice the independence judgement needs a human. Treat as manual evidence with an org chart upload, and note the Entra data as supporting."
+  },
+  "1-2-2": {
+   "title": "Positions filled by full-time qualified Saudi professionals",
+   "class": "semi_automated",
+   "plain": "ECC-2 broadened this from the previous version. It now covers all cybersecurity positions, not just the head of function, and requires them to be full-time and filled by qualified Saudi cybersecurity professionals.",
+   "how": "Track every cybersecurity role: filled or vacant, employment type, nationality and qualifications. Where positions sit with contractors or non-Saudi staff, this is a recruitment and Saudisation matter, not a paperwork one — plan the runway.",
+   "evidence": "The staffing roster with employment type, the Saudisation percentage for the function, certifications held, and vacancy ageing.",
+   "platforms": "HRMS is the primary source: SAP SuccessFactors, Oracle HCM, Workday, Odoo HR, or a Saudi payroll platform integrated with GOSI and Qiwa. Certification tracking may sit in a learning platform.",
+   "in_risys": "Genuinely automatable with an HRMS connector — headcount, employment type, nationality and vacancy state are all structured fields. This is the strongest argument for adding an HRMS integration and it also serves 1-9 across six further controls."
+  },
+  "1-2-3": {
+   "title": "Cybersecurity supervisory committee",
+   "class": "manual_evidence",
+   "plain": "A supervisory committee must be established on the Authorized Official's instruction, with documented and approved membership, responsibilities and governance framework. The head of the cybersecurity department must sit on it.",
+   "how": "Form the committee, issue the charter, and meet on a defined cadence. The membership requirement is specific and checkable — an assessor will look for the security head on the attendance list.",
+   "evidence": "The committee charter, the establishment decision, membership list, meeting minutes and attendance records.",
+   "platforms": "Governance and meeting tooling: Microsoft Teams or SharePoint for minutes, Diligent or Nasdaq Boardvantage in larger entities, or the RISYS evidence store.",
+   "in_risys": "Manual evidence with a recurring cadence. RISYS can track meeting frequency against the charter and flag when the committee has not met within its defined interval — a genuinely useful signal, since lapsed committees are a common finding."
+  },
+  "1-3-1": {
+   "title": "Policies documented, approved and communicated",
+   "class": "manual_evidence",
+   "plain": "The cybersecurity department must author the policies and procedures, get them approved by the Authorized Official, and communicate them to relevant personnel inside the entity. Communication is part of the control, not an afterthought.",
+   "how": "Build the policy set covering every applicable ECC subdomain. Route through formal approval. Distribute and record acknowledgement — an unread policy does not satisfy the communication limb.",
+   "evidence": "The approved policy set, approval records, distribution and acknowledgement logs.",
+   "platforms": "Policy management and acknowledgement: SharePoint, Confluence, or dedicated tools such as PowerDMS or LogicGate. Acknowledgement often runs through the LMS or HRMS.",
+   "in_risys": "Manual evidence, but the acknowledgement rate is a readable metric if the client's LMS or SharePoint is connected. RISYS can hold the policy library, version it, and track which policies map to which ECC subdomains."
+  },
+  "1-3-2": {
+   "title": "Policies implemented",
+   "class": "semi_automated",
+   "plain": "The department must ensure the policies, controls and requirements are actually applied across the entity. This is the enforcement limb — the gap between what the policy says and what the systems do.",
+   "how": "Run compliance checks against each policy. Where technical policy exists — password rules, encryption, access — verify the system configuration matches the written standard.",
+   "evidence": "Compliance check results, configuration baselines compared against policy, exception registers.",
+   "platforms": "The systems the policy governs: Entra ID for identity policy, Intune for device policy, Microsoft Purview for data policy, the firewall management console for network policy.",
+   "in_risys": "The interesting control in this subdomain. Every technical finding RISYS derives from a connector is evidence toward 1-3-2 — an MFA gap is simultaneously a 2-2-3-2 failure and evidence that identity policy is not fully implemented. Worth mapping findings to both."
+  },
+  "1-3-3": {
+   "title": "Supported by technical security standards",
+   "class": "manual_evidence",
+   "plain": "Policies must be backed by technical standards — NCA names firewalls, databases and operating systems as examples. A policy saying \"systems shall be hardened\" without a document saying what hardened means fails this control.",
+   "how": "Write hardening baselines per technology. Most organisations adopt CIS Benchmarks or vendor baselines and tailor them. Cover at minimum the operating systems, database platforms, firewalls and hypervisors in the estate.",
+   "evidence": "The technical standard documents, their approval, and the mapping showing which estate components each covers.",
+   "platforms": "Configuration baselines live in Microsoft Intune, Group Policy, Defender for Cloud, Tenable or Qualys policy compliance modules, or Ansible and Terraform definitions.",
+   "in_risys": "Manual evidence for the standard itself. If the client runs Defender for Cloud or a Tenable policy compliance scan, RISYS can read the pass rate against the baseline as supporting evidence for 1-3-2."
+  },
+  "1-3-4": {
+   "title": "Reviewed and updated at planned intervals",
+   "class": "semi_automated",
+   "plain": "Policies must be reviewed on a defined interval or when legislation, regulation or standards change. Changes must be documented and approved.",
+   "how": "Set a review interval per policy, typically annual. Maintain version history with a change log and approval per version.",
+   "evidence": "Version history, review records, change approvals.",
+   "platforms": "The document repository's native version control: SharePoint, Confluence, or a DMS.",
+   "in_risys": "RISYS runs the review cycle and holds version metadata. Overdue policy reviews become a visible, chaseable state rather than something nobody notices until the audit."
+  },
+  "1-4-1": {
+   "title": "Governance structure, roles and responsibilities assigned",
+   "class": "semi_automated",
+   "plain": "The Authorized Official must identify, document and approve the cybersecurity governance structure, roles and responsibilities, assign named people to them, and provide the support needed — while ensuring no conflict of interest arises.",
+   "how": "Produce a RACI covering every cybersecurity function. Name individuals, not just job titles. Check for conflicts — the person operating a control should not be the person auditing it.",
+   "evidence": "The approved RACI or responsibility matrix, appointment letters, the organisation chart, and a conflict of interest assessment.",
+   "platforms": "HRMS for the authoritative role and reporting data, Entra ID for group membership and directory roles reflecting those assignments.",
+   "in_risys": "Partly automatable. Entra ID directory roles show who actually holds privileged responsibility, which can be reconciled against the documented RACI. A mismatch between the two is a genuinely valuable finding and is not something clients usually see."
+  },
+  "1-4-2": {
+   "title": "Roles reviewed and updated at planned intervals",
+   "class": "semi_automated",
+   "plain": "Roles and responsibilities must be reviewed on a defined interval or when legislative and regulatory requirements change.",
+   "how": "Schedule the review, run it against the current organisation chart, and update after joiners, leavers and restructures rather than only on the calendar.",
+   "evidence": "Review records, dated versions of the responsibility matrix, and change history.",
+   "platforms": "HRMS and Entra ID as the source of current state; RISYS for the review cycle.",
+   "in_risys": "RISYS schedules and records the review. If an HRMS connector exists, leaver events can trigger an out-of-cycle review of any role that person held."
+  },
+  "1-5-1": {
+   "title": "Risk management methodology documented and approved",
+   "class": "manual_evidence",
+   "plain": "The cybersecurity department must identify, document and approve a risk management methodology and procedures, built around confidentiality, integrity and availability of information and technology assets.",
+   "how": "Document the methodology: how risks are identified, the scoring scale for likelihood and impact, the risk appetite and acceptance thresholds, the treatment options, and the review cadence. Get it approved.",
+   "evidence": "The approved methodology document, the risk scoring scale, and the risk appetite statement.",
+   "platforms": "RISYS itself is the natural home, alongside the document store.",
+   "in_risys": "RISYS already implements a standardised scoring model with inherent and residual scoring and a control effectiveness reduction. The methodology document should describe exactly what RISYS does — at which point the platform becomes the implementation of the client's methodology rather than a record of it."
+  },
+  "1-5-2": {
+   "title": "Methodology implemented",
+   "class": "automated",
+   "plain": "The methodology must actually be applied across the entity — a populated, scored, owned risk register rather than a document describing one.",
+   "how": "Run the register. Every risk scored consistently, assigned an owner, moved through the lifecycle, with treatment actions tracked to closure.",
+   "evidence": "The live risk register, scoring consistency across entries, ownership coverage, and treatment progress.",
+   "platforms": "RISYS.",
+   "in_risys": "Fully automated and self-evidencing. RISYS computes register population, scoring completeness, ownership coverage and treatment closure rates directly from its own data. This is one of the very few controls in Domain 1 that scores itself, and it is a strong demonstration point."
+  },
+  "1-5-3": {
+   "title": "Risk assessment at four defined trigger points",
+   "class": "semi_automated",
+   "plain": "Risk assessment must be performed at minimum in four situations: early in technology projects, before major infrastructure changes, when planning to obtain third-party services, and during planning and before release of new technology services and products.",
+   "how": "Embed a risk assessment gate into four existing business processes — the project intake process, the change advisory board, the procurement and vendor onboarding process, and the release or go-live checklist. This is a process integration problem, not a documentation one.",
+   "evidence": "Completed assessments tied to specific projects, changes, vendor engagements and releases, showing the assessment preceded the event.",
+   "platforms": "Jira or Azure DevOps for project and release gates, ServiceNow or Jira Service Management for change management, and the procurement platform — SAP Ariba, Coupa, Oracle Procurement — for vendor onboarding.",
+   "in_risys": "Semi-automated and a good integration case. A Jira or ServiceNow connector lets RISYS see change records and project initiations, and flag any that proceeded without a linked risk assessment. That gap detection is more valuable than the assessment count itself."
+  },
+  "1-5-4": {
+   "title": "Methodology reviewed and updated",
+   "class": "semi_automated",
+   "plain": "The methodology and procedures must be reviewed on a defined interval or on regulatory change, with changes documented and approved.",
+   "how": "Annual review of the methodology, scoring scale and appetite. Update when the entity's risk profile or regulatory position changes materially.",
+   "evidence": "Review records, version history, approval of changes.",
+   "platforms": "RISYS and the document store.",
+   "in_risys": "RISYS runs the review cycle and records completion in the audit log."
+  },
+  "1-6-1": {
+   "title": "Cybersecurity built into project and change management",
+   "class": "semi_automated",
+   "plain": "Cybersecurity requirements must be part of the project management methodology and of asset change management, so that risks are identified and managed across the technology project lifecycle. NCA is explicit that security requirements are a key part of technology project requirements.",
+   "how": "Amend the project methodology and the change process to include mandatory security requirements and sign-off. Give the cybersecurity department a formal role in project gates and in the change advisory board.",
+   "evidence": "The updated methodology, project gate templates showing security sign- off, and CAB records showing security representation.",
+   "platforms": "Jira, Azure DevOps, ServiceNow, Microsoft Project.",
+   "in_risys": "A connector reading project and change records lets RISYS measure what proportion carried a security sign-off. That percentage is a defensible compliance metric for this control."
+  },
+  "1-6-2": {
+   "title": "Vulnerability assessment and secure configuration before launch",
+   "class": "automated",
+   "plain": "Two minimum requirements before projects and changes go live: vulnerability assessment and remediation, and review of secure configuration, hardening and update packages.",
+   "how": "Gate releases on a vulnerability scan with defined severity thresholds, and on a configuration baseline check. Block go-live on unremediated high and critical findings.",
+   "evidence": "Pre-launch scan reports, remediation records, configuration review sign- offs, and evidence of releases blocked or accepted with exception.",
+   "platforms": "Vulnerability scanning: Tenable, Qualys, Rapid7 InsightVM, Microsoft Defender Vulnerability Management. Configuration: Defender for Cloud, CIS-CAT, Intune, Ansible.",
+   "in_risys": "Automatable with a vulnerability management connector. RISYS reads open findings by severity and their remediation state. This is the highest-value Domain 1 integration after HRMS, because the same connector serves the whole of subdomain 2-10."
+  },
+  "1-6-3": {
+   "title": "Secure software development requirements",
+   "class": "semi_automated",
+   "plain": "Five minimum requirements for software and application development: secure coding standards, trusted and licensed sources for development tools and libraries, compliance testing of software against the entity's cybersecurity requirements, secure integration between applications, and review of secure configuration and hardening before launching software products.",
+   "how": "Adopt a secure coding standard such as OWASP ASVS. Put dependency management under control with an approved-source policy and software composition analysis. Add SAST and DAST to the pipeline. Define secure integration patterns — authenticated APIs, no plaintext secrets, validated inputs.",
+   "evidence": "The secure coding standard, SAST and DAST results, software composition analysis reports showing licence and provenance, and pre-release security test sign-offs.",
+   "platforms": "GitHub Advanced Security, GitLab Ultimate, SonarQube, Snyk, Checkmarx, Veracode, OWASP Dependency-Check, JFrog Xray.",
+   "in_risys": "Semi-automated. A GitHub or GitLab connector gives scan results, dependency alerts and policy pass rates per repository. The coding standard itself remains a document. Worth noting to a client that this control applies to them if they build software — many assume it does not."
+  },
+  "1-6-4": {
+   "title": "Project cybersecurity requirements periodically reviewed",
+   "class": "manual_evidence",
+   "plain": "The cybersecurity requirements applied to project management must themselves be reviewed periodically.",
+   "how": "Review the project security gate criteria annually against current threats and any lessons from incidents.",
+   "evidence": "Review records and updated gate criteria.",
+   "platforms": "Document store and RISYS.",
+   "in_risys": "Review cycle tracked in RISYS."
+  },
+  "1-7-1": {
+   "title": "Comply with nationally approved international commitments",
+   "class": "manual_evidence",
+   "plain": "A single-control subdomain, and narrower than it looks. Where nationally approved international agreements or commitments include cybersecurity requirements, the entity must identify and comply with them. ECC-2 deleted the former control requiring general compliance with national cybersecurity laws, on the basis that regulatory maturity now handles it.",
+   "how": "Identify which international commitments bind the entity — SWIFT CSP for financial institutions, PCI-DSS for card handling, and any treaty-derived obligations. Map their requirements and assess compliance against each.",
+   "evidence": "The register of applicable international requirements, compliance assessments against each, and any certifications held.",
+   "platforms": "Compliance management — RISYS itself — plus whatever system holds the certification evidence.",
+   "in_risys": "Directly relevant to the multi-framework design. A client bound by both ECC and PCI-DSS or SWIFT CSP is exactly the map-once-satisfy-many case. Worth noting for roadmap: adding PCI-DSS and SWIFT CSP would make this control automatable and strengthen the financial-sector pitch."
+  },
+  "1-8-1": {
+   "title": "Cybersecurity department reviews control implementation",
+   "class": "automated",
+   "plain": "The cybersecurity department must periodically review whether the entity is actually implementing its cybersecurity controls. This is the first-line self-assessment.",
+   "how": "Run a periodic self-assessment across the control set. NCA will issue the ECC-2:2024 Assessment and Compliance Tool for this purpose, and the entity's internal review should align to it.",
+   "evidence": "Self-assessment results, the review schedule, and identified gaps with remediation plans.",
+   "platforms": "RISYS is the natural system of record. NCA's own compliance tool sits alongside it.",
+   "in_risys": "Strongly automated and one of the best demonstration controls in the framework. Running the ECC assessment inside RISYS is itself the evidence for 1-8-1 — control statuses, assessment dates, assessor identity and gap register all come from platform data. Align the RISYS compliance status vocabulary to NCA's scoring scale so output can be submitted without translation."
+  },
+  "1-8-2": {
+   "title": "Independent review by a party other than the security department",
+   "class": "manual_evidence",
+   "plain": "Implementation must also be reviewed and audited by parties other than the cybersecurity department, conducted independently, respecting conflict of interest, in line with Generally Accepted Auditing Standards. This is second and third line assurance — internal audit or an external firm.",
+   "how": "Commission internal audit or an external assessor on a defined cycle. Ensure genuine independence — the reviewer must not report to the head of cybersecurity.",
+   "evidence": "Audit reports, engagement letters, the independence declaration, and auditor credentials.",
+   "platforms": "Audit management: internal audit platforms such as TeamMate or AuditBoard, or the RISYS evidence store.",
+   "in_risys": "Manual evidence, but RISYS holds the findings. A useful capability is importing external audit findings as tracked remediation items with owners and due dates, which links this control to 1-8-3."
+  },
+  "1-8-3": {
+   "title": "Results documented and presented to committee and Authorized Official",
+   "class": "semi_automated",
+   "plain": "Audit and review results must be documented and presented to the cybersecurity supervisory committee and the Authorized Official, and must include scope, observations, recommendations, corrective actions and remediation plans. The required content is specific and checkable.",
+   "how": "Produce reports containing all five required elements. Present them to the committee and record it in the minutes. Track corrective actions to closure.",
+   "evidence": "The reports themselves, committee minutes recording presentation, and the remediation tracker showing progress.",
+   "platforms": "RISYS for findings and remediation tracking; the document store or board platform for the reports and minutes.",
+   "in_risys": "RISYS holds findings and remediation actions with owners and due dates, and can generate the report content. The presentation to committee remains an uploaded minute. Note this control needs the reporting capability that RISYS does not yet have beyond CSV export."
+  },
+  "1-9-1": {
+   "title": "Personnel security requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Requirements covering personnel must be identified, documented and approved for all three phases: prior to, during, and on end or termination of employment.",
+   "how": "Write the personnel security standard covering screening, contractual clauses, awareness obligations, and revocation on exit. Get it approved.",
+   "evidence": "The approved personnel security policy and its approval record.",
+   "platforms": "Document store; HR policy library.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "1-9-2": {
+   "title": "Requirements implemented",
+   "class": "semi_automated",
+   "plain": "The personnel security requirements must actually be applied, not merely written.",
+   "how": "Operate the process: screening completed before start dates, clauses present in signed contracts, awareness assigned on onboarding, access revoked on exit.",
+   "evidence": "Completed screening records, signed contracts, onboarding checklists, offboarding completion records.",
+   "platforms": "HRMS as primary source; Entra ID or Active Directory for the access side.",
+   "in_risys": "Semi-automated with an HRMS connector — completion rates for screening, contract clauses and onboarding are structured fields."
+  },
+  "1-9-3": {
+   "title": "Pre-employment: contractual clauses and screening",
+   "class": "semi_automated",
+   "plain": "Two minimum requirements before employment starts. First, cybersecurity responsibility and non-disclosure clauses in employment contracts, binding during and after employment. Second, screening or vetting for personnel in cybersecurity positions and technical positions with critical and privileged powers.",
+   "how": "Add the clauses to standard contract templates. Define which roles are privileged and therefore require vetting, and run the screening before access is granted rather than after.",
+   "evidence": "Contract templates showing the clauses, signed contracts, the list of positions designated as privileged, and completed screening records for each.",
+   "platforms": "HRMS and applicant tracking: SuccessFactors, Workday, Oracle HCM, Odoo. Background screening vendors. Contract execution in DocuSign or Adobe Sign.",
+   "in_risys": "Semi-automated. An HRMS connector shows screening completion per role. The privileged-role designation can be cross-checked against Entra ID directory roles — anyone holding a privileged role in Entra without a completed screening record is a precise, high-value finding that spans HR and identity."
+  },
+  "1-9-4": {
+   "title": "During employment: awareness and compliance",
+   "class": "automated",
+   "plain": "Two minimum requirements during employment: cybersecurity awareness at onboarding and continuing through employment, and implementation of and compliance with the entity's cybersecurity requirements.",
+   "how": "Assign awareness training at onboarding and on a recurring cycle. Track completion and chase non-completion.",
+   "evidence": "Training completion records with dates, coverage percentage against headcount, and non-completion follow-up.",
+   "platforms": "Learning management and awareness platforms: KnowBe4, Proofpoint Security Awareness, Microsoft Viva Learning, Cornerstone, Moodle, SANS.",
+   "in_risys": "Fully automatable and an easy win. Awareness platforms expose completion data through APIs, and completion percentage against active headcount is a clean numeric compliance measure. This connector also serves the whole of subdomain 1-10."
+  },
+  "1-9-5": {
+   "title": "Powers revoked immediately on termination",
+   "class": "automated",
+   "plain": "The word is immediately. Personnel powers must be reviewed and revoked immediately on end or termination of employment. Any gap between the HR leave date and the account disable date is a measurable failure.",
+   "how": "Wire the joiner-mover-leaver process so that termination in the HRMS triggers account disablement automatically. Where the process is manual, define and monitor the maximum acceptable lag.",
+   "evidence": "Termination records paired with account disablement timestamps, and the measured lag between them.",
+   "platforms": "HRMS as the authoritative leave date; Entra ID or Active Directory for account state. Identity governance tooling such as SailPoint, Saviynt or Microsoft Entra ID Governance where it exists.",
+   "in_risys": "One of the most compelling automated controls in the whole framework and a strong demonstration. Reconciling HRMS leave dates against Entra or AD account state produces a specific, undeniable finding: named accounts still enabled after their termination date. It is visual, it is serious, and almost every organisation has some. It requires both an HRMS connector and the existing Entra connector — the reconciliation is the product."
+  },
+  "1-9-6": {
+   "title": "Personnel requirements periodically reviewed",
+   "class": "semi_automated",
+   "plain": "The cybersecurity requirements for personnel must be reviewed periodically.",
+   "how": "Annual review of the personnel security standard and the privileged- role designations.",
+   "evidence": "Review records and updated designations.",
+   "platforms": "HRMS and document store.",
+   "in_risys": "Review cycle in RISYS."
+  },
+  "1-10-1": {
+   "title": "Awareness programme developed and approved",
+   "class": "semi_automated",
+   "plain": "An awareness programme delivered through multiple channels must be periodically developed and approved, aimed at strengthening awareness of cyber threats and risks and building a positive security culture. The multiple-channel requirement is explicit.",
+   "how": "Build a programme using several delivery methods — e-learning, simulated phishing, posters, briefings, newsletters. Get the programme approved and refresh it periodically.",
+   "evidence": "The approved programme plan, the channel inventory, and the content calendar.",
+   "platforms": "KnowBe4, Proofpoint, Microsoft Viva Learning, Cornerstone, internal communications platforms.",
+   "in_risys": "Programme document is manual evidence; delivery data comes from the awareness platform."
+  },
+  "1-10-2": {
+   "title": "Programme implemented",
+   "class": "automated",
+   "plain": "The approved awareness programme must actually be delivered across the entity.",
+   "how": "Run the campaigns and track participation against total headcount.",
+   "evidence": "Delivery records, participation rates, campaign history.",
+   "platforms": "The awareness platform, reconciled against HRMS headcount.",
+   "in_risys": "Fully automated where the awareness platform is connected. Coverage percentage is the metric."
+  },
+  "1-10-3": {
+   "title": "Programme content covers four required topics",
+   "class": "semi_automated",
+   "plain": "The programme must cover, as a minimum: secure handling of email services and especially phishing, secure handling of mobile devices and storage media, secure internet browsing, and secure use of social media.",
+   "how": "Map programme modules to each of the four topics and confirm none is missing. Phishing simulation results give the strongest evidence for the first topic.",
+   "evidence": "Content mapping against the four topics, module completion by topic, and phishing simulation results with click and report rates.",
+   "platforms": "KnowBe4 or Proofpoint for phishing simulation and topic-tagged modules.",
+   "in_risys": "Semi-automated. Completion by topic is readable where the platform tags content. Phishing simulation click rate is a compelling metric to surface — it is the one awareness number executives actually engage with."
+  },
+  "1-10-4": {
+   "title": "Specialised training for three personnel groups",
+   "class": "semi_automated",
+   "plain": "Specialised skills and training must be provided to personnel in roles linked directly to cybersecurity, classified in line with their responsibilities, covering three named groups: cybersecurity department personnel, personnel working on software and application development and on the entity's information and technology assets, and executive and supervisory positions.",
+   "how": "Define a training pathway per group. Track certifications and specialised course completion separately from general awareness — they are different evidence.",
+   "evidence": "Training plans per group, completion records, certifications held with expiry dates, and budget allocation.",
+   "platforms": "LMS and certification tracking: Cornerstone, SuccessFactors Learning, Credly for certification verification, and the HRMS for role classification.",
+   "in_risys": "Semi-automated where an LMS connector exists. The role classification comes from HRMS, the completion from the LMS. Certification expiry tracking is a useful early-warning surface."
+  },
+  "1-10-5": {
+   "title": "Implementation periodically reviewed",
+   "class": "semi_automated",
+   "plain": "The implementation of the awareness programme must be periodically reviewed.",
+   "how": "Review effectiveness annually — completion rates, phishing click rate trend, incident correlation — and adjust content.",
+   "evidence": "Review records, effectiveness metrics over time, and programme adjustments made.",
+   "platforms": "Awareness platform analytics; RISYS for the review cycle.",
+   "in_risys": "RISYS holds the review cadence and can trend the metrics across periods."
+  },
+  "2-1-1": {
+   "title": "Asset management requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Requirements for managing information and technology assets must be identified, documented and approved.",
+   "how": "Write the asset management standard: what counts as an asset, who owns each class, the required inventory attributes, and the lifecycle from acquisition to disposal.",
+   "evidence": "The approved asset management policy.",
+   "platforms": "Document store.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "2-1-2": {
+   "title": "Requirements implemented",
+   "class": "automated",
+   "plain": "The asset management requirements must be operating — meaning a real, current, complete inventory rather than a spreadsheet last updated two years ago. Completeness is the thing assessors test.",
+   "how": "Maintain the inventory from authoritative discovery sources rather than manual entry. Reconcile across sources: devices in Intune versus devices in the CMDB versus endpoints reporting to the EDR agent. The gaps between those three lists are the real finding.",
+   "evidence": "The live inventory, its coverage against discovery sources, the last- updated timestamps, and the reconciliation exceptions.",
+   "platforms": "Microsoft Intune and Entra ID for devices, ServiceNow CMDB or Jira Assets, Lansweeper, Defender for Endpoint device inventory, Tenable or Qualys asset discovery, and cloud inventories from Azure Resource Graph or AWS Config.",
+   "in_risys": "Highly automatable and a strong early integration. Intune and Defender both expose full device inventories through Graph. RISYS can hold the reconciled asset list and surface unmanaged devices — endpoints seen on the network but absent from the managed inventory. That gap is a compelling and very common finding."
+  },
+  "2-1-3": {
+   "title": "Acceptable use policy documented, approved and communicated",
+   "class": "manual_evidence",
+   "plain": "The acceptable use policy for information and technology assets must be identified, documented, approved and communicated. Communication is part of the control.",
+   "how": "Write the AUP, approve it, and distribute with recorded acknowledgement — typically at onboarding and on annual refresh.",
+   "evidence": "The approved AUP and acknowledgement records per employee.",
+   "platforms": "HRMS or LMS for acknowledgement capture; SharePoint or the policy library for the document.",
+   "in_risys": "The document is manual evidence; acknowledgement rate is readable from HRMS or LMS if connected."
+  },
+  "2-1-4": {
+   "title": "Acceptable use policy implemented",
+   "class": "semi_automated",
+   "plain": "The AUP must be enforced, not merely signed. Enforcement is technical as much as procedural.",
+   "how": "Back the policy with technical controls — web filtering, application control, removable media restrictions, DLP — so that the policy statements have a mechanism behind them.",
+   "evidence": "Enforcement configuration, policy violation reports, and disciplinary records where the policy was breached.",
+   "platforms": "Microsoft Defender for Endpoint and Intune for application and device control, Zscaler or Netskope for web filtering, Microsoft Purview DLP.",
+   "in_risys": "Semi-automated. Violation counts and enforcement coverage are readable from the endpoint and web filtering platforms."
+  },
+  "2-1-5": {
+   "title": "Assets classified, labelled and handled",
+   "class": "semi_automated",
+   "plain": "Information and technology assets must be classified, labelled and handled in line with relevant legislative and regulatory requirements. Note the interaction with PDPL and with the NDMO data classification mandates — classification is not a purely internal choice.",
+   "how": "Define the classification scheme, apply labels, and define handling rules per level. Automated labelling scales far better than asking users to classify.",
+   "evidence": "The classification standard, label coverage across documents and emails, and the handling rules per classification level.",
+   "platforms": "Microsoft Purview Information Protection is the dominant platform — sensitivity labels, auto-labelling policies and label analytics. Also Titus, Boldon James, or Google Workspace labels.",
+   "in_risys": "Automatable through Purview. Label coverage percentage and the distribution across classification levels are readable through Graph. This control also feeds PDPL Article 1 and the NDMO classification requirement, which is a good cross-framework demonstration once PDPL is live in RISYS."
+  },
+  "2-1-6": {
+   "title": "Asset requirements periodically reviewed",
+   "class": "semi_automated",
+   "plain": "The requirements for managing assets must be periodically reviewed.",
+   "how": "Annual review of the standard, the classification scheme and the inventory attributes.",
+   "evidence": "Review records and updates made.",
+   "platforms": "RISYS and document store.",
+   "in_risys": "Review cycle tracked in RISYS."
+  },
+  "2-2-1": {
+   "title": "IAM requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Identity and access management requirements must be identified, documented and approved.",
+   "how": "Write the IAM standard: authentication requirements, authorisation model, privileged access rules, joiner-mover-leaver process and review cadence.",
+   "evidence": "The approved IAM policy.",
+   "platforms": "Document store.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "2-2-2": {
+   "title": "IAM requirements implemented",
+   "class": "automated",
+   "plain": "The IAM requirements must be operating across the estate — the configured reality matching the written standard.",
+   "how": "Enforce through conditional access policies, group-based authorisation and automated provisioning rather than manual administration.",
+   "evidence": "Conditional access policy configuration, provisioning records, and coverage across the user population.",
+   "platforms": "Microsoft Entra ID, Active Directory, Okta, Ping Identity. Identity governance in SailPoint, Saviynt, or Entra ID Governance.",
+   "in_risys": "Fully automated with the existing Entra connector. Every gap RISYS finds in 2-2-3 is evidence against this control."
+  },
+  "2-2-3": {
+   "title": "Five minimum IAM requirements",
+   "class": "automated",
+   "plain": "The subcontrols here are the most automatable set in the framework. Five minimum requirements: single-factor authentication based on username and password (2-2-3- 1); multi-factor authentication with factors chosen based on impact assessment of authentication failure and bypass, for remote access and for privileged accounts (2-2-3-2); user authorisation based on need-to-know, need-to-use, least privilege and segregation of duties (2- 2-3-3); privileged access management (2-2-3-4); and periodic review of identities and access rights (2-2-3-5).",
+   "how": "Enforce MFA through conditional access, with no unscoped exclusions. Implement privileged access management with just-in-time elevation and approval. Run access recertification campaigns on a defined cycle. Design groups so that authorisation reflects role rather than accumulating over time.",
+   "evidence": "MFA registration and enforcement coverage, the conditional access policy set with exclusions justified, the privileged account inventory, PIM activation logs, and completed access review campaigns with revocation actions taken.",
+   "platforms": "Microsoft Entra ID including Privileged Identity Management and Access Reviews, Active Directory with a PAM tool, CyberArk, BeyondTrust, Delinea, Okta, SailPoint, Saviynt.",
+   "in_risys": "The flagship automated control. RISYS already reads MFA registration state and privileged directory roles from Entra. Extending to conditional access policies, PIM activation and access review completion covers all five subcontrols. Note the current defect: the inactivity finding cannot fire because last sign-in is never populated, which weakens 2-2-3-5 — fix that first, since access review evidence is exactly what this control asks for."
+  },
+  "2-2-4": {
+   "title": "IAM implementation periodically reviewed",
+   "class": "automated",
+   "plain": "The implementation of identity and access management requirements must be periodically reviewed.",
+   "how": "Run scheduled access recertification and review the IAM configuration itself — conditional access drift, stale exclusions, orphaned privileged roles.",
+   "evidence": "Access review campaign records with completion rates and revocations, and configuration review records.",
+   "platforms": "Entra ID Access Reviews, SailPoint, Saviynt.",
+   "in_risys": "Automatable. Entra Access Reviews expose campaign status, completion and decisions through Graph. RISYS can also run the review cycle itself where the client has no governance tooling, which is the common case in mid-size organisations."
+  },
+  "2-3-1": {
+   "title": "System protection requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Requirements for protecting information systems and processing facilities must be identified, documented and approved.",
+   "how": "Write the endpoint and server protection standard covering malware protection, media control, patching and time synchronisation.",
+   "evidence": "The approved standard.",
+   "platforms": "Document store.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "2-3-2": {
+   "title": "Requirements implemented",
+   "class": "automated",
+   "plain": "Protection must be deployed and operating across the estate. Coverage is the measure — an EDR agent on 82 percent of endpoints is an 18 percent gap, and that gap is where incidents start.",
+   "how": "Deploy the endpoint protection agent estate-wide and monitor coverage against the asset inventory. Investigate every unprotected device rather than accepting the percentage.",
+   "evidence": "Agent coverage against total assets, health status of deployed agents, and exception records for devices that cannot carry an agent.",
+   "platforms": "Microsoft Defender for Endpoint, CrowdStrike Falcon, SentinelOne, Kaspersky Endpoint Security, Trend Micro, Sophos.",
+   "in_risys": "Fully automated. Every EDR platform exposes agent coverage and health. Reconciling that against the Intune or CMDB asset inventory produces the unprotected-device list, which is a genuinely useful operational output as well as compliance evidence."
+  },
+  "2-3-3": {
+   "title": "Four minimum protection requirements",
+   "class": "automated",
+   "plain": "Four minimum requirements: protection from viruses, suspicious programs and malware on workstations and servers using modern advanced technologies, securely managed (2-3-3-1); strict restriction on the use of external storage media and their security (2- 3-3-2); patch management for systems, applications and devices (2-3-3-3); and centralised clock synchronisation with an accurate trusted source, with NCA naming SASO as an example (2-3-3-4).",
+   "how": "Deploy modern EDR rather than signature-only antivirus — NCA's wording on advanced protection technologies points at behavioural detection. Block or tightly control removable media through device control policy. Run a patch management programme with defined SLAs by severity. Point all systems at a common trusted NTP source and monitor for drift.",
+   "evidence": "EDR coverage and detection configuration, removable media policy configuration and exception list, patch compliance rates by severity with SLA adherence, and NTP configuration with drift monitoring.",
+   "platforms": "EDR: Defender for Endpoint, CrowdStrike, SentinelOne, Kaspersky. Media control: Intune device control, Defender for Endpoint device control. Patching: Microsoft Intune, WSUS, SCCM, Automox, Ivanti, Tanium. Time: NTP infrastructure, monitored through the SIEM.",
+   "in_risys": "Three of the four subcontrols are strongly automatable. EDR coverage, media control policy state and patch compliance percentage are all API-readable. Clock synchronisation is the awkward one — it typically needs a SIEM query or a configuration check rather than a native API, so treat it as semi-automated evidence."
+  },
+  "2-3-4": {
+   "title": "Implementation periodically reviewed",
+   "class": "semi_automated",
+   "plain": "The implementation of system protection requirements must be periodically reviewed.",
+   "how": "Scheduled review of coverage, configuration and exceptions.",
+   "evidence": "Review records and remediation of gaps found.",
+   "platforms": "The EDR and patching consoles; RISYS for the cycle.",
+   "in_risys": "Review cycle in RISYS with the coverage metrics attached as evidence."
+  },
+  "2-4-1": {
+   "title": "Email protection requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Requirements for protecting the email service must be identified, documented and approved.",
+   "how": "Write the email security standard covering filtering, authentication, archiving and access controls.",
+   "evidence": "The approved standard.",
+   "platforms": "Document store.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "2-4-2": {
+   "title": "Requirements implemented",
+   "class": "automated",
+   "plain": "Email protection must be configured and operating.",
+   "how": "Deploy and tune the email security stack; monitor filtering effectiveness and false negative rates.",
+   "evidence": "Configuration state, filtering statistics, and threat detection volumes.",
+   "platforms": "Microsoft Defender for Office 365, Proofpoint, Mimecast, Barracuda, Cisco Secure Email.",
+   "in_risys": "Automatable through the email security platform API."
+  },
+  "2-4-3": {
+   "title": "Five minimum email requirements",
+   "class": "automated",
+   "plain": "Five minimum requirements: analysing and filtering email including phishing and spam using modern techniques (2-4-3-1); multi-factor authentication for remote and webmail access with factors based on impact assessment (2-4-3-2); email archiving and backup (2-4-3-3); secure management and protection against Advanced Persistent Threats using zero-day malware (2-4-3-4); and validation of the entity's email service domains using SPF, DKIM and DMARC (2-4-3-5).",
+   "how": "Enable advanced threat protection with safe attachments and safe links. Enforce MFA on webmail through conditional access. Configure archiving with a defined retention period. Publish SPF, DKIM and DMARC records and move DMARC to an enforcing policy rather than leaving it at none.",
+   "evidence": "Filtering policy configuration and detection statistics, conditional access covering webmail, archive configuration and retention settings, ATP policy state, and DNS records showing SPF, DKIM and DMARC with the DMARC policy value.",
+   "platforms": "Microsoft Defender for Office 365 or Exchange Online Protection, Proofpoint, Mimecast. DMARC monitoring through Dmarcian, Valimail or Agari. DNS through the domain registrar.",
+   "in_risys": "Note 2-4-3-5 specifically: it is a plain DNS lookup, requires no connector, no credentials and no client cooperation, and returns a definitive pass or fail with a visible red or green result. It can be built in an afternoon and demonstrated on the client's own domain before they have integrated anything. Of everything in this framework, it is the single best opening move for a sales demonstration."
+  },
+  "2-4-4": {
+   "title": "Implementation periodically reviewed",
+   "class": "semi_automated",
+   "plain": "Email protection implementation must be periodically reviewed.",
+   "how": "Review filtering effectiveness, DMARC reports and policy configuration on a cycle.",
+   "evidence": "Review records and configuration changes made.",
+   "platforms": "The email security console; DMARC reporting platform.",
+   "in_risys": "Review cycle in RISYS with DMARC posture attached."
+  },
+  "2-5-1": {
+   "title": "Network security requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Network security management requirements must be identified, documented and approved.",
+   "how": "Write the network security standard covering segmentation, environment separation, browsing controls, wireless, services and ports, IPS, DNS, APT protection and DDoS.",
+   "evidence": "The approved standard and the network architecture documentation.",
+   "platforms": "Document store; network diagramming.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "2-5-2": {
+   "title": "Requirements implemented",
+   "class": "semi_automated",
+   "plain": "Network security controls must be deployed and operating.",
+   "how": "Deploy and maintain the network security stack; verify configuration against the documented architecture.",
+   "evidence": "Firewall rule base, segmentation verification, and configuration compliance reports.",
+   "platforms": "Palo Alto Networks, Fortinet FortiGate, Cisco, Check Point, Juniper. Rule management through Tufin, AlgoSec or FireMon.",
+   "in_risys": "Semi-automated. Firewall management platforms expose rule and policy data through APIs, but interpreting whether segmentation is adequate needs human judgement."
+  },
+  "2-5-3": {
+   "title": "Nine minimum network requirements",
+   "class": "semi_automated",
+   "plain": "The longest subcontrol set in the framework, at nine items: logical or physical segmentation using firewalls and defence-in-depth (2-5-3-1); isolation of production from test and development networks (2-5-3-2); secure browsing and internet connectivity with strict restrictions on suspicious sites, file sharing and remote access sites (2-5-3-3); wireless security using secure authentication and encryption, avoiding connection of wireless to the internal network without comprehensive risk assessment (2-5-3-4); restricting and managing network services, protocols and ports (2-5-3-5); intrusion prevention systems (2-5-3-6); DNS security (2-5-3-7); protection of the browsing channel against APTs using zero-day malware (2- 5-3-8); and protection against DDoS attacks (2-5-3-9, newly added in ECC-2).",
+   "how": "Segment by trust zone with enforced inter-zone policy. Physically or logically separate non-production. Deploy web filtering with category blocking. Secure wireless with WPA3 Enterprise and keep guest wireless off the internal network. Run a port and service review against a documented baseline. Enable IPS in prevention rather than detection mode. Deploy protective DNS. Enable sandboxing on the browsing channel. Put DDoS protection in front of internet-facing services.",
+   "evidence": "Network architecture and segmentation diagrams with firewall policy proving enforcement, environment separation evidence, web filtering policy and block statistics, wireless configuration and the risk assessment where wireless touches internal networks, the approved port and service baseline with exceptions, IPS mode and signature currency, DNS security configuration, sandboxing configuration, and DDoS protection configuration with any mitigation events.",
+   "platforms": "Firewalls and IPS: Palo Alto, Fortinet, Cisco Firepower, Check Point. Web filtering: Zscaler, Netskope, Cisco Umbrella, Forcepoint. Wireless: Cisco, Aruba, Ruckus. Protective DNS: Cisco Umbrella, Infoblox, Cloudflare Gateway. DDoS: Cloudflare, Akamai, Azure DDoS Protection, AWS Shield, Radware.",
+   "in_risys": "This subdomain is the weakest fit for automation despite being highly technical, because network security platforms are fragmented, often on-premises, and rarely expose clean compliance APIs. Treat most of it as semi-automated with configuration exports as evidence. The exceptions worth automating are DDoS protection state, where Cloudflare and Azure have good APIs, and web filtering coverage. Do not over-promise on this subdomain in a demo."
+  },
+  "2-5-4": {
+   "title": "Implementation periodically reviewed",
+   "class": "semi_automated",
+   "plain": "Network security implementation must be periodically reviewed.",
+   "how": "Periodic firewall rule review, segmentation validation and port baseline reconciliation.",
+   "evidence": "Rule review records, removed and justified rules, and segmentation test results.",
+   "platforms": "Tufin, AlgoSec, FireMon for rule review workflow.",
+   "in_risys": "Review cycle in RISYS; rule review completion readable where a rule management platform exists."
+  },
+  "2-6-1": {
+   "title": "Mobile and BYOD requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Requirements for mobile devices and BYOD security when connected to the entity's network must be identified, documented and approved.",
+   "how": "Write the mobile and BYOD standard. Decide explicitly whether BYOD is permitted at all — many Saudi entities restrict it, and a clear prohibition is easier to evidence than a permissive policy.",
+   "evidence": "The approved mobile and BYOD policy and user acceptance records.",
+   "platforms": "Document store; HRMS for acceptance.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "2-6-2": {
+   "title": "Requirements implemented",
+   "class": "automated",
+   "plain": "Mobile device management must be deployed and enrolling devices.",
+   "how": "Enrol corporate devices in MDM. For BYOD, use application-level management rather than full device management where privacy considerations apply.",
+   "evidence": "Enrolment coverage, compliance policy state, and the count of non- compliant devices.",
+   "platforms": "Microsoft Intune, VMware Workspace ONE, Jamf for Apple estates, MobileIron or Ivanti Neurons.",
+   "in_risys": "Fully automated. Intune exposes enrolment and compliance state through Graph, and device compliance percentage is a clean metric."
+  },
+  "2-6-3": {
+   "title": "Four minimum mobile requirements",
+   "class": "automated",
+   "plain": "Four minimum requirements: separation and encryption of entity data stored on mobile devices and BYODs (2-6-3-1); controlled and restricted use based on business need (2-6-3-2); deletion of entity data on device loss or on end of employment (2-6-3-3); and security awareness for users (2-6-3-4).",
+   "how": "Enforce encryption and app protection policies that separate work data into a managed container. Restrict which users may enrol personal devices. Configure selective wipe and test that it works. Assign mobile-specific awareness content.",
+   "evidence": "Encryption compliance per device, app protection policy coverage, wipe capability configuration and executed wipe records, and awareness completion covering mobile topics.",
+   "platforms": "Intune app protection policies, Workspace ONE, Jamf. Awareness through the LMS.",
+   "in_risys": "Strongly automated. Encryption state, app protection coverage and wipe events are all readable from Intune. Subcontrol 2-6-3-3 ties directly to 1-9-5 — the leaver reconciliation should include mobile data removal, not just account disablement."
+  },
+  "2-6-4": {
+   "title": "Implementation periodically reviewed",
+   "class": "semi_automated",
+   "plain": "Mobile and BYOD security implementation must be periodically reviewed.",
+   "how": "Review enrolment coverage, policy configuration and exception list on a cycle.",
+   "evidence": "Review records and remediation of non-compliant devices.",
+   "platforms": "Intune console.",
+   "in_risys": "Review cycle in RISYS with compliance metrics attached."
+  },
+  "2-7-1": {
+   "title": "Data protection requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Requirements for protecting and handling data must be identified, documented and approved in line with relevant legislative and regulatory requirements — which here means PDPL and the NDMO mandates.",
+   "how": "Write the data protection standard aligned to both ECC and PDPL. The overlap is substantial and the documents should be written once, not twice.",
+   "evidence": "The approved data protection policy showing alignment to PDPL and NDMO requirements.",
+   "platforms": "Document store.",
+   "in_risys": "Evidence upload. A strong cross-framework case: one policy artefact satisfying an ECC control and several PDPL articles simultaneously, which is exactly what the map-once model is for."
+  },
+  "2-7-2": {
+   "title": "Protection implemented based on classification level",
+   "class": "semi_automated",
+   "plain": "ECC-2 modified this control to tie implementation explicitly to classification level. Protection must be proportionate — the controls applied to a document depend on how it is classified.",
+   "how": "Define handling rules per classification level and enforce them technically: encryption, access restriction, DLP policy and sharing limits keyed to the label.",
+   "evidence": "Handling rules per level, DLP policy configuration mapped to labels, encryption coverage, and DLP incident volumes.",
+   "platforms": "Microsoft Purview Information Protection and Purview DLP, Symantec DLP, Forcepoint DLP, Netskope.",
+   "in_risys": "Semi-automated through Purview. Label coverage, DLP policy state and incident counts are readable through Graph. This control and 2-1-5 share the same data source."
+  },
+  "2-7-3": {
+   "title": "Implementation periodically reviewed",
+   "class": "semi_automated",
+   "plain": "The implementation of data protection requirements must be periodically reviewed.",
+   "how": "Review classification accuracy, DLP rule effectiveness and false positive rates on a cycle.",
+   "evidence": "Review records, rule tuning history, and coverage trend.",
+   "platforms": "Purview analytics.",
+   "in_risys": "Review cycle in RISYS."
+  },
+  "2-8-1": {
+   "title": "Cryptography requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Cryptography requirements must be identified, documented and approved.",
+   "how": "Write the cryptographic standard specifying approved algorithms, key lengths, protocol versions and prohibited legacy ciphers.",
+   "evidence": "The approved cryptographic standard.",
+   "platforms": "Document store.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "2-8-2": {
+   "title": "Requirements implemented",
+   "class": "semi_automated",
+   "plain": "The cryptographic standard must be enforced across systems.",
+   "how": "Audit TLS configurations, disable deprecated protocols and ciphers, and verify encryption at rest across data stores.",
+   "evidence": "TLS scan results, cipher suite configuration, and encryption-at-rest state per data store.",
+   "platforms": "Qualys SSL Labs, Tenable, Defender for Cloud, cloud provider encryption settings in Azure Key Vault, AWS KMS.",
+   "in_risys": "Semi-automated. TLS posture is scannable externally without client credentials, which makes it another useful pre-integration demonstration alongside DMARC."
+  },
+  "2-8-3": {
+   "title": "Compliance with National Cryptographic Standards",
+   "class": "semi_automated",
+   "plain": "ECC-2 rewrote this control significantly. Cryptography requirements must now include at minimum the requirements in the National Cryptographic Standards published by NCA, with the appropriate standard level chosen based on the nature and sensitivity of the data, systems and networks, and on the entity's risk assessment. Three subcontrols follow: approved cryptographic systems and solutions standards with their technical and regulatory restrictions (2-8-3-1); secure management of cryptographic keys through their lifecycle (2-8-3- 2); and encryption of data in transit and at rest per classification (2-8-3-3).",
+   "how": "Obtain NCS-1:2020 and map the entity's cryptographic usage to the correct NCS level. Implement key management with defined generation, storage, rotation, revocation and destruction. Encrypt in transit and at rest, keyed to classification.",
+   "evidence": "The mapping of systems to NCS levels, the key management procedure, HSM or key vault configuration, key rotation records, and encryption coverage per classification.",
+   "platforms": "Azure Key Vault, AWS KMS, HashiCorp Vault, Thales or Entrust HSMs, Venafi for certificate lifecycle.",
+   "in_risys": "Semi-automated. Key vaults expose key inventory, rotation state and expiry through APIs — expired or unrotated keys are a readable finding. Note the direct product relevance: RISYS holds all 136 NCS controls in the database already but does not surface them in the UI. This control is the reason to add NCS to the framework registry, since ECC 2-8-3 formally requires compliance with it."
+  },
+  "2-8-4": {
+   "title": "Implementation periodically reviewed",
+   "class": "semi_automated",
+   "plain": "Cryptography implementation must be periodically reviewed.",
+   "how": "Review algorithm currency against NCS updates, certificate expiry and key rotation compliance.",
+   "evidence": "Review records, certificate inventory with expiry dates, and rotation compliance.",
+   "platforms": "Venafi, Key Vault, certificate management tooling.",
+   "in_risys": "Review cycle in RISYS; certificate expiry is a good automated early-warning surface."
+  },
+  "2-9-1": {
+   "title": "Backup requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Backup and recovery requirements must be identified, documented and approved.",
+   "how": "Write the backup standard defining scope, frequency, retention, storage location, encryption and recovery time and point objectives.",
+   "evidence": "The approved backup policy with RTO and RPO per system tier.",
+   "platforms": "Document store.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "2-9-2": {
+   "title": "Requirements implemented",
+   "class": "automated",
+   "plain": "Backups must be running and succeeding. Job success rate is the measure, and silent failure is the common finding.",
+   "how": "Configure backup jobs across the defined scope and monitor success and failure daily. Alert on consecutive failures rather than reviewing reports monthly.",
+   "evidence": "Job success and failure rates, coverage against the asset inventory, and failure investigation records.",
+   "platforms": "Veeam, Commvault, Rubrik, Cohesity, Veritas NetBackup, Azure Backup, AWS Backup, Acronis.",
+   "in_risys": "Fully automated. Every enterprise backup platform exposes job status through an API. Backup success rate and unprotected-system count are clean numeric metrics and immediately meaningful to an operations audience."
+  },
+  "2-9-3": {
+   "title": "Three minimum backup requirements",
+   "class": "automated",
+   "plain": "Three minimum requirements: backup scope covering critical technology and information assets (2-9-3-1); ability to perform quick recovery of data and systems after cybersecurity incidents (2-9-3-2); and periodic testing of the effectiveness of backup recovery (2-9-3-3).",
+   "how": "Reconcile backup scope against the critical asset register — the gap between what is critical and what is backed up is the finding. Verify recovery capability meets the documented RTO. Run scheduled restore tests and record the results, since untested backups are the classic audit failure.",
+   "evidence": "Scope reconciliation against the critical asset list, documented and demonstrated recovery times, and restore test records with dates, systems tested and outcomes.",
+   "platforms": "The backup platform for scope and job data; disaster recovery tooling such as Azure Site Recovery, Zerto or VMware SRM for recovery capability.",
+   "in_risys": "Automated for scope and job status. Restore testing is where clients usually fail — most platforms record test restore jobs, so RISYS can surface when a system was last successfully test-restored, and flag anything beyond its test interval. That is a specific, defensible finding."
+  },
+  "2-9-4": {
+   "title": "Implementation periodically reviewed",
+   "class": "semi_automated",
+   "plain": "Backup and recovery implementation must be periodically reviewed.",
+   "how": "Review scope, retention, success rates and test outcomes on a cycle.",
+   "evidence": "Review records and scope changes made.",
+   "platforms": "Backup console; RISYS for the cycle.",
+   "in_risys": "Review cycle with metrics attached."
+  },
+  "2-10-1": {
+   "title": "Vulnerability management requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Requirements for technical vulnerability management must be identified, documented and approved.",
+   "how": "Write the standard defining scan scope and frequency, severity classification, remediation SLAs per severity, and the exception process.",
+   "evidence": "The approved vulnerability management policy with remediation SLAs.",
+   "platforms": "Document store.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "2-10-2": {
+   "title": "Requirements implemented",
+   "class": "automated",
+   "plain": "Scanning must be running across the defined scope and findings must be flowing into remediation.",
+   "how": "Operate the scanning programme with authenticated scans where possible, and route findings to owners with due dates derived from the SLA.",
+   "evidence": "Scan coverage against the asset inventory, scan frequency, and open finding counts by severity and age.",
+   "platforms": "Tenable Nessus or Tenable.io, Qualys VMDR, Rapid7 InsightVM, Microsoft Defender Vulnerability Management.",
+   "in_risys": "Fully automated and one of the highest-value integrations available. Open findings by severity and their ageing against SLA is precisely the kind of live metric that makes a compliance platform feel operational rather than administrative."
+  },
+  "2-10-3": {
+   "title": "Five minimum vulnerability requirements",
+   "class": "automated",
+   "plain": "Five minimum requirements: periodic vulnerability assessment and detection (2-10-3-1); classification by severity (2-10-3-2); remediation based on classification and associated cyber risks (2-10-3-3); patch management to remediate vulnerabilities, with integrity and effectiveness of updates verified in a non-production environment before being applied (2-10-3-4); and communication and subscription with trusted resources for new and up- to-date vulnerabilities (2-10-3-5).",
+   "how": "Scan on a defined cycle. Use CVSS with environmental scoring so severity reflects the entity's context. Remediate against SLA. Note the specific requirement in 2-10-3-4 for pre-production testing of patches — that is a process requirement many organisations skip and it is explicitly checkable. Subscribe to threat intelligence and vendor advisories, including the NCA's own advisories.",
+   "evidence": "Scan schedule and results, severity classification methodology, remediation SLA adherence with mean time to remediate by severity, change records showing patches tested in non-production before deployment, and subscription records for threat intelligence sources.",
+   "platforms": "Scanning: Tenable, Qualys, Rapid7, Defender Vulnerability Management. Patching: Intune, SCCM, WSUS, Automox, Ivanti, Tanium. Test environments and change records in ServiceNow or Jira. Threat intelligence: NCA advisories, vendor feeds, MISP, Recorded Future.",
+   "in_risys": "Four of five subcontrols are strongly automated. Subcontrol 2-10-3-4 needs the change management system to prove pre-production testing — a Jira or ServiceNow connector closes it. Subcontrol 2-10-3-5 is manual evidence of subscription. Overall this is the single best integration for demonstrating operational value."
+  },
+  "2-10-4": {
+   "title": "Implementation periodically reviewed",
+   "class": "semi_automated",
+   "plain": "Vulnerability management implementation must be periodically reviewed.",
+   "how": "Review scan coverage, SLA adherence trend and the exception register on a cycle.",
+   "evidence": "Review records, SLA trend, and exception justifications with expiry.",
+   "platforms": "The scanning platform; RISYS for the cycle and exception register.",
+   "in_risys": "RISYS already implements risk exceptions with expiry, which maps well onto vulnerability exceptions. Worth reusing that model rather than building a separate one."
+  },
+  "2-11-1": {
+   "title": "Penetration testing requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Requirements for penetration testing must be identified, documented and approved.",
+   "how": "Write the standard defining scope, frequency, tester qualification requirements, rules of engagement and finding handling.",
+   "evidence": "The approved penetration testing policy.",
+   "platforms": "Document store.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "2-11-2": {
+   "title": "Requirements implemented",
+   "class": "manual_evidence",
+   "plain": "Penetration testing must actually be commissioned and performed.",
+   "how": "Engage qualified testers on the defined cycle and ensure findings enter the remediation process rather than sitting in a PDF.",
+   "evidence": "Engagement letters, test reports, and finding remediation tracking.",
+   "platforms": "Third-party testing firms; findings tracked in RISYS or the vulnerability platform.",
+   "in_risys": "Manual evidence for the test itself. The valuable capability is importing report findings as tracked remediation items with owners and due dates."
+  },
+  "2-11-3": {
+   "title": "Two minimum testing requirements",
+   "class": "semi_automated",
+   "plain": "Two minimum requirements: scope covering all externally provided services delivered over the internet and their technical components — infrastructure, websites, web applications, smartphone and tablet applications, email and remote access (2-11-3-1); and conducting penetration tests periodically (2-11-3-2).",
+   "how": "Build an inventory of internet-facing assets and confirm the test scope covers all of it. Scope gaps are the common failure — a forgotten subdomain or a mobile app nobody tested. Run tests on a defined cycle, annually at minimum for most entities.",
+   "evidence": "The internet-facing asset inventory reconciled against the test scope, test reports with dates showing the interval, and remediation status per finding.",
+   "platforms": "External attack surface management: Microsoft Defender External Attack Surface Management, Tenable ASM, Censys, Shodan. Test findings in the report or the vulnerability platform.",
+   "in_risys": "Interesting and underused. An external attack surface management connector — or even a simple certificate transparency and DNS enumeration of the client's domains — gives RISYS an independent view of internet-facing assets that can be reconciled against the declared test scope. Finding an untested internet-facing asset is a strong, concrete finding that requires no client credentials."
+  },
+  "2-11-4": {
+   "title": "Implementation periodically reviewed",
+   "class": "semi_automated",
+   "plain": "Penetration testing implementation must be periodically reviewed.",
+   "how": "Review scope currency, test interval adherence and finding closure rates.",
+   "evidence": "Review records and scope updates.",
+   "platforms": "RISYS.",
+   "in_risys": "Review cycle in RISYS; test interval adherence is computable from test dates held as evidence metadata."
+  },
+  "2-12-1": {
+   "title": "Logging and monitoring requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Requirements for event logs and monitoring management must be identified, documented and approved.",
+   "how": "Write the logging standard defining which systems log, what events, where logs are sent, retention, and monitoring responsibilities.",
+   "evidence": "The approved logging and monitoring policy.",
+   "platforms": "Document store.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "2-12-2": {
+   "title": "Requirements implemented",
+   "class": "automated",
+   "plain": "Logging must be enabled and flowing to the collection platform, and monitoring must be operating.",
+   "how": "Onboard log sources to the SIEM, verify ingestion health, and operate detection and response — whether in-house or through a managed service.",
+   "evidence": "Log source inventory and ingestion status, coverage against the critical asset list, and monitoring operating hours.",
+   "platforms": "Microsoft Sentinel, Splunk, IBM QRadar, Elastic Security, LogRhythm, Google Chronicle, Wazuh.",
+   "in_risys": "Automated. SIEM platforms expose connected source counts and ingestion health. Log source coverage against the asset inventory is the key metric and often reveals critical systems that log nowhere."
+  },
+  "2-12-3": {
+   "title": "Five minimum logging requirements",
+   "class": "automated",
+   "plain": "Five minimum requirements: activation of event logs for critical information assets (2-12-3-1); activation of logs for critical and privileged accounts accessing information assets and for remote access events (2-12-3-2); identification of SIEM techniques required for log collection (2-12-3-3); continuous monitoring of event logs (2-12-3-4); and a retention period of at least twelve months (2-12-3-5).",
+   "how": "Enable logging on critical assets and confirm ingestion. Ensure privileged account activity and remote access events are specifically captured — these are called out separately for a reason. Deploy a SIEM. Operate monitoring continuously, which for most entities means a managed SOC. Configure retention to at least twelve months and verify it, since default retention in most SIEM platforms is shorter and this is a hard numeric requirement that is trivially checkable.",
+   "evidence": "Log source coverage against critical assets, privileged and remote access log configuration, SIEM architecture documentation, monitoring coverage and shift records, and retention configuration showing at least twelve months with evidence that data of that age is retrievable.",
+   "platforms": "Microsoft Sentinel, Splunk, QRadar, Elastic, Chronicle. Privileged activity from Entra ID sign-in logs and PIM audit logs, and from the PAM platform.",
+   "in_risys": "Subcontrol 2-12-3-5 is worth singling out: it is a specific numeric threshold, readable directly from SIEM workspace configuration, and frequently non-compliant because retention costs money and defaults are shorter. It is an easy automated check with a clear pass or fail. The existing Entra sign-in log ingestion in RISYS also gives partial coverage of 2-12-3-2."
+  },
+  "2-12-4": {
+   "title": "Implementation periodically reviewed",
+   "class": "semi_automated",
+   "plain": "Logging and monitoring implementation must be periodically reviewed.",
+   "how": "Review source coverage, detection rule effectiveness and retention configuration on a cycle.",
+   "evidence": "Review records, rule tuning history and coverage trend.",
+   "platforms": "SIEM console.",
+   "in_risys": "Review cycle with coverage metrics attached."
+  },
+  "2-13-1": {
+   "title": "Incident management requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Requirements for incident and threat management must be identified, documented and approved.",
+   "how": "Write the incident response plan: classification scheme, severity definitions, escalation paths, roles, communication plan and NCA reporting procedure.",
+   "evidence": "The approved incident response plan and escalation matrix.",
+   "platforms": "Document store.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "2-13-2": {
+   "title": "Requirements implemented",
+   "class": "automated",
+   "plain": "Incident management must be operating — incidents logged, classified, assigned and closed.",
+   "how": "Run the incident process. Track detection and response times against defined targets.",
+   "evidence": "The incident register, classification distribution, mean time to detect and respond, and closure rates.",
+   "platforms": "RISYS incidents module, ServiceNow Security Incident Response, Jira Service Management, Microsoft Sentinel incidents, PagerDuty.",
+   "in_risys": "Fully automated and self-evidencing. RISYS already has an incidents module with lifecycle, SLA configuration and Jira ingestion. Incident volume, classification, SLA adherence and closure rate all come from platform data."
+  },
+  "2-13-3": {
+   "title": "Five minimum incident requirements, including NCA reporting",
+   "class": "semi_automated",
+   "plain": "Five minimum requirements: incident response plans and escalation procedures (2-13-3-1); incident classification (2-13-3-2); reporting cybersecurity incidents to the NCA (2-13-3-3); sharing incident notifications, threat intelligence, penetration indicators and incident reports with the NCA (2-13-3-4); and collecting and handling threat intelligence feeds (2-13-3-5).",
+   "how": "The NCA reporting obligation in 2-13-3-3 and 2-13-3-4 is the distinctive Saudi requirement and the one foreign vendors miss entirely. Define which incident classifications trigger NCA notification, within what timeframe, through which channel, and who is authorised to make the report. Build threat intelligence collection into the SOC workflow.",
+   "evidence": "The classification scheme with NCA reporting thresholds mapped to it, records of reports actually submitted to NCA with timestamps, evidence of intelligence sharing, and the threat intelligence source inventory.",
+   "platforms": "RISYS or the incident platform for classification and tracking. NCA reporting channels. Threat intelligence in MISP, Recorded Future, Anomali, or Microsoft Defender Threat Intelligence.",
+   "in_risys": "A significant product opportunity. Building NCA reporting workflow into the RISYS incidents module — classification thresholds that trigger a reporting task, a timer, and an evidence record of the submission — is genuinely differentiating and something no international GRC vendor offers. It is also directly relevant to CST RT-13, which RISYS already holds in the database. Worth prioritising for the Saudi market specifically."
+  },
+  "2-13-4": {
+   "title": "Implementation periodically reviewed",
+   "class": "semi_automated",
+   "plain": "Incident and threat management implementation must be periodically reviewed.",
+   "how": "Review the plan, run tabletop exercises, and conduct post-incident reviews feeding lessons back into the plan.",
+   "evidence": "Review records, exercise reports, and post-incident review findings with actions.",
+   "platforms": "RISYS.",
+   "in_risys": "Review cycle in RISYS; post-incident review can be modelled as a required step in incident closure, which makes the evidence automatic."
+  },
+  "2-14-1": {
+   "title": "Physical security requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Requirements for physical protection of assets must be identified, documented and approved.",
+   "how": "Write the physical security standard covering critical area access, surveillance, log protection, secure disposal and equipment security.",
+   "evidence": "The approved physical security policy and the list of designated critical areas.",
+   "platforms": "Document store.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "2-14-2": {
+   "title": "Requirements implemented",
+   "class": "semi_automated",
+   "plain": "Physical controls must be deployed and operating at the defined critical areas.",
+   "how": "Deploy access control and surveillance at critical areas; operate the access authorisation process.",
+   "evidence": "Access control system configuration, authorised personnel lists per area, and CCTV coverage.",
+   "platforms": "Lenel OnGuard, Honeywell, Genetec, Gallagher, Johnson Controls, Bosch. CCTV in Milestone, Genetec or Avigilon.",
+   "in_risys": "Semi-automated at best. Physical access control systems are usually on-premises and rarely expose usable APIs, and many clients will not permit integration. Treat as evidence upload with periodic access list export, and set expectations accordingly — this is not a subdomain to promise automation on."
+  },
+  "2-14-3": {
+   "title": "Five minimum physical requirements",
+   "class": "semi_automated",
+   "plain": "Five minimum requirements: authorised access to critical areas, with NCA naming the data centre, disaster recovery centre, critical information processing facilities, security surveillance centre, network connection rooms and equipment supply areas (2-14-3-1); access and monitoring logs via CCTV (2-14-3-2); protection of access and monitoring log information (2-14-3-3); security of destruction and re-use of physical assets holding classified information, explicitly including paper documents and storage media (2-14-3-4); and security of devices and equipment inside and outside the entity's facilities (2-14-3-5).",
+   "how": "Designate the critical areas and restrict access lists to genuine need. Deploy CCTV covering those areas with defined retention. Protect the access logs themselves from tampering. Establish secure destruction with certificates, covering paper as well as drives — 2-14-3-4 names paper explicitly and it is commonly overlooked. Cover equipment taken off site.",
+   "evidence": "Critical area designation and authorised access lists with review records, CCTV coverage map and retention configuration, log protection measures, destruction certificates for media and paper, and asset removal authorisation records.",
+   "platforms": "Physical access control and CCTV platforms as above; certified destruction vendors for 2-14-3-4; the asset management system for equipment tracking.",
+   "in_risys": "Mostly manual evidence. The one readily automatable element is 2-14-3-4 where destruction certificates can be held as structured evidence with asset serial numbers reconciled against the asset inventory — proving that a decommissioned asset was actually destroyed rather than merely removed from the register."
+  },
+  "2-14-4": {
+   "title": "Requirements periodically reviewed",
+   "class": "manual_evidence",
+   "plain": "Physical security requirements must be periodically reviewed.",
+   "how": "Review critical area designations, access lists and CCTV coverage on a cycle.",
+   "evidence": "Review records and access list revisions.",
+   "platforms": "Access control system exports.",
+   "in_risys": "Review cycle in RISYS with access list uploads as evidence."
+  },
+  "2-15-1": {
+   "title": "Web application security requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Requirements for protecting external web applications must be identified, documented and approved.",
+   "how": "Write the web application security standard covering WAF, architecture, protocols, usage policy and authentication.",
+   "evidence": "The approved standard and the inventory of external web applications.",
+   "platforms": "Document store.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "2-15-2": {
+   "title": "Requirements implemented",
+   "class": "automated",
+   "plain": "The protections must be deployed in front of the external web applications.",
+   "how": "Deploy WAF coverage across all external applications and verify no application is exposed without it.",
+   "evidence": "WAF coverage per application, policy mode, and blocked request statistics.",
+   "platforms": "Cloudflare, Akamai, Azure Front Door and Application Gateway WAF, AWS WAF, F5, Imperva, Fortinet FortiWeb.",
+   "in_risys": "Automated. Cloud WAF platforms have strong APIs. Coverage reconciled against the external application inventory identifies unprotected applications."
+  },
+  "2-15-3": {
+   "title": "Five minimum web application requirements",
+   "class": "automated",
+   "plain": "Five minimum requirements: use of a web application firewall (2-15-3-1); adoption of the multi-tier architecture principle (2-15-3-2); use of secure protocols such as HTTPS (2-15-3-3); clarification of the secure usage policy for users (2-15-3-4); and user authentication with factors and techniques defined based on impact assessment of authentication failure and bypass (2-15-3-5, modified in ECC-2 from a flat MFA requirement to a risk-based one).",
+   "how": "Deploy WAF in blocking rather than detection mode. Document the multi-tier architecture separating presentation, logic and data. Enforce HTTPS with HSTS and disable plaintext HTTP. Publish the acceptable use terms. Implement authentication proportionate to the assessed impact of compromise.",
+   "evidence": "WAF configuration and mode, architecture diagrams showing tier separation, TLS configuration and HSTS headers, published usage terms, and the authentication impact assessment with the resulting control decision.",
+   "platforms": "WAF as above. TLS posture from Qualys SSL Labs or an internal scanner. Authentication through Entra ID, Okta, or the application's own identity provider.",
+   "in_risys": "Subcontrols 2-15-3-1 and 2-15-3-3 are externally verifiable without any client integration — a scan of the client's public domains reveals TLS configuration, HSTS and often the presence of a WAF. Combined with the DMARC check in 2-4-3-5 and the attack surface work in 2-11-3, this forms a pre-integration external posture assessment that RISYS can run on a prospect before they sign anything. That is a compelling sales instrument."
+  },
+  "2-15-4": {
+   "title": "Requirements periodically reviewed",
+   "class": "semi_automated",
+   "plain": "Web application protection requirements must be periodically reviewed.",
+   "how": "Review WAF rule effectiveness, TLS configuration currency and the application inventory on a cycle.",
+   "evidence": "Review records, rule tuning history and inventory updates.",
+   "platforms": "WAF console; external scanning.",
+   "in_risys": "Review cycle with external posture scan results attached as recurring evidence."
+  },
+  "3-1-1": {
+   "title": "BCM cybersecurity requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Cybersecurity requirements for business continuity management must be identified, documented and approved. The framing matters — this is not a general BCM control, it is specifically about cyber resilience within BCM.",
+   "how": "Integrate cyber scenarios into the existing BCM programme rather than running a parallel one. Ensure the business impact analysis covers cyber-driven outage, not only physical and natural disruption.",
+   "evidence": "The approved BCM policy showing cybersecurity scenarios, and the business impact analysis covering cyber events.",
+   "platforms": "BCM platforms such as Fusion Risk Management, Riskonnect or Castellan; otherwise the document store.",
+   "in_risys": "Evidence upload with review cycle. Note the cross-framework opportunity: this control maps closely onto SAMA BCM, already loaded in the RISYS database at 75 controls but not surfaced in the UI. For a financial-sector client this is a natural map-once demonstration."
+  },
+  "3-1-2": {
+   "title": "Requirements implemented",
+   "class": "semi_automated",
+   "plain": "The cyber resilience requirements must be operating within the continuity programme.",
+   "how": "Maintain current continuity and recovery plans covering cyber scenarios, with defined recovery objectives per critical service.",
+   "evidence": "Current plans with version dates, recovery objectives per service, and evidence of plan maintenance.",
+   "platforms": "BCM platform or document store; recovery capability in Azure Site Recovery, Zerto or VMware SRM.",
+   "in_risys": "Semi-automated. Plan currency is trackable in RISYS; recovery capability state is readable from DR tooling where it exists."
+  },
+  "3-1-3": {
+   "title": "Three minimum resilience requirements",
+   "class": "semi_automated",
+   "plain": "Three minimum requirements: ensuring continuity of cybersecurity systems and procedures (3-1-3-1); developing plans for response to cybersecurity incidents that may affect business continuity (3-1-3-2); and developing disaster recovery plans (3-1-3-3).",
+   "how": "The first subcontrol is the one most often missed — it asks whether the security controls themselves survive a disruption. If the SIEM, the EDR management console or the identity provider is unavailable during an incident, security capability degrades exactly when it is needed. Assess resilience of the security stack itself. Build cyber-specific response plans including ransomware. Maintain and test DR plans.",
+   "evidence": "Resilience assessment of security infrastructure with redundancy design, cyber incident response plans including ransomware scenarios, DR plans with RTO and RPO per system, and test results.",
+   "platforms": "DR tooling as above; the security platforms' own high-availability configuration; BCM platform for plan management.",
+   "in_risys": "Semi-automated. DR test results and replication health are readable from DR platforms. The resilience assessment of the security stack is a documented judgement. Worth raising with clients as a question they usually have not considered, which builds credibility."
+  },
+  "3-1-4": {
+   "title": "Requirements periodically reviewed",
+   "class": "semi_automated",
+   "plain": "Cybersecurity requirements for business continuity must be periodically reviewed.",
+   "how": "Review and exercise plans on a defined cycle, including cyber-specific tabletop exercises.",
+   "evidence": "Review records, exercise reports with participants and scenarios, and plan updates arising from lessons learned.",
+   "platforms": "BCM platform; RISYS for the cycle.",
+   "in_risys": "Review cycle in RISYS with exercise records as evidence. Exercise interval adherence is computable from evidence metadata."
+  },
+  "4-1-1": {
+   "title": "Third-party contract requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Cybersecurity requirements for contracts and agreements with third parties must be identified, documented and approved.",
+   "how": "Build a standard security schedule for contracts and make it mandatory in the procurement process.",
+   "evidence": "The approved contract security schedule and the procurement standard requiring it.",
+   "platforms": "Contract lifecycle management: SAP Ariba, Coupa, Icertis, DocuSign CLM. Document store.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "4-1-2": {
+   "title": "Three minimum contract clauses",
+   "class": "semi_automated",
+   "plain": "For contracts and agreements that could affect the entity's data or services if impaired — NCA gives SLAs as the example — three minimum inclusions: non-disclosure clauses and secure removal of the entity's data by the third party at end of service (4-1-2-1); communication procedures in case of a cybersecurity incident (4-1-2-2); and obligating the third party to apply the entity's cybersecurity requirements and policies (4-1-2-3).",
+   "how": "Audit existing contracts for the three clauses and remediate at renewal, prioritising by data sensitivity. Note the overlap with PDPL Article 8, which imposes materially the same obligation from the data protection direction — write the clauses once to satisfy both.",
+   "evidence": "The vendor register, contract clause audit showing which contracts contain which clauses, and remediation plan for the gaps.",
+   "platforms": "Contract lifecycle management and the vendor master in the ERP.",
+   "in_risys": "Semi-automated. A CLM connector can indicate contract presence and renewal dates; clause presence usually needs a human check or contract analytics tooling. RISYS can hold the vendor register with per-vendor clause status and drive remediation at renewal."
+  },
+  "4-1-3": {
+   "title": "Outsourcing requirements including the in-Kingdom SOC rule",
+   "class": "manual_evidence",
+   "plain": "For third parties providing IT or cybersecurity outsourcing or managed services, two minimum requirements: conducting a cybersecurity risk assessment and ensuring risk mitigation controls are available before signing contracts or on relevant regulatory change (4-1-3-1); and — the commercially significant one — cybersecurity managed service centres for monitoring and operations which use remote access must be fully located inside the Kingdom of Saudi Arabia (4-1-3-2).",
+   "how": "Subcontrol 4-1-3-2 is a hard geographic requirement and it eliminates offshore SOC arrangements outright. A client using a managed SOC operating from India, Egypt or Europe with remote access into their environment is non-compliant, and no contractual language fixes it. Verify the physical location of every managed security service and plan migration where needed. Run risk assessments before contract signature, not after.",
+   "evidence": "Pre-contract risk assessments dated before signature, and documented physical location of managed service centres with attestation from the provider.",
+   "platforms": "Procurement and vendor management; RISYS for the assessments.",
+   "in_risys": "Manual evidence, but flag 4-1-3-2 prominently to clients — it is frequently discovered late and is expensive to remediate. RISYS should hold a specific attestation field for managed service centre location. This is also a control worth raising early in a sales conversation, because it demonstrates that the platform understands Saudi requirements rather than generic international ones."
+  },
+  "4-1-4": {
+   "title": "Third-party requirements periodically reviewed",
+   "class": "semi_automated",
+   "plain": "Cybersecurity requirements for third parties must be periodically reviewed.",
+   "how": "Reassess vendors on a risk-based cycle, more frequently for those handling sensitive data or holding privileged access.",
+   "evidence": "Vendor review records, updated assessments, and remediation of findings.",
+   "platforms": "Third-party risk management platforms such as OneTrust, Prevalent, SecurityScorecard or BitSight; the vendor register.",
+   "in_risys": "Semi-automated. Security rating services expose vendor posture scores through APIs, which gives a continuous signal between formal reviews. RISYS runs the review cycle and holds the assessments."
+  },
+  "4-2-1": {
+   "title": "Cloud requirements documented and approved",
+   "class": "manual_evidence",
+   "plain": "Cybersecurity requirements for the use of cloud computing and hosting services must be identified, documented and approved.",
+   "how": "Write the cloud security standard covering permitted service models, approved providers, data classification limits per service, and the shared responsibility interpretation.",
+   "evidence": "The approved cloud security policy and the approved provider list.",
+   "platforms": "Document store.",
+   "in_risys": "Evidence upload with review cycle."
+  },
+  "4-2-2": {
+   "title": "Requirements implemented",
+   "class": "automated",
+   "plain": "The cloud security requirements must be enforced in the cloud environments themselves.",
+   "how": "Deploy cloud security posture management and enforce configuration baselines. Discover unsanctioned cloud usage rather than assuming the approved list is complete.",
+   "evidence": "CSPM findings and remediation state, baseline compliance scores, and shadow IT discovery results.",
+   "platforms": "Microsoft Defender for Cloud, Wiz, Prisma Cloud, Orca Security, AWS Security Hub, Google Security Command Center. Shadow IT discovery through Defender for Cloud Apps or Netskope.",
+   "in_risys": "Fully automated and high value. CSPM platforms expose posture scores and findings through APIs. Defender for Cloud in particular integrates cleanly and, for a Microsoft- centric client, adds substantial coverage across this subdomain and parts of 2-3 and 2-10."
+  },
+  "4-2-3": {
+   "title": "Cloud minimum requirements and the data return obligation",
+   "class": "semi_automated",
+   "plain": "NCA states these apply in addition to the applicable controls in Domains 1, 2 and 3 and in subdomain 4-1 — so cloud does not replace the rest of the framework, it adds to it. Two subcontrols: protection of the entity's data by cloud and hosting providers in accordance with its classification level, and returning data in a usable format on service completion (4-2-3-1, modified in ECC-2 to emphasise provider protection obligations); and separation of the entity's environment, especially virtual servers, from other entities' environments within the provider (4-2-3-2).",
+   "how": "Ensure contracts oblige protection proportionate to classification and guarantee data return in usable format at exit — test that this is actually achievable rather than assuming it. Verify tenant isolation design with the provider. Note that ECC-2 removed the former subcontrol requiring hosting and storage inside the Kingdom, transferring data localisation to NDMO at SDAIA. Entities must now refer to NDMO on localisation, so do not assume localisation is no longer required — assume instead that it is governed elsewhere.",
+   "evidence": "Contract clauses on protection and data return, exit plan with tested extraction procedure, tenant isolation design documentation from the provider, and NDMO position on localisation for the data in question.",
+   "platforms": "Cloud provider configuration and contracts; CSPM for isolation and configuration evidence.",
+   "in_risys": "Semi-automated for configuration; manual for contractual terms. The localisation point is worth flagging to clients directly, since many still cite the old ECC-1 requirement and are unaware it moved to NDMO. Demonstrating that awareness builds credibility quickly."
+  },
+  "4-2-4": {
+   "title": "Cloud requirements periodically reviewed",
+   "class": "semi_automated",
+   "plain": "Cybersecurity requirements for cloud and hosting services must be periodically reviewed.",
+   "how": "Review posture, provider list currency, and cloud usage against the approved standard on a cycle.",
+   "evidence": "Review records, posture trend, and newly discovered cloud services assessed.",
+   "platforms": "CSPM platform; RISYS for the cycle.",
+   "in_risys": "Review cycle with CSPM posture score attached as trending evidence."
+  }
+ }
+}

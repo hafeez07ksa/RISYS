@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
+import { localISO } from '@/lib/manualCompliance'
 
 // ── FRAMEWORK REGISTRY ────────────────────────────────────────────────────────
 export const FRAMEWORKS = [
@@ -171,7 +172,12 @@ export function useComplianceStatuses(frameworkId) {
       .eq('org_id', organization.id)
       .eq('framework', frameworkId)
     const map = {}
-    for (const row of (data || [])) map[row.requirement_id] = row
+    const today = localISO()
+    for (const row of (data || [])) {
+      // Evidence goes stale: past its review date a compliant control reads as Partial until re-evidenced.
+      const overdue = row.status === 'compliant' && row.review_due_at && String(row.review_due_at).slice(0, 10) < today
+      map[row.requirement_id] = overdue ? { ...row, status: 'partial', review_overdue: true } : row
+    }
     setStatuses(map)
     setLoading(false)
   }, [organization?.id, frameworkId])
@@ -198,6 +204,98 @@ export function useComplianceStatuses(frameworkId) {
   }
 
   return { statuses, loading, setStatus, refetch: fetchStatuses }
+}
+
+// ── HOOK: evidenced compliance for a manual-evidence requirement ──────────────
+//
+// Every Comply appends a compliance_evidence row — the history is the audit
+// trail — then marks the status compliant, pointing at that row and carrying
+// its review date. Files live in a private bucket and are read through
+// short-lived signed links.
+const EVIDENCE_BUCKET = 'compliance-evidence'
+
+export function useComplianceEvidence(frameworkId, requirementId) {
+  const { organization, user } = useAuth()
+  const [history, setHistory] = useState([])
+  const [loadedKey, setLoadedKey] = useState(null)
+  const [migrated, setMigrated] = useState(true)
+  const key = `${organization?.id}|${frameworkId}|${requirementId}`
+
+  const fetchEvidence = useCallback(async () => {
+    if (!organization?.id || !frameworkId || !requirementId) return
+    const { data, error } = await supabase
+      .from('compliance_evidence')
+      .select('*')
+      .eq('org_id', organization.id)
+      .eq('framework', frameworkId)
+      .eq('requirement_id', requirementId)
+      .order('submitted_at', { ascending: false })
+      .limit(20)
+    setMigrated(!error)
+    setHistory(error ? [] : (data || []))
+    setLoadedKey(`${organization.id}|${frameworkId}|${requirementId}`)
+  }, [organization?.id, frameworkId, requirementId])
+
+  useEffect(() => { fetchEvidence() }, [fetchEvidence])
+
+  const uploadFile = async (file) => {
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const fw = String(frameworkId).replace(/[^a-zA-Z0-9]/g, '_')
+    const path = `${organization.id}/${fw}/${requirementId}/${Date.now()}_${safe}`
+    const { error } = await supabase.storage.from(EVIDENCE_BUCKET).upload(path, file, { upsert: false })
+    if (error) throw new Error(`Upload failed: ${error.message}`)
+    return { path, name: file.name, size: file.size, type: file.type || null, uploaded_at: new Date().toISOString() }
+  }
+
+  const signedUrl = async (path) => {
+    const { data, error } = await supabase.storage.from(EVIDENCE_BUCKET).createSignedUrl(path, 300)
+    if (error) throw new Error(`Could not open the file: ${error.message}`)
+    return data.signedUrl
+  }
+
+  const comply = async ({ answers, files, nextReviewDate, summary }) => {
+    const { data: evidence, error } = await supabase.from('compliance_evidence').insert({
+      org_id: organization.id,
+      framework: frameworkId,
+      requirement_id: requirementId,
+      answers,
+      files,
+      next_review_date: nextReviewDate || null,
+      submitted_by: user?.id,
+    }).select().single()
+    if (error) throw new Error(`Could not save the evidence: ${error.message}`)
+
+    const status = {
+      status: 'compliant',
+      updated_by: user?.id,
+      updated_at: new Date().toISOString(),
+      review_due_at: nextReviewDate || null,
+      evidence_id: evidence.id,
+    }
+    const { data: existing } = await supabase.from('compliance_statuses').select('id')
+      .eq('org_id', organization.id).eq('framework', frameworkId).eq('requirement_id', requirementId)
+      .maybeSingle()
+    const { error: statusError } = existing
+      ? await supabase.from('compliance_statuses').update(status).eq('id', existing.id)
+      : await supabase.from('compliance_statuses').insert({
+          ...status, org_id: organization.id, framework: frameworkId, requirement_id: requirementId, notes: summary || null,
+        })
+    if (statusError) throw new Error(`Evidence saved, but the status could not be updated: ${statusError.message}`)
+
+    await fetchEvidence()
+    return evidence
+  }
+
+  return {
+    history,
+    latest: history[0] || null,
+    loaded: loadedKey === key,
+    migrated,
+    uploadFile,
+    signedUrl,
+    comply,
+    refetch: fetchEvidence,
+  }
 }
 
 // ── HOOK: control→framework mappings for an org ───────────────────────────────
