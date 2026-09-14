@@ -1140,7 +1140,7 @@ function DiscussionTab({ riskId }) {
   }
   if (loading) return <CenterSpin />
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 680 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <TabHeader title="Discussion" sub="Comments and notes from the risk team" />
       {comments.length === 0 && <EmptyBox icon={MessageSquare} title="No comments yet" sub="Start a discussion about this risk" />}
       {comments.map(c => (
@@ -1236,7 +1236,7 @@ function AuditTab({ riskId, member }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 720 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <TabHeader title="History" sub="Immutable record — every field change and workflow decision is logged automatically by the database" />
       {timeline.length === 0
         ? <EmptyBox icon={Clock} title="No entries yet" sub="Actions on this risk appear here automatically" />
@@ -1326,14 +1326,11 @@ function CenterSpin() {
 }
 function LS({ label, value, onChange, options }) {
   return (
-    <div>
+    <div style={{ minWidth: 0 }}>
       {label && <p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>{label}</p>}
-      <div style={{ position: 'relative' }}>
-        <SelectField value={value} onChange={onChange} style={{ appearance: 'none', paddingRight: 28, cursor: 'pointer' }}>
-          {options.map(o => <option key={o.value||o} value={o.value||o}>{o.label||o}</option>)}
-        </SelectField>
-        <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: 10, color: 'var(--text-3)' }}>▾</span>
-      </div>
+      <SelectField className="w-full" value={value} onChange={onChange}>
+        {options.map(o => <option key={o.value||o} value={o.value||o}>{o.label||o}</option>)}
+      </SelectField>
     </div>
   )
 }
