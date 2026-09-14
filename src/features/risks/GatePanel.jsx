@@ -228,12 +228,19 @@ export function ToleranceChip({ risk }) {
         color: breached ? 'var(--critical)' : 'var(--low)',
         background: breached ? 'var(--critical-bg)' : 'var(--low-bg)',
         border: `1px solid ${breached ? 'var(--critical-bd)' : 'var(--low-bd)'}`,
-        whiteSpace: 'nowrap',
+        // The chip sits in a fixed-width table column. Without a ceiling a long
+        // breach count ("Breached · 214d") pushes the tinted pill past the
+        // column edge and over the status beside it.
+        maxWidth: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
       }}
     >
-      {breached
-        ? `Breached${days !== null ? ` · ${days}d` : ''}`
-        : 'Within'}
+      <span className="truncate">
+        {breached
+          ? `Breached${days !== null ? ` · ${days}d` : ''}`
+          : 'Within'}
+      </span>
     </span>
   )
 }

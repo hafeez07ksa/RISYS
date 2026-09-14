@@ -53,6 +53,7 @@ export function CommandSearch({ open, onClose }) {
   const navigate = useNavigate()
   const { organization } = useAuth()
   const inputRef = useRef(null)
+  const dialogRef = useRef(null)
   const orgId = organization?.id
 
   useEffect(() => {
@@ -108,10 +109,19 @@ export function CommandSearch({ open, onClose }) {
 
   useEffect(() => { setCursor(0) }, [all.length])
 
+  // Escape is bound to the document, not to the input. Bound to the input it
+  // stopped working the moment focus moved — after a click on a result row, or
+  // anywhere else inside the dialog — which read as the key failing at random.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); onClose() } }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
   const go = (item) => { onClose(); navigate(item.to) }
 
   const onKeyDown = (e) => {
-    if (e.key === 'Escape') { e.preventDefault(); onClose() }
     if (e.key === 'ArrowDown') { e.preventDefault(); setCursor((c) => Math.min(c + 1, all.length - 1)) }
     if (e.key === 'ArrowUp') { e.preventDefault(); setCursor((c) => Math.max(c - 1, 0)) }
     if (e.key === 'Enter' && all[cursor]) { e.preventDefault(); go(all[cursor]) }
@@ -124,10 +134,15 @@ export function CommandSearch({ open, onClose }) {
   return createPortal(
     <div
       style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-modal)', display: 'flex', justifyContent: 'center', paddingTop: '11vh' }}
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
+      /* Anything outside the dialog dismisses. The previous test — target ===
+         currentTarget — could never be true: the dim layer below covers the
+         whole overlay, so every click outside the dialog landed on that instead
+         and the search stayed open. */
+      onMouseDown={(e) => { if (!dialogRef.current?.contains(e.target)) onClose() }}
     >
       <div className="anim-fade" style={{ position: 'absolute', inset: 0, background: 'rgba(41,32,33,0.30)' }} />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label="Search"

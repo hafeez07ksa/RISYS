@@ -114,7 +114,11 @@ export function RiskRegisterPage() {
     if (quickFilter === 'mine')           list = list.filter(r => r.owner_id === user?.id || r.reviewer_id === user?.id || r.approver_id === user?.id)
     if (quickFilter === 'overdue')        list = list.filter(isReviewOverdue)
     if (quickFilter === 'pending_review') list = list.filter(r => r.workflow_state === 'draft')
-    if (quickFilter === 'breached')       list = list.filter(r => r.tolerance_status === 'breached')
+    // The three gate filters are scoped the same way the gate panel counts
+    // them — open risks only — so the rows listed match the number clicked.
+    if (quickFilter === 'breached')       list = list.filter(r => r.workflow_state !== 'closed' && r.tolerance_status === 'breached')
+    if (quickFilter === 'within')         list = list.filter(r => r.workflow_state !== 'closed' && r.tolerance_status === 'within')
+    if (quickFilter === 'unjudged')       list = list.filter(r => r.workflow_state !== 'closed' && r.tolerance_status !== 'breached' && r.tolerance_status !== 'within')
     if (quickFilter === 'sla')            list = list.filter(r => treatmentSLA(r)?.overdue)
     if (quickFilter.startsWith('band:'))  list = list.filter(r => currentBand(r, matrix) === quickFilter.slice(5))
     if (stateFilter)                      list = list.filter(r => normalizeWorkflowState(r.workflow_state) === stateFilter)
@@ -282,9 +286,10 @@ export function RiskRegisterPage() {
             </div>
           ))}
           {hasFilters && (
-            <button onClick={clearFilters} className="text-xs px-3 py-2 rounded-md border hover:bg-[#f6eeec]"
-              style={{ borderColor: '#e9dad7', color: '#97817d' }}>
-              <Filter size={11} className="inline mr-1" />Clear
+            <button onClick={clearFilters}
+              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border transition-colors hover:bg-[#f6eeec]"
+              style={{ borderColor: '#e9dad7', background: '#fff', color: '#97817d' }}>
+              <Filter size={11} /> Clear filters
             </button>
           )}
           <span className="text-xs ml-auto" style={{ color: '#97817d' }}>{filtered.length} risk{filtered.length !== 1 ? 's' : ''}</span>
@@ -321,10 +326,14 @@ export function RiskRegisterPage() {
             <ShieldAlert size={32} strokeWidth={1} className="mx-auto mb-4" style={{ color: '#d9c5c1' }} />
             <p className="text-sm font-medium mb-1" style={{ color: '#4d3e3e' }}>
               {quickFilter === 'breached' ? 'Nothing is outside tolerance'
+                : quickFilter === 'within' ? 'Nothing is within tolerance yet'
+                : quickFilter === 'unjudged' ? 'Every open risk has been judged'
                 : hasFilters ? 'No risks match your filters' : 'No risks yet'}
             </p>
             <p className="text-xs mb-4" style={{ color: '#97817d' }}>
               {quickFilter === 'breached' ? 'Every scored risk is currently within the line set for its category'
+                : quickFilter === 'within' ? 'No open risk has passed the gate — score a residual and set a tolerance for its category'
+                : quickFilter === 'unjudged' ? 'The gate has returned a verdict on every open risk'
                 : hasFilters ? 'Try adjusting your filters' : 'Start building your risk register'}
             </p>
             {!hasFilters && perms.canCreateRisk && (
@@ -370,7 +379,7 @@ export function RiskRegisterPage() {
                       </p>
                     </div>
                     <ScoreTransition risk={risk} matrix={matrix} />
-                    <ToleranceChip risk={risk} />
+                    <span className="flex min-w-0 overflow-hidden pr-3"><ToleranceChip risk={risk} /></span>
                     <span className="text-xs px-2 py-0.5 rounded-full border w-fit"
                       style={{ color: s.color, background: s.bg, borderColor: s.border }}>{s.label}</span>
                     <span className="text-xs px-2 py-0.5 rounded-full border w-fit"

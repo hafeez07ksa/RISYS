@@ -11,9 +11,10 @@ import {
   RISK_CATEGORIES, RISK_SUBCATEGORIES, RISK_TYPES,
   RISK_DIRECTIONS, REVIEW_FREQUENCIES, RISK_SOURCES,
 } from '@/lib/risks'
-import { levelFor, scalePoint, DEFAULT_MATRIX } from '@/lib/matrix'
+import { levelFor, DEFAULT_MATRIX } from '@/lib/matrix'
 import { Spinner } from '@/components/ui/Spinner'
 import { SelectField } from '@/components/ui/Combobox'
+import { DateField } from '@/components/ui/DateField'
 
 // ============================================================
 // NEW / EDIT RISK — a page, not a dialog
@@ -66,32 +67,27 @@ function Field({ label, hint, required, error, children, span }) {
   )
 }
 
-/** 1–5 rating with the written definition of the chosen point shown beneath. */
+/** 1–5 rating. The scale point's label carries the meaning; the monetary and
+ *  frequency bands behind it are set on the matrix, not restated per field. */
 function Rating({ value, onChange, scale }) {
-  const point = scalePoint(scale, value)
   return (
-    <div>
-      <div style={{ display: 'flex', gap: 5 }}>
-        {scale.map(s => {
-          const active = Number(value) === Number(s.value)
-          return (
-            <button key={s.value} type="button" onClick={() => onChange(s.value)} title={s.definition}
-              style={{
-                flex: 1, padding: '8px 3px', borderRadius: 'var(--r-md)', cursor: 'pointer',
-                border: `1px solid ${active ? 'var(--crimson)' : 'var(--border-2)'}`,
-                background: active ? 'var(--crimson)' : 'var(--bg-2)',
-                color: active ? '#fff' : 'var(--text-2)',
-                transition: 'all var(--dur-2) var(--ease)',
-              }}>
-              <span className="tnum" style={{ display: 'block', fontSize: 'var(--t-body)', fontWeight: active ? 600 : 500 }}>{s.value}</span>
-              <span style={{ display: 'block', fontSize: 'var(--t-micro)', marginTop: 1, opacity: active ? 0.9 : 0.65 }}>{s.label}</span>
-            </button>
-          )
-        })}
-      </div>
-      <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-2)', marginTop: 6, minHeight: 28 }}>
-        {point?.definition}
-      </p>
+    <div style={{ display: 'flex', gap: 5 }}>
+      {scale.map(s => {
+        const active = Number(value) === Number(s.value)
+        return (
+          <button key={s.value} type="button" onClick={() => onChange(s.value)}
+            style={{
+              flex: 1, padding: '8px 3px', borderRadius: 'var(--r-md)', cursor: 'pointer',
+              border: `1px solid ${active ? 'var(--crimson)' : 'var(--border-2)'}`,
+              background: active ? 'var(--crimson)' : 'var(--bg-2)',
+              color: active ? '#fff' : 'var(--text-2)',
+              transition: 'all var(--dur-2) var(--ease)',
+            }}>
+            <span className="tnum" style={{ display: 'block', fontSize: 'var(--t-body)', fontWeight: active ? 600 : 500 }}>{s.value}</span>
+            <span style={{ display: 'block', fontSize: 'var(--t-micro)', marginTop: 1, opacity: active ? 0.9 : 0.65 }}>{s.label}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -314,8 +310,7 @@ export function RiskFormPage() {
                   </SelectField>
                 </Field>
                 <Field label="Identified on">
-                  <input type="date" className="risys-input" style={{ width: '100%' }}
-                    value={form.identified_date} onChange={set('identified_date')} />
+                  <DateField value={form.identified_date} onChange={set('identified_date')} aria-label="Identified on" />
                 </Field>
                 <Field label="Framework reference" hint="Optional clause mapping">
                   <input className="risys-input mono" style={{ width: '100%' }} value={form.framework_ref}
@@ -362,8 +357,7 @@ export function RiskFormPage() {
                   </SelectField>
                 </Field>
                 <Field label="Next review date">
-                  <input type="date" className="risys-input" style={{ width: '100%' }}
-                    value={form.review_date} onChange={set('review_date')} />
+                  <DateField value={form.review_date} onChange={set('review_date')} aria-label="Next review date" />
                 </Field>
               </div>
 

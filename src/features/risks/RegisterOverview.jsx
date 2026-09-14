@@ -110,9 +110,9 @@ function GateSummary({ risks, quickFilter, onQuickFilter }) {
   const pW = (within / total) * 100
 
   const rows = [
-    { key: 'breached', label: 'Outside tolerance', value: breached, color: 'var(--critical)', icon: ShieldAlert },
-    { key: 'within', label: 'Within tolerance', value: within, color: 'var(--low)', icon: ShieldCheck },
-    { key: 'unjudged', label: 'Not yet judged', value: pending, color: 'var(--text-3)', icon: ShieldQuestion },
+    { key: 'breached', label: 'Outside tolerance', value: breached, color: 'var(--critical)', bg: 'var(--critical-bg)', icon: ShieldAlert },
+    { key: 'within', label: 'Within tolerance', value: within, color: 'var(--low)', bg: 'var(--low-bg)', icon: ShieldCheck },
+    { key: 'unjudged', label: 'Not yet judged', value: pending, color: 'var(--text-3)', bg: 'var(--surface)', icon: ShieldQuestion },
   ]
 
   return (
@@ -141,15 +141,13 @@ function GateSummary({ risks, quickFilter, onQuickFilter }) {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
           {rows.map(r => {
             const Icon = r.icon
-            const clickable = r.key === 'breached'
-            const active = quickFilter === 'breached' && clickable
+            const active = quickFilter === r.key
             return (
-              <button key={r.key} onClick={clickable ? () => onQuickFilter('breached') : undefined}
-                className={clickable ? 'row-hover' : undefined}
+              <button key={r.key} onClick={() => onQuickFilter(r.key)} className="row-hover"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 7, padding: '5px 7px', borderRadius: 'var(--r)',
-                  border: 'none', background: active ? 'var(--critical-bg)' : 'transparent',
-                  cursor: clickable ? 'pointer' : 'default', textAlign: 'left',
+                  border: 'none', background: active ? r.bg : 'transparent',
+                  cursor: 'pointer', textAlign: 'left',
                 }}>
                 <Icon size={12} style={{ color: r.color, flexShrink: 0 }} />
                 <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-2)', flex: 1 }}>{r.label}</span>

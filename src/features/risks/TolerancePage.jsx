@@ -296,12 +296,12 @@ export function TolerancePage() {
         }
       />
 
-      <div className="flex-1 overflow-y-auto" style={{ padding: '16px var(--gutter) var(--s-10)' }}>
+      <div className="flex-1 overflow-y-auto page-content">
         <BackLink to={() => navigate('/app/risks')} label="Risk Register" style={{ marginBottom: 12 }} />
 
         <div style={{
           display: 'flex', gap: 10, padding: '12px 14px', borderRadius: 'var(--r-md)',
-          background: 'var(--surface)', border: '1px solid var(--border)', marginBottom: 18, maxWidth: 860,
+          background: 'var(--surface)', border: '1px solid var(--border)', marginBottom: 18,
         }}>
           <Info size={15} style={{ color: 'var(--rose)', flexShrink: 0, marginTop: 1 }} />
           <div>
@@ -322,7 +322,7 @@ export function TolerancePage() {
         {!migrated && (
           <div style={{
             display: 'flex', gap: 9, padding: '11px 13px', borderRadius: 'var(--r-md)',
-            background: 'var(--medium-bg)', border: '1px solid var(--medium-bd)', marginBottom: 18, maxWidth: 860,
+            background: 'var(--medium-bg)', border: '1px solid var(--medium-bd)', marginBottom: 18,
           }}>
             <ShieldAlert size={14} style={{ color: 'var(--medium)', flexShrink: 0, marginTop: 1 }} />
             <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)' }}>
@@ -338,7 +338,7 @@ export function TolerancePage() {
         {(loading || risksLoading) ? (
           <div style={{ padding: '48px 0', display: 'flex', justifyContent: 'center' }}><Spinner /></div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 1000 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {RISK_CATEGORIES.map(cat => (
               <CategoryCard
                 key={cat}
@@ -384,7 +384,7 @@ function AuthorityPanel({ canEdit }) {
   }
 
   return (
-    <div className="card" style={{ padding: '14px 16px', marginBottom: 18, maxWidth: 1000 }}>
+    <div className="card" style={{ padding: '14px 16px', marginBottom: 18 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
         <Scale size={14} style={{ color: 'var(--crimson)' }} />
         <p style={{ fontSize: 'var(--t-section)', fontWeight: 600, color: 'var(--text)' }}>Acceptance authority</p>

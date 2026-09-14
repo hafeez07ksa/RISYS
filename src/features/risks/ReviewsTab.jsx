@@ -38,7 +38,7 @@ export function ReviewsTab({ risk, member, onRiskChanged, canReview }) {
   if (loading) return <div style={{ padding: 40, display: 'flex', justifyContent: 'center' }}><Spinner /></div>
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 720 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Periodic Reviews</p>

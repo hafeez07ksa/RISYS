@@ -97,11 +97,30 @@ export function Combobox({
   }, [selectable, value, selected, multiple])
 
   // Position the portal panel against the trigger, and keep it there on scroll.
+  //
+  // A panel is fixed-positioned, so anything that lands below the fold is
+  // simply unreachable — the page scrolls, the panel does not. When the space
+  // under the trigger cannot hold a usable list it opens upward instead, and
+  // either way the height is capped to the room actually available.
   useEffect(() => {
     if (!open) return
     const place = () => {
       const r = btnRef.current?.getBoundingClientRect()
-      if (r) setRect({ top: r.bottom + 4, left: r.left, width: r.width, bottom: r.top })
+      if (!r) return
+      const M = 8
+      const below = window.innerHeight - r.bottom - M
+      const above = r.top - M
+      const flip = below < 200 && above > below
+      const minW = Math.max(r.width, 180)
+      const left = Math.max(M, Math.min(r.left, window.innerWidth - minW - M))
+      setRect({
+        top: flip ? undefined : r.bottom + 4,
+        bottom: flip ? window.innerHeight - r.top + 4 : undefined,
+        left,
+        width: r.width,
+        maxWidth: Math.max(minW, Math.min(Math.max(r.width, 320), window.innerWidth - left - M)),
+        maxHeight: Math.max(140, Math.min(300, flip ? above : below)),
+      })
     }
     place()
     window.addEventListener('scroll', place, true)
@@ -228,10 +247,10 @@ export function Combobox({
           className="anim-pop"
           style={{
             position: 'fixed',
-            top: rect.top, left: rect.left,
+            top: rect.top, bottom: rect.bottom, left: rect.left,
             minWidth: Math.max(rect.width, 180),
-            maxWidth: Math.max(rect.width, 320),
-            maxHeight: 300,
+            maxWidth: rect.maxWidth,
+            maxHeight: rect.maxHeight,
             background: 'var(--bg-2)',
             border: '1px solid var(--border)',
             borderRadius: 'var(--r-md)',
