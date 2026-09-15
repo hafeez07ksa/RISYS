@@ -400,7 +400,7 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto
             currentStatus={effectiveStatus}
             onSet={(s) => onSetStatus(reqId, s)}
             disabled={!canManage}
-            hideCompliant={automationClass === 'manual_evidence' && !isSubCtrl}
+            hideCompliant={(automationClass === 'manual_evidence' || automationClass === 'semi_automated') && !isSubCtrl}
           />
           {status?.review_overdue && (
             <span title={`Evidence review was due ${status.review_due_at}`} style={{

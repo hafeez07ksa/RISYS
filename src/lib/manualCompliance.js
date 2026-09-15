@@ -1,10 +1,11 @@
 // ============================================================
-// EVIDENCED COMPLIANCE — manual-evidence controls
+// EVIDENCED COMPLIANCE — manual, semi-automated and interim evidence
 //
-// A manual control is met when the artefacts an assessor expects are on
-// record and nothing on record contradicts it. This module decides both,
-// from a control's checklist definition (src/data/eccManualRequirements.js)
-// and the answers and files captured against it.
+// A control is met when the artefacts an assessor expects are on record
+// and nothing on record contradicts it. This module decides both, from a
+// control's checklist definition (src/data/eccManualRequirements.js and
+// src/data/eccEvidenceRequirements.js) and the answers and files captured
+// against it.
 //
 // Pure: no React, no Supabase, the clock only through `now`, so it runs
 // under plain Node for verification.
@@ -25,6 +26,13 @@ export function withinMonths(iso, months, now = new Date()) {
   return iso >= localISO(cutoff)
 }
 
+/** `iso` moved forward by whole months, as yyyy-mm-dd. */
+export function addMonthsISO(iso, months) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''))
+  if (!m) return null
+  return localISO(new Date(Number(m[1]), Number(m[2]) - 1 + months, Number(m[3])))
+}
+
 export function isVisible(field, answers = {}) {
   return !field.showIf || !!field.showIf(answers)
 }
@@ -43,7 +51,7 @@ export function isFilled(field, answers = {}, files = {}) {
 }
 
 // The date a next-review must follow — whichever event the evidence records.
-const ANCHOR_KEYS = ['approved_on', 'reviewed_on', 'review_date', 'test_date', 'last_meeting', 'assessed_on']
+const ANCHOR_KEYS = ['approved_on', 'reviewed_on', 'review_date', 'test_date', 'last_meeting', 'assessed_on', 'measured_on']
 
 /**
  * Checklist progress and blocking problems for one submission.
@@ -64,6 +72,10 @@ export function evaluateSubmission(def, answers = {}, files = {}, now = new Date
     if (f.type === 'date' && v) {
       if (f.notFuture && v > today) blockers.push(`${f.label} cannot be in the future.`)
       if (f.future && v <= today) blockers.push(`${f.label} must be a future date.`)
+      if (f.maxDaysAhead) {
+        const limit = localISO(new Date(now.getFullYear(), now.getMonth(), now.getDate() + f.maxDaysAhead))
+        if (v > limit) blockers.push(`${f.label} can be at most ${f.maxDaysAhead} days away.`)
+      }
     }
     if (f.type === 'number' && isFilled(f, answers)) {
       const n = Number(v)

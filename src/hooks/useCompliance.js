@@ -286,9 +286,26 @@ export function useComplianceEvidence(frameworkId, requirementId) {
     return evidence
   }
 
+  // Attestation for a measured control: on record, while the connector keeps deciding the status.
+  const recordEvidence = async ({ answers, files, nextReviewDate }) => {
+    const { data, error } = await supabase.from('compliance_evidence').insert({
+      org_id: organization.id,
+      framework: frameworkId,
+      requirement_id: requirementId,
+      answers,
+      files,
+      next_review_date: nextReviewDate || null,
+      submitted_by: user?.id,
+    }).select().single()
+    if (error) throw new Error(`Could not save the attestation: ${error.message}`)
+    await fetchEvidence()
+    return data
+  }
+
   return {
     history,
     latest: history[0] || null,
+    recordEvidence,
     loaded: loadedKey === key,
     migrated,
     uploadFile,

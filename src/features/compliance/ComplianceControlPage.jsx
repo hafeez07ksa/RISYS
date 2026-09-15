@@ -15,9 +15,9 @@ import {
   isAutomated, hasAutomatedResult, isOverridingEvidence,
 } from '@/hooks/useCompliance'
 import { LinkControlModal } from './ComplianceFrameworkPage'
-import { ManualCompliancePanel } from './ManualCompliancePanel'
+import { EvidenceCompliancePanel } from './EvidenceCompliancePanel'
 import { AUTOMATION_META, automationClassFor, mainControlId } from '@/data/eccAutomation'
-import { manualRequirementFor } from '@/data/eccManualRequirements'
+import { evidenceRequirementFor } from '@/data/eccEvidenceRequirements'
 
 const GUIDE_SECTIONS = [
   { key: 'plain',     label: 'In plain terms' },
@@ -274,11 +274,16 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
 
   const isEcc = fw?.id === 'NCA ECC'
   const isSub = isSubControl(req || {})
-  const manualDef = isEcc && !isSub ? manualRequirementFor(requirementId) : null
-  const manualParent = isEcc && isSub && manualRequirementFor(mainControlId(requirementId)) ? mainControlId(requirementId) : null
+  const evidence = isEcc && !isSub ? evidenceRequirementFor(requirementId, { measured: hasAutomatedResult(auto) }) : null
+  const evidenceParent = isEcc && isSub && automationClassFor(requirementId) ? mainControlId(requirementId) : null
   const guideEntry = isEcc ? implGuide?.controls?.[mainControlId(requirementId)] : null
-  // Manual-evidence controls reach Compliant only through the evidenced Comply flow.
-  const statusOptions = manualDef ? STATUS_OPTIONS.filter(o => o.value !== 'compliant') : STATUS_OPTIONS
+  // A semi-automated control cannot be complied over a failing measurement.
+  const measuredBlocker = evidence?.mode === 'semi' && hasAutomatedResult(auto)
+    && ['not_compliant', 'partial'].includes(auto.automated_status)
+    ? `The connector measures this control as ${STATUS_CONFIG[auto.automated_status]?.label}. Resolve what it reports before complying.`
+    : null
+  // Manual and semi-automated controls reach Compliant only through the evidenced Comply flow.
+  const statusOptions = ['manual', 'semi'].includes(evidence?.mode) ? STATUS_OPTIONS.filter(o => o.value !== 'compliant') : STATUS_OPTIONS
 
   const childrenWithGuidance = useMemo(
     () => children
@@ -473,32 +478,34 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
               </div>
             </Source>
 
-            {manualDef && (
-              <ManualCompliancePanel
-                key={requirementId}
+            {evidence && (
+              <EvidenceCompliancePanel
+                key={`${requirementId}:${evidence.mode}`}
                 frameworkId={frameworkId}
                 requirementId={requirementId}
-                def={manualDef}
+                mode={evidence.mode}
+                def={evidence.def}
                 statusRow={statusRow}
                 canManage={canManage}
+                measuredBlocker={measuredBlocker}
                 onComplied={refetchStatuses}
               />
             )}
 
-            {manualParent && (
+            {evidenceParent && (
               <Panel style={{ marginBottom: 30, background: 'var(--surface)' }}>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                   <ShieldCheck size={14} style={{ color: 'var(--taupe)', flexShrink: 0, marginTop: 2 }} />
                   <p style={{ fontSize: 'var(--t-body)', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
                     Evidence for this subcontrol is recorded once, against its main control{' '}
                     <button
-                      onClick={() => onOpenControl(manualParent)}
+                      onClick={() => onOpenControl(evidenceParent)}
                       className="mono"
                       style={{
                         background: 'none', border: 'none', padding: 0, cursor: 'pointer',
                         color: 'var(--crimson)', fontSize: 'var(--t-sm)', fontWeight: 500,
                       }}>
-                      {manualParent}
+                      {evidenceParent}
                     </button>.
                   </p>
                 </div>

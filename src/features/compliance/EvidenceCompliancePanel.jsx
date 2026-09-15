@@ -1,20 +1,27 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
-  CheckCircle2, Circle, Upload, FileText, X, AlertTriangle, ShieldCheck, Loader2, Info,
+  CheckCircle2, Circle, Upload, FileText, X, AlertTriangle, ShieldCheck, Loader2, Info, ClipboardCheck,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { usePeople } from '@/hooks/usePeople'
 import { useComplianceEvidence } from '@/hooks/useCompliance'
-import { evaluateSubmission, isFilled, isVisible, pruneSubmission } from '@/lib/manualCompliance'
+import { evaluateSubmission, isFilled, isVisible, pruneSubmission, localISO } from '@/lib/manualCompliance'
 import { DateField } from '@/components/ui/DateField'
 import { SelectField } from '@/components/ui/Combobox'
 
 /* ── Evidenced compliance ────────────────────────────────────────────────────
  *
- * A manual-evidence control has no connector to read, so it is complied by
- * putting on record exactly what an assessor will ask for. The checklist
- * comes from the implementation guide; Comply stays disabled until every
- * item is complete and nothing on record contradicts the control.
+ * One panel, four ways a control is put on record:
+ *
+ *   manual       no system holds the answer — the artefacts are the proof
+ *   semi         a connector measures part; policy and judgement supply the rest
+ *   interim      automated, but its connector is not built — the platform's own
+ *                export stands in for at most 90 days
+ *   attestation  automated and measured — the connector decides the status and
+ *                a reviewer attests that the measurement covers the full scope
+ *
+ * The first three end in Comply, which marks the control compliant. An
+ * attestation is recorded without touching the status.
  * -------------------------------------------------------------------------- */
 
 const MAX_BYTES = 25 * 1024 * 1024
@@ -23,6 +30,26 @@ const TONES = {
   low:      { color: 'var(--low)',      bg: 'var(--low-bg)',      border: 'var(--low-bd)' },
   medium:   { color: 'var(--medium)',   bg: 'var(--medium-bg)',   border: 'var(--medium-bd)' },
   critical: { color: 'var(--critical)', bg: 'var(--critical-bg)', border: 'var(--critical-bd)' },
+  info:     { color: 'var(--info)',     bg: 'var(--info-bg)',     border: 'var(--info-bd)' },
+}
+
+const MODE_COPY = {
+  manual: {
+    heading: 'Evidence & compliance', Icon: ShieldCheck, action: 'Comply',
+    intro: 'No system holds the answer to this control. Put on record what an assessor will ask to see — Comply unlocks once every item is complete.',
+  },
+  semi: {
+    heading: 'Evidence & compliance', Icon: ShieldCheck, action: 'Comply',
+    intro: 'A connector can measure part of this control; the policy and judgement around it cannot be measured. Put both on record — Comply unlocks once every item is complete.',
+  },
+  interim: {
+    heading: 'Interim evidence', Icon: ShieldCheck, action: 'Comply with interim evidence',
+    intro: 'No connector measures this control yet. Record the platform’s own export as interim evidence — it holds for at most 90 days, or until the platform is connected and measured.',
+  },
+  attestation: {
+    heading: 'Reviewer attestation', Icon: ClipboardCheck, action: 'Record attestation',
+    intro: 'The connector sets this control’s status. Record a reviewer confirming the measurement covers the full scope — this does not change the status.',
+  },
 }
 
 // Date-only strings parse as UTC; read them as local dates so they never shift a day.
@@ -38,20 +65,26 @@ function formatSize(bytes) {
   return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
-function SectionHead({ children }) {
+function SectionHead({ children, first }) {
   return (
-    <p className="eyebrow" style={{ margin: '18px 0 10px', paddingTop: 14, borderTop: '1px solid var(--border-3)' }}>
+    <p className="eyebrow" style={first
+      ? { margin: '16px 0 10px' }
+      : { margin: '18px 0 10px', paddingTop: 14, borderTop: '1px solid var(--border-3)' }}>
       {children}
     </p>
   )
 }
 
-export function ManualCompliancePanel({ frameworkId, requirementId, def, statusRow, canManage, onComplied }) {
+export function EvidenceCompliancePanel({
+  frameworkId, requirementId, mode = 'manual', def, statusRow, canManage, onComplied, measuredBlocker = null,
+}) {
   const { organization } = useAuth()
   const { members } = usePeople()
-  const { latest, loaded, migrated, uploadFile, signedUrl, comply } = useComplianceEvidence(frameworkId, requirementId)
+  const { latest, loaded, migrated, uploadFile, signedUrl, comply, recordEvidence } = useComplianceEvidence(frameworkId, requirementId)
+  const copy = MODE_COPY[mode] || MODE_COPY.manual
 
-  const draftKey = organization?.id ? `risys:ecc-evidence-draft:${organization.id}:${requirementId}` : null
+  // Keyed by mode too: an automated control's interim checklist and its attestation are different forms.
+  const draftKey = organization?.id ? `risys:ecc-evidence-draft:${organization.id}:${requirementId}:${mode}` : null
   const [answers, setAnswers] = useState({})
   const [files, setFiles] = useState({})
   const [seeded, setSeeded] = useState(false)
@@ -59,30 +92,40 @@ export function ManualCompliancePanel({ frameworkId, requirementId, def, statusR
   const [uploading, setUploading] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [recorded, setRecorded] = useState(false)
+
+  // The last submission seeds the form only when it was made with this same checklist.
+  const latestForMode = latest && (latest.answers?.__mode || 'manual') === mode ? latest : null
 
   // Seed once: an unsaved draft wins, otherwise the last submission, so re-complying starts from the record.
   useEffect(() => {
     if (seeded || !loaded || !draftKey) return
     let draft = null
     try { draft = JSON.parse(localStorage.getItem(draftKey) || 'null') } catch { /* storage unavailable */ }
-    const source = draft || latest
+    const source = draft || latestForMode
     if (source) {
-      setAnswers(source.answers || {})
+      const { __mode, ...rest } = source.answers || {}
+      setAnswers(rest)
       setFiles(source.files || {})
     }
     setSeeded(true)
-  }, [seeded, loaded, draftKey, latest])
+  }, [seeded, loaded, draftKey, latestForMode])
 
   useEffect(() => {
     if (!dirty || !draftKey) return
     try { localStorage.setItem(draftKey, JSON.stringify({ answers, files })) } catch { /* storage unavailable */ }
   }, [answers, files, dirty, draftKey])
 
-  const result = useMemo(() => evaluateSubmission(def, answers, files), [def, answers, files])
+  const result = useMemo(() => {
+    const r = evaluateSubmission(def, answers, files)
+    if (!measuredBlocker) return r
+    return { ...r, blockers: [measuredBlocker, ...r.blockers], ready: false }
+  }, [def, answers, files, measuredBlocker])
+
   const fields = def.fields.filter(f => isVisible(f, answers))
   const canEdit = canManage && migrated && !saving
 
-  const setAnswer = (key, value) => { setDirty(true); setAnswers(a => ({ ...a, [key]: value })) }
+  const setAnswer = (key, value) => { setDirty(true); setRecorded(false); setAnswers(a => ({ ...a, [key]: value })) }
 
   const addFiles = async (key, list) => {
     const picked = Array.from(list || [])
@@ -110,29 +153,36 @@ export function ManualCompliancePanel({ frameworkId, requirementId, def, statusR
 
   // Open the tab synchronously so the popup blocker allows it, then point it at the signed link.
   const openFile = async (path) => {
-    const win = window.open('about:blank', '_blank')
+    const win = window.open('', '_blank')
     try {
       const url = await signedUrl(path)
-      if (win) win.location.href = url
+      if (win) { win.opener = null; win.location.href = url }
     } catch (e) {
       win?.close()
       setError(e.message)
     }
   }
 
-  const doComply = async () => {
+  const submit = async () => {
     if (!result.ready || !canEdit) return
     setSaving(true)
     setError('')
     try {
       const pruned = pruneSubmission(def, answers, files)
-      await comply({
-        ...pruned,
-        nextReviewDate: pruned.answers.next_review,
-        summary: `Complied with evidence — ${result.total} checklist items on record.`,
-      })
+      const payload = { answers: { ...pruned.answers, __mode: mode }, files: pruned.files, nextReviewDate: pruned.answers.next_review }
+      if (mode === 'attestation') {
+        await recordEvidence(payload)
+      } else {
+        await comply({
+          ...payload,
+          summary: mode === 'interim'
+            ? `Complied with interim evidence — ${result.total} checklist items on record.`
+            : `Complied with evidence — ${result.total} checklist items on record.`,
+        })
+      }
       try { localStorage.removeItem(draftKey) } catch { /* storage unavailable */ }
       setDirty(false)
+      setRecorded(true)
       onComplied?.()
     } catch (e) {
       setError(e.message)
@@ -142,28 +192,50 @@ export function ManualCompliancePanel({ frameworkId, requirementId, def, statusR
   }
 
   const nameOf = uid => {
+    if (!uid) return null
     const m = members.find(x => x.user_id === uid)
     return m?.full_name || m?.email || 'a team member'
   }
 
-  const evidenced = statusRow?.status === 'compliant' && !!statusRow?.evidence_id
+  const today = localISO()
   let banner = null
-  if (statusRow?.review_overdue) {
-    banner = { tone: 'critical', Icon: AlertTriangle, title: 'Review overdue',
-      text: `The next review was due ${formatDate(statusRow.review_due_at)}. This control counts as Partial until evidence is re-submitted.` }
-  } else if (evidenced) {
-    banner = { tone: 'low', Icon: ShieldCheck, title: 'Compliant',
-      text: [
-        latest ? `Evidenced ${formatDate(latest.submitted_at)} by ${nameOf(latest.submitted_by)}` : 'Evidence on record',
-        statusRow.review_due_at ? `next review ${formatDate(statusRow.review_due_at)}` : null,
-      ].filter(Boolean).join(' · ') }
-  } else if (statusRow?.status === 'compliant') {
-    banner = { tone: 'medium', Icon: AlertTriangle, title: 'Marked compliant without evidence',
-      text: 'This status was set before evidence was recorded. Complete the checklist and comply to put the evidence on record.' }
+  if (mode === 'attestation') {
+    if (latestForMode) {
+      const overdue = latestForMode.next_review_date && String(latestForMode.next_review_date).slice(0, 10) < today
+      banner = overdue
+        ? { tone: 'medium', Icon: AlertTriangle, title: 'Attestation overdue',
+            text: `The last attestation was due for review ${formatDate(latestForMode.next_review_date)}. The measured status is unaffected; record a fresh attestation.` }
+        : { tone: 'info', Icon: ClipboardCheck, title: 'Attested',
+            text: [
+              `${formatDate(latestForMode.submitted_at)} by ${nameOf(latestForMode.answers?.reviewer) || nameOf(latestForMode.submitted_by)}`,
+              latestForMode.next_review_date ? `next review ${formatDate(latestForMode.next_review_date)}` : null,
+            ].filter(Boolean).join(' · ') }
+    }
+  } else {
+    const evidenced = statusRow?.status === 'compliant' && !!statusRow?.evidence_id
+    if (statusRow?.review_overdue) {
+      banner = { tone: 'critical', Icon: AlertTriangle, title: 'Review overdue',
+        text: `The next review was due ${formatDate(statusRow.review_due_at)}. This control counts as Partial until evidence is re-submitted.` }
+    } else if (evidenced) {
+      const byline = latest
+        ? `Evidenced ${formatDate(latest.submitted_at)} by ${nameOf(latest.answers?.reviewer) || nameOf(latest.submitted_by)}`
+        : 'Evidence on record'
+      banner = { tone: 'low', Icon: ShieldCheck,
+        title: latest?.answers?.__mode === 'interim' ? 'Compliant — interim evidence' : 'Compliant',
+        text: [byline, statusRow.review_due_at ? `next review ${formatDate(statusRow.review_due_at)}` : null].filter(Boolean).join(' · ') }
+    } else if (statusRow?.status === 'compliant') {
+      banner = { tone: 'medium', Icon: AlertTriangle, title: 'Marked compliant without evidence',
+        text: 'This status was set before evidence was recorded. Complete the checklist and comply to put the evidence on record.' }
+    }
   }
 
-  const pct = result.total ? Math.round((result.done / result.total) * 100) : 0
-  const reComply = evidenced || statusRow?.review_overdue
+  const pctDone = result.total ? Math.round((result.done / result.total) * 100) : 0
+  const again = mode === 'attestation'
+    ? !!latestForMode
+    : (statusRow?.status === 'compliant' && !!statusRow?.evidence_id) || statusRow?.review_overdue
+  const actionLabel = saving
+    ? 'Recording…'
+    : again ? (mode === 'attestation' ? 'Record a new attestation' : 'Re-comply with this evidence') : copy.action
 
   const renderInput = (f) => {
     const v = answers[f.key]
@@ -172,7 +244,7 @@ export function ManualCompliancePanel({ frameworkId, requirementId, def, statusR
         return <input className="risys-input" value={v || ''} disabled={!canEdit} onChange={e => setAnswer(f.key, e.target.value)} />
       case 'number':
         return (
-          <input className="risys-input tnum" type="number" min={f.min} max={f.max} style={{ maxWidth: 140 }}
+          <input className="risys-input tnum" type="number" min={f.min} max={f.max} style={{ maxWidth: 160 }}
             value={v ?? ''} disabled={!canEdit} onChange={e => setAnswer(f.key, e.target.value)} />
         )
       case 'date':
@@ -187,6 +259,17 @@ export function ManualCompliancePanel({ frameworkId, requirementId, def, statusR
             <SelectField className="w-full" value={v || ''} disabled={!canEdit} onChange={e => setAnswer(f.key, e.target.value)}>
               <option value="">Select…</option>
               {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+            </SelectField>
+          </div>
+        )
+      case 'member':
+        return (
+          <div style={{ maxWidth: 320 }}>
+            <SelectField className="w-full" value={v || ''} disabled={!canEdit} onChange={e => setAnswer(f.key, e.target.value)}>
+              <option value="">Select a member…</option>
+              {members.map(m => (
+                <option key={m.user_id} value={m.user_id}>{m.full_name || m.email || m.user_id?.slice(0, 8)}</option>
+              ))}
             </SelectField>
           </div>
         )
@@ -303,9 +386,9 @@ export function ManualCompliancePanel({ frameworkId, requirementId, def, statusR
   return (
     <section style={{ marginBottom: 30 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-        <ShieldCheck size={14} style={{ color: 'var(--crimson)' }} />
+        <copy.Icon size={14} style={{ color: 'var(--crimson)' }} />
         <h2 style={{ fontSize: 'var(--t-section)', fontWeight: 600, color: 'var(--text)', margin: 0 }}>
-          Evidence &amp; compliance
+          {copy.heading}
         </h2>
         <span className="tnum" style={{ marginLeft: 'auto', fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>
           {result.done} of {result.total} complete
@@ -316,7 +399,7 @@ export function ManualCompliancePanel({ frameworkId, requirementId, def, statusR
         background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
         padding: '18px 20px',
       }}>
-        {banner ? (
+        {banner && (
           <div style={{
             display: 'flex', gap: 10, padding: '10px 12px', borderRadius: 'var(--r)', marginBottom: 14,
             background: TONES[banner.tone].bg, border: `1px solid ${TONES[banner.tone].border}`,
@@ -327,12 +410,11 @@ export function ManualCompliancePanel({ frameworkId, requirementId, def, statusR
               <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-2)', margin: '2px 0 0', lineHeight: 1.5 }}>{banner.text}</p>
             </div>
           </div>
-        ) : (
-          <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)', lineHeight: 1.6, margin: '0 0 14px' }}>
-            No system holds the answer to this control. Put on record what an assessor will ask to see —
-            <strong style={{ fontWeight: 600 }}> Comply</strong> unlocks once every item is complete.
-          </p>
         )}
+
+        <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)', lineHeight: 1.6, margin: '0 0 14px' }}>
+          {copy.intro}
+        </p>
 
         {!migrated && (
           <div style={{
@@ -355,7 +437,7 @@ export function ManualCompliancePanel({ frameworkId, requirementId, def, statusR
 
         <div aria-hidden style={{ height: 5, borderRadius: 99, background: 'var(--surface-2)', overflow: 'hidden' }}>
           <div style={{
-            width: `${pct}%`, height: '100%', borderRadius: 99,
+            width: `${pctDone}%`, height: '100%', borderRadius: 99,
             background: result.ready ? 'var(--low)' : 'var(--crimson)', transition: 'width 0.3s var(--ease)',
           }} />
         </div>
@@ -364,9 +446,7 @@ export function ManualCompliancePanel({ frameworkId, requirementId, def, statusR
           const done = f.optional ? null : isFilled(f, answers, files)
           return (
             <div key={f.key}>
-              {f.section && (idx === 0
-                ? <p className="eyebrow" style={{ margin: '16px 0 10px' }}>{f.section}</p>
-                : <SectionHead>{f.section}</SectionHead>)}
+              {f.section && <SectionHead first={idx === 0}>{f.section}</SectionHead>}
               <div style={{ display: 'grid', gridTemplateColumns: '18px minmax(0, 1fr)', gap: 10, padding: '8px 0' }}>
                 <span style={{ paddingTop: 1 }}>
                   {done === null
@@ -396,7 +476,8 @@ export function ManualCompliancePanel({ frameworkId, requirementId, def, statusR
             background: 'var(--critical-bg)', border: '1px solid var(--critical-bd)',
           }}>
             <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--t-sm)', fontWeight: 600, color: 'var(--critical)', margin: '0 0 4px' }}>
-              <AlertTriangle size={13} /> This control cannot be complied yet
+              <AlertTriangle size={13} />
+              {mode === 'attestation' ? 'This attestation cannot be recorded yet' : 'This control cannot be complied yet'}
             </p>
             <ul style={{ margin: 0, paddingLeft: 18 }}>
               {result.blockers.map(b => (
@@ -414,19 +495,21 @@ export function ManualCompliancePanel({ frameworkId, requirementId, def, statusR
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
           marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border-3)',
         }}>
-          <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', margin: 0 }}>
-            {result.ready
-              ? 'Everything an assessor expects is on record.'
-              : `${result.total - result.done} item${result.total - result.done === 1 ? '' : 's'} left${result.blockers.length ? ` · ${result.blockers.length} problem${result.blockers.length === 1 ? '' : 's'} to resolve` : ''}`}
+          <p style={{ fontSize: 'var(--t-meta)', color: recorded ? 'var(--low)' : 'var(--text-3)', margin: 0 }}>
+            {recorded
+              ? (mode === 'attestation' ? 'Attestation recorded.' : 'Evidence recorded and the control marked compliant.')
+              : result.ready
+                ? 'Everything an assessor expects is on record.'
+                : `${result.total - result.done} item${result.total - result.done === 1 ? '' : 's'} left${result.blockers.length ? ` · ${result.blockers.length} problem${result.blockers.length === 1 ? '' : 's'} to resolve` : ''}`}
             {dirty && ' · draft saved on this device'}
           </p>
           {canManage && (
-            <button type="button" className="btn-primary" onClick={doComply}
+            <button type="button" className="btn-primary" onClick={submit}
               disabled={!result.ready || !canEdit}
-              title={result.ready ? 'Record the evidence and mark this control compliant' : 'Complete every item first'}
+              title={result.ready ? copy.action : 'Complete every item first'}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, opacity: result.ready && canEdit ? 1 : 0.55 }}>
-              {saving ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />}
-              {saving ? 'Recording…' : reComply ? 'Re-comply with this evidence' : 'Comply'}
+              {saving ? <Loader2 size={13} className="animate-spin" /> : <copy.Icon size={13} />}
+              {actionLabel}
             </button>
           )}
         </div>
