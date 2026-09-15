@@ -1,3 +1,4 @@
+import { callEdgeFunction } from '@/lib/functions'
 // ── PKCE helpers ──────────────────────────────────────────────────────────────
 
 async function generateCodeVerifier() {
@@ -102,22 +103,9 @@ export async function exchangeCodeInBrowser({ connector, code, codeVerifier }) {
   return tokens
 }
 
-export async function exchangeCodeForTokens({ connectorId, code, orgId, codeVerifier }) {
-  const supabaseUrl     = import.meta.env.VITE_SUPABASE_URL
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-  const redirectUri     = import.meta.env.VITE_OAUTH_REDIRECT_URI || 'http://localhost:5173/oauth/callback'
-
-  const res = await fetch(`${supabaseUrl}/functions/v1/oauth-exchange`, {
-    method:  'POST',
-    headers: {
-      'Content-Type':  'application/json',
-      'Authorization': `Bearer ${supabaseAnonKey}`,
-      'apikey':        supabaseAnonKey,
-    },
-    body: JSON.stringify({ connectorId, code, redirectUri, orgId, codeVerifier }),
-  })
-
-  const data = await res.json()
-  if (!res.ok || data.error) throw new Error(data.error || 'Token exchange failed')
-  return data
+export async function exchangeCodeForTokens({ connectorId, code, orgId }) {
+  const redirectUri = import.meta.env.VITE_OAUTH_REDIRECT_URI || 'http://localhost:5173/oauth/callback'
+  // V6: sent with the user's session; the function verifies org-admin membership.
+  // V4: tokens are stored in Vault server-side and never returned to the browser.
+  return callEdgeFunction('oauth-exchange', { connectorId, code, redirectUri, orgId })
 }

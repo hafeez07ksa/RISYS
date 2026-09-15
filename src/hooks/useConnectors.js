@@ -6,52 +6,9 @@ import { CONNECTORS } from '@/lib/constants'
 import { supabase } from '@/lib/supabase'
 import { logAudit, AUDIT } from '@/lib/audit'
 
-// ── Token refresh ─────────────────────────────────────────────────────────────
-
-function isTokenExpiringSoon(meta) {
-  if (!meta?.expires_at) return false
-  return new Date(meta.expires_at).getTime() - Date.now() < 5 * 60 * 1000
-}
-
-async function refreshEntraToken(orgId, connector) {
-  const meta = connector?.meta
-  if (!meta?.refresh_token) throw new Error('No refresh token stored — please reconnect Entra ID.')
-
-  const clientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID
-  const body = new URLSearchParams({
-    client_id:     clientId,
-    grant_type:    'refresh_token',
-    refresh_token: meta.refresh_token,
-    scope:         'openid email profile offline_access User.Read',
-  })
-
-  const res = await fetch(
-    `https://login.microsoftonline.com/${meta.tenant_id || 'common'}/oauth2/v2.0/token`,
-    { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body }
-  )
-  const data = await res.json()
-  if (!res.ok || data.error) {
-    throw new Error(data.error_description || data.error || 'Token refresh failed')
-  }
-
-  const newMeta = {
-    ...meta,
-    access_token:  data.access_token,
-    refresh_token: data.refresh_token ?? meta.refresh_token,
-    expires_in:    data.expires_in    ?? null,
-    expires_at:    data.expires_in
-      ? new Date(Date.now() + data.expires_in * 1000).toISOString()
-      : null,
-  }
-
-  await supabase
-    .from('org_connectors')
-    .update({ meta: newMeta })
-    .eq('org_id', orgId)
-    .eq('connector_id', 'entra')
-
-  return { access_token: data.access_token, meta: newMeta }
-}
+// V4: OAuth tokens are never held in the browser or in org_connectors.meta.
+// Microsoft syncs use app-only tokens server-side; Jira tokens live in Vault
+// and are refreshed inside edge functions.
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
@@ -100,18 +57,6 @@ export function useConnectors() {
     }
   }
 
-  const getValidEntraToken = async () => {
-    const connector = store.getConnection('entra')
-    const meta = connector?.meta
-    if (!meta?.access_token) throw new Error('Entra ID is not connected.')
-    if (isTokenExpiringSoon(meta)) {
-      const { access_token } = await refreshEntraToken(organization.id, connector)
-      store.mockConnect('entra')
-      return access_token
-    }
-    return meta.access_token
-  }
-
   return {
     connections:    store.connections,
     loading:        store.loading,
@@ -120,6 +65,5 @@ export function useConnectors() {
     getConnection:  store.getConnection,
     connect,
     disconnect,
-    getValidEntraToken,
   }
 }

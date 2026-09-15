@@ -6,10 +6,10 @@ import {
 } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
-import { useConnectors } from '@/hooks/useConnectors'
 import { supabase } from '@/lib/supabase'
 import { Spinner } from '@/components/ui/Spinner'
 import { SEVERITY_CONFIG } from '@/lib/findings'
+import { callEdgeFunction } from '@/lib/functions'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -60,7 +60,6 @@ function StatCard({ label, value, icon: Icon, tone }) {
 export function SharePointManagePage() {
   const navigate               = useNavigate()
   const { organization }       = useAuth()
-  const { getValidEntraToken } = useConnectors()
 
   const [findings, setFindings]   = useState([])
   const [loading, setLoading]     = useState(true)
@@ -87,21 +86,7 @@ export function SharePointManagePage() {
   const handleSync = async () => {
     setSyncing(true); setSyncMsg(null); setSyncError(false)
     try {
-      await getValidEntraToken()
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sharepoint-security`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          },
-          body: JSON.stringify({ org_id: organization.id }),
-        }
-      )
-      const data = await res.json()
-      if (!res.ok || data.error) throw new Error(data.error)
+      const data = await callEdgeFunction('sharepoint-security', { org_id: organization.id })
       const parts = [`Scanned ${data.breakdown?.sites_scanned ?? 0} sites · Found ${data.findings_upserted} findings`]
       if (data.breakdown?.external_sharing) parts.push(`External sharing: ${data.breakdown.external_sharing}`)
       if (data.breakdown?.public_files)     parts.push(`Public files: ${data.breakdown.public_files}`)

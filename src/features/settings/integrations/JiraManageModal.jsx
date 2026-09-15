@@ -5,6 +5,7 @@ import { SEVERITIES, JIRA_ISSUE_TYPES } from '@/lib/incidents'
 import { useAuth } from '@/hooks/useAuth'
 import { Spinner } from '@/components/ui/Spinner'
 import { SelectField } from '@/components/ui/Combobox'
+import { supabase } from '@/lib/supabase'
 
 export function JiraManageModal({ onClose }) {
   const { organization } = useAuth()
@@ -12,15 +13,34 @@ export function JiraManageModal({ onClose }) {
   const [newType, setNewType] = useState('')
   const [newSeverity, setNewSeverity] = useState('medium')
   const [saving, setSaving] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState(null)
+  const [ingestToken, setIngestToken] = useState(null)
+  const [tokenBusy, setTokenBusy] = useState(false)
+  const [tokenError, setTokenError] = useState(null)
 
-  const ingestUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-incident`
-  const n8nPayload = JSON.stringify({
-    org_id: organization?.id || 'YOUR_ORG_ID',
-    connector_id: 'jira',
-    secret: 'YOUR_INGEST_SECRET',
-    issue: '{{ $json.issue }}',
-  }, null, 2)
+  // V2: n8n authenticates with a per-organisation token sent in a header.
+  // Only its hash is stored, so it is shown once when generated.
+  const ingestUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-incident?org_id=${organization?.id || 'YOUR_ORG_ID'}&connector_id=jira`
+  const n8nPayload = JSON.stringify({ issue: '{{ $json.issue }}' }, null, 2)
+
+  const handleGenerateToken = async () => {
+    if (!window.confirm(
+      'Generate a new n8n ingest token?\n\nAny n8n workflow using the previous token will stop working. ' +
+      'The direct Jira connection is not affected.'
+    )) return
+    setTokenBusy(true); setTokenError(null)
+    try {
+      const { data, error } = await supabase.rpc('rotate_ingest_token', {
+        p_org: organization.id, p_connector: 'jira-n8n',
+      })
+      if (error) throw error
+      setIngestToken(data)
+    } catch (err) {
+      setTokenError(err.message || 'Could not generate a token')
+    } finally {
+      setTokenBusy(false)
+    }
+  }
 
   const handleAdd = async () => {
     if (!newType.trim()) return
@@ -34,10 +54,10 @@ export function JiraManageModal({ onClose }) {
     }
   }
 
-  const handleCopy = (text) => {
+  const handleCopy = (text, key = 'url') => {
     navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setCopied(key)
+    setTimeout(() => setCopied(null), 2000)
   }
 
   const unmappedTypes = JIRA_ISSUE_TYPES.filter(
@@ -147,16 +167,43 @@ export function JiraManageModal({ onClose }) {
             <h3 className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: '#8a7070' }}>n8n Webhook Setup</h3>
             <p className="text-xs mb-3" style={{ color: '#8a7070' }}>
               Use this endpoint in your n8n workflow to send Jira issues to RISYS.
+              Not needed if Jira is connected directly — that webhook is registered and secured automatically.
             </p>
 
             <div className="mb-3">
               <p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: '#8a7070' }}>Ingest URL</p>
               <div className="flex items-center gap-2 p-2.5 rounded-md font-mono text-xs" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
                 <span className="flex-1 truncate" style={{ color: '#1a1314' }}>{ingestUrl}</span>
-                <button onClick={() => handleCopy(ingestUrl)} className="flex-shrink-0 transition-opacity hover:opacity-70">
-                  {copied ? <Check size={13} style={{ color: '#16a34a' }} /> : <Copy size={13} style={{ color: '#8a7070' }} />}
+                <button onClick={() => handleCopy(ingestUrl, 'url')} className="flex-shrink-0 transition-opacity hover:opacity-70">
+                  {copied === 'url' ? <Check size={13} style={{ color: '#16a34a' }} /> : <Copy size={13} style={{ color: '#8a7070' }} />}
                 </button>
               </div>
+            </div>
+
+            <div className="mb-3">
+              <p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: '#8a7070' }}>
+                Header <code className="px-1 rounded normal-case" style={{ background: '#ede9e9' }}>x-risys-token</code>
+              </p>
+              {ingestToken ? (
+                <>
+                  <div className="flex items-center gap-2 p-2.5 rounded-md font-mono text-xs" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
+                    <span className="flex-1 truncate" style={{ color: '#1a1314' }}>{ingestToken}</span>
+                    <button onClick={() => handleCopy(ingestToken, 'token')} className="flex-shrink-0 transition-opacity hover:opacity-70">
+                      {copied === 'token' ? <Check size={13} style={{ color: '#16a34a' }} /> : <Copy size={13} style={{ color: '#8a7070' }} />}
+                    </button>
+                  </div>
+                  <p className="text-[11px] mt-1" style={{ color: '#b45309' }}>
+                    Copy this now and store it in n8n credentials. It won't be shown again.
+                  </p>
+                </>
+              ) : (
+                <button onClick={handleGenerateToken} disabled={tokenBusy}
+                  className="text-xs px-3 py-1.5 rounded-md border transition-colors hover:bg-[#f5f3f3] disabled:opacity-50"
+                  style={{ borderColor: '#e5e0e0', color: '#4a3a3a', background: '#fff' }}>
+                  {tokenBusy ? 'Generating…' : 'Generate ingest token'}
+                </button>
+              )}
+              {tokenError && <p className="text-[11px] mt-1" style={{ color: '#dc2626' }}>{tokenError}</p>}
             </div>
 
             <div>
@@ -167,8 +214,9 @@ export function JiraManageModal({ onClose }) {
             </div>
 
             <p className="text-[11px] mt-3" style={{ color: '#8a7070' }}>
-              In n8n: Jira Trigger → HTTP Request (POST to URL above) → done.
-              Set <code className="px-1 rounded" style={{ background: '#ede9e9' }}>org_id</code> to your org's ID shown above.
+              In n8n: Jira Trigger → HTTP Request (POST to the URL above, with the
+              <code className="px-1 rounded" style={{ background: '#ede9e9' }}>x-risys-token</code> header) → done.
+              Requests without a valid token are rejected.
             </p>
           </div>
         </div>

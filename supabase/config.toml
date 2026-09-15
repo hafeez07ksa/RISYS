@@ -1,0 +1,36 @@
+# Supabase CLI config for RISYS (project cfyjfmlhquyxgwrekswe).
+# Only the settings that differ from CLI defaults are listed.
+project_id = "cfyjfmlhquyxgwrekswe"
+
+# Inbound webhooks authenticate themselves (per-tenant ingest token, plus
+# Jira's signed JWT), so the gateway must NOT require a Supabase JWT.
+[functions.ingest-incident]
+verify_jwt = false
+
+[functions.ingest-entra-events]
+verify_jwt = false
+
+# Browser-invoked functions: gateway JWT check on, plus org-admin check in code.
+[functions.oauth-exchange]
+verify_jwt = true
+
+[functions.register-jira-webhook]
+verify_jwt = true
+
+[functions.entra-directory]
+verify_jwt = true
+
+[functions.m365-security]
+verify_jwt = true
+
+[functions.defender-security]
+verify_jwt = true
+
+[functions.sharepoint-security]
+verify_jwt = true
+
+[functions.entra-sync]
+verify_jwt = true
+
+[functions.m365-debug]
+verify_jwt = true

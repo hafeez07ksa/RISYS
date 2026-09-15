@@ -22,6 +22,7 @@ import { getRiskLevel } from '@/lib/risks'
 import { ControlModal } from './ControlModal'
 import { Spinner } from '@/components/ui/Spinner'
 import { SelectField } from '@/components/ui/Combobox'
+import { EvidenceFileLink } from '@/components/ui/EvidenceFileLink'
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 const TABS = [
@@ -226,11 +227,11 @@ function EvidenceTab({ control, canManage }) {
                 </p>
                 {ev.description && <p style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 3 }}>{ev.description}</p>}
               </div>
-              {ev.file_url && (
-                <a href={ev.file_url} target="_blank" rel="noopener noreferrer"
+              {ev.file_path && (
+                <EvidenceFileLink evidence={ev}
                   style={{ color: 'var(--crimson)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
                   <ExternalLink size={13} /> View
-                </a>
+                </EvidenceFileLink>
               )}
               {canManage && (
                 <button onClick={() => deleteEvidence(ev.id)}

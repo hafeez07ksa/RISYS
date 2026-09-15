@@ -11,6 +11,7 @@ import {
 import { logAudit, AUDIT } from '@/lib/audit'
 import { Spinner } from '@/components/ui/Spinner'
 import { CheckCircle, XCircle } from 'lucide-react'
+import { callEdgeFunction } from '@/lib/functions'
 
 // ── Tenant resolution (mirrors useConnectors logic) ───────────────────────────
 
@@ -50,43 +51,18 @@ async function resolveEntraTenantId(accessToken, idToken) {
 // ── Post-connect actions (mirrors POST_CONNECT in useConnectors) ───────────────
 
 async function runPostConnect(connectorId, orgId) {
-  const supabaseUrl     = import.meta.env.VITE_SUPABASE_URL
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-  const headers = {
-    'Content-Type':  'application/json',
-    'Authorization': `Bearer ${supabaseAnonKey}`,
-    'apikey':        supabaseAnonKey,
-  }
-
   if (connectorId === 'jira') {
     try {
-      const res = await fetch(`${supabaseUrl}/functions/v1/register-jira-webhook`, {
-        method: 'POST', headers,
-        body: JSON.stringify({ org_id: orgId }),
-      })
-      const data = await res.json()
-      if (!res.ok || data.error) {
-        console.warn('[RISYS] Jira webhook registration failed:', data.error || data)
-      } else {
-        console.log('[RISYS] Jira webhook registered:', data.webhookId)
-      }
-    } catch (err) { console.warn('[RISYS] Jira webhook error:', err) }
+      const data = await callEdgeFunction('register-jira-webhook', { org_id: orgId })
+      console.log('[RISYS] Jira webhook registered:', data.webhookId)
+    } catch (err) { console.warn('[RISYS] Jira webhook registration failed:', err.message) }
   }
 
   if (connectorId === 'entra') {
     try {
-      const res = await fetch(`${supabaseUrl}/functions/v1/entra-directory`, {
-        method: 'POST', headers,
-        body: JSON.stringify({ org_id: orgId }),
-      })
-      const data = await res.json()
-      if (!res.ok || data.error) {
-        console.warn('[RISYS] Entra directory sync failed:', data.error)
-      } else {
-        console.log('[RISYS] Entra synced:', data.users_synced, 'users')
-      }
-    } catch (err) { console.warn('[RISYS] Entra sync error:', err) }
+      const data = await callEdgeFunction('entra-directory', { org_id: orgId })
+      console.log('[RISYS] Entra synced:', data.users_synced, 'users')
+    } catch (err) { console.warn('[RISYS] Entra directory sync failed:', err.message) }
   }
 }
 
@@ -182,14 +158,9 @@ export function OAuthCallbackPage() {
             connector_id: connectorId,
             status:       'active',
             connected_at: new Date().toISOString(),
+            // V4: the delegated tokens are used only above to resolve the tenant and
+            // are discarded. All Microsoft syncs use app-only tokens server-side.
             meta: {
-              access_token:  tokens.access_token,
-              refresh_token: tokens.refresh_token  ?? null,
-              expires_in:    tokens.expires_in     ?? null,
-              expires_at:    tokens.expires_in
-                ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
-                : null,
-              token_type:    tokens.token_type     ?? 'Bearer',
               scope:         tokens.scope          ?? null,
               tenant_id:     tenantId,
               tenant_name:   tenantName,
@@ -209,7 +180,7 @@ export function OAuthCallbackPage() {
 
       } else {
         // ── All other connectors: exchange via Supabase edge function ─────────
-        await exchangeCodeForTokens({ connectorId, code, orgId, codeVerifier })
+        await exchangeCodeForTokens({ connectorId, code, orgId })
       }
 
       // ── Post-connect actions (webhook registration, initial sync) ─────────

@@ -13,6 +13,7 @@ import { usePermissions } from '@/hooks/usePermissions'
 import { getRiskLevel } from '@/lib/risks'
 import { Spinner } from '@/components/ui/Spinner'
 import { SelectField } from '@/components/ui/Combobox'
+import { EvidenceFileLink } from '@/components/ui/EvidenceFileLink'
 
 const RESULT_COLORS = { Pass: '#166534', Fail: '#991b1b', Partial: '#92400e' }
 
@@ -171,10 +172,10 @@ function EvidenceTab({ control, canManage }) {
                   {ev.file_name && ` · ${ev.file_name}`}
                 </p>
               </div>
-              {ev.file_url && (
-                <a href={ev.file_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--crimson)', flexShrink: 0 }}>
+              {ev.file_path && (
+                <EvidenceFileLink evidence={ev} style={{ color: 'var(--crimson)', flexShrink: 0 }}>
                   <ExternalLink size={13} />
-                </a>
+                </EvidenceFileLink>
               )}
               {canManage && (
                 <button onClick={() => deleteEvidence(ev.id)} style={{ color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}>

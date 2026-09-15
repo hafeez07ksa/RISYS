@@ -8,6 +8,7 @@ import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { Spinner } from '@/components/ui/Spinner'
+import { callEdgeFunction } from '@/lib/functions'
 
 // ── Scan scope definitions ────────────────────────────────────────────────────
 // Each scope maps to a category in m365_findings and a Graph API permission.
@@ -241,20 +242,7 @@ export function M365ManagePage() {
   const handleSync = async () => {
     setSyncing(true); setSyncMsg(null); setSyncError(false)
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/m365-security`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          },
-          body: JSON.stringify({ org_id: organization.id }),
-        }
-      )
-      const data = await res.json()
-      if (!res.ok || data.error) throw new Error(data.error)
+      const data = await callEdgeFunction('m365-security', { org_id: organization.id })
       const parts = [`Found ${data.findings_upserted} findings`]
       if (data.breakdown?.exchange  !== undefined) parts.push(`Exchange: ${data.breakdown.exchange}`)
       if (data.breakdown?.sharepoint !== undefined) parts.push(`SharePoint: ${data.breakdown.sharepoint}`)

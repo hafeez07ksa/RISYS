@@ -33,6 +33,7 @@ import {
 import { logAudit, AUDIT } from '@/lib/audit'
 import { Spinner } from '@/components/ui/Spinner'
 import { SelectField } from '@/components/ui/Combobox'
+import { EvidenceFileLink } from '@/components/ui/EvidenceFileLink'
 
 const EVIDENCE_ICONS = {
   Document: FileText, Screenshot: Image, Log: ClipboardList, Attestation: PenLine,
@@ -929,11 +930,11 @@ function EvidenceTab({ riskId, canManage }) {
                     </div>
                     {ev.description && <p style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.5, marginTop: 3 }}>{ev.description}</p>}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 6, flexWrap: 'wrap' }}>
-                      {ev.file_url && (
-                        <a href={ev.file_url} target="_blank" rel="noopener noreferrer"
+                      {ev.file_path && (
+                        <EvidenceFileLink evidence={ev}
                           style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500, color: 'var(--crimson)', textDecoration: 'none', padding: '3px 9px', borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--border)' }}>
                           <ExternalLink size={11} /> {ev.file_name || 'View file'}
-                        </a>
+                        </EvidenceFileLink>
                       )}
                       <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Collected {new Date(ev.collected_at).toLocaleDateString('en-GB')}</span>
                       {ev.expires_at && <span style={{ fontSize: 11, color: expired ? '#8C1616' : 'var(--text-3)' }}>Valid until {new Date(ev.expires_at).toLocaleDateString('en-GB')}</span>}
