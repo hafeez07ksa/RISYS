@@ -7,10 +7,10 @@ import {
 } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
-import { useConnectors } from '@/hooks/useConnectors'
 import { supabase } from '@/lib/supabase'
 import { Spinner } from '@/components/ui/Spinner'
 import { SEVERITY_CONFIG } from '@/lib/findings'
+import { callEdgeFunction } from '@/lib/functions'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -75,7 +75,6 @@ function CategoryIcon({ category }) {
 export function DefenderManagePage() {
   const navigate            = useNavigate()
   const { organization }    = useAuth()
-  const { getValidEntraToken } = useConnectors()
 
   const [findings, setFindings]   = useState([])
   const [loading, setLoading]     = useState(true)
@@ -102,21 +101,7 @@ export function DefenderManagePage() {
   const handleSync = async () => {
     setSyncing(true); setSyncMsg(null); setSyncError(false)
     try {
-      await getValidEntraToken()
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/defender-security`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          },
-          body: JSON.stringify({ org_id: organization.id }),
-        }
-      )
-      const data = await res.json()
-      if (!res.ok || data.error) throw new Error(data.error)
+      const data = await callEdgeFunction('defender-security', { org_id: organization.id })
       const parts = [`Found ${data.findings_upserted} findings`]
       if (data.breakdown?.alerts   !== undefined) parts.push(`Alerts: ${data.breakdown.alerts}`)
       if (data.breakdown?.posture  !== undefined) parts.push(`Posture gaps: ${data.breakdown.posture}`)

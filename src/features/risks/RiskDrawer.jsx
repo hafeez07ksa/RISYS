@@ -11,6 +11,7 @@ import { usePeople } from '@/hooks/usePeople'
 import { useComments } from '@/hooks/useComments'
 import { Spinner } from '@/components/ui/Spinner'
 import { SelectField } from '@/components/ui/Combobox'
+import { EvidenceFileLink } from '@/components/ui/EvidenceFileLink'
 
 const TABS = [
   { id: 'overview',   label: 'Overview',     icon: Shield },
@@ -401,11 +402,11 @@ function EvidenceTab({ riskId }) {
                   </div>
                   {ev.description && <p className="text-[11px] mt-1" style={{ color: '#97817d' }}>{ev.description}</p>}
                   <div className="flex items-center gap-2 mt-1">
-                    {ev.file_url && (
-                      <a href={ev.file_url} target="_blank" rel="noopener noreferrer"
+                    {ev.file_path && (
+                      <EvidenceFileLink evidence={ev}
                         className="flex items-center gap-1 text-[11px]" style={{ color: '#1e40af' }}>
                         <ExternalLink size={10} /> {ev.file_name || 'View file'}
-                      </a>
+                      </EvidenceFileLink>
                     )}
                     <span className="text-[11px]" style={{ color: '#97817d' }}>{new Date(ev.collected_at).toLocaleDateString()}</span>
                   </div>

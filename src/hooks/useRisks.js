@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
 import { logAudit, AUDIT } from '@/lib/audit'
+import { uploadEvidenceFile, deleteEvidenceRecord } from '@/lib/evidence'
 
 // ── RISKS ─────────────────────────────────────────────────────────────────────
 export function useRisks(filters = {}) {
@@ -208,29 +209,18 @@ export function useRiskEvidence(riskId, controlId) {
   useEffect(() => { fetchEvidence() }, [fetchEvidence])
 
   const addEvidence = async (data, file) => {
-    let fileUrl = null, fileName = null, fileSize = null
-
-    if (file) {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-      const path = `${organization.id}/evidence/${Date.now()}_${safeName}`
-      const { error: uploadError } = await supabase.storage
-        .from('risk-evidence')
-        .upload(path, file, { cacheControl: '3600', upsert: false })
-      if (uploadError) throw new Error(`File upload failed: ${uploadError.message}`)
-      const { data: urlData } = supabase.storage.from('risk-evidence').getPublicUrl(path)
-      fileUrl  = urlData.publicUrl
-      fileName = file.name
-      fileSize = file.size
-    }
+    // V1: store the private object path, never a public URL
+    const fileInfo = file
+      ? await uploadEvidenceFile(organization.id, 'evidence', file)
+      : { file_path: null, file_name: null, file_size: null }
 
     const payload = {
       ...data,
       org_id:     organization.id,
       risk_id:    riskId    || null,
       control_id: controlId || null,
-      file_url:   fileUrl,
-      file_name:  fileName,
-      file_size:  fileSize,
+      file_url:   null,
+      ...fileInfo,
     }
 
     const { data: ev, error } = await supabase
@@ -243,8 +233,7 @@ export function useRiskEvidence(riskId, controlId) {
   }
 
   const deleteEvidence = async (id) => {
-    const { error } = await supabase.from('risk_evidence').delete().eq('id', id)
-    if (error) throw error
+    await deleteEvidenceRecord(id)
     await fetchEvidence()
   }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
+import { uploadEvidenceFile, deleteEvidenceRecord } from '@/lib/evidence'
 
 // ── CONTROL LIBRARY ───────────────────────────────────────────────────────────
 export function useControls(filters = {}) {
@@ -118,26 +119,16 @@ export function useControlEvidence(controlId) {
   useEffect(() => { fetchEvidence() }, [fetchEvidence])
 
   const addEvidence = async (data, file) => {
-    let fileUrl = null, fileName = null, fileSize = null
-    if (file) {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-      const path = `${organization.id}/control-evidence/${Date.now()}_${safeName}`
-      const { error: uploadError } = await supabase.storage
-        .from('risk-evidence')
-        .upload(path, file, { cacheControl: '3600', upsert: false })
-      if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`)
-      const { data: urlData } = supabase.storage.from('risk-evidence').getPublicUrl(path)
-      fileUrl  = urlData.publicUrl
-      fileName = file.name
-      fileSize = file.size
-    }
+    // V1: store the private object path, never a public URL
+    const fileInfo = file
+      ? await uploadEvidenceFile(organization.id, 'control-evidence', file)
+      : { file_path: null, file_name: null, file_size: null }
     const { error } = await supabase.from('risk_evidence').insert({
       ...data,
       org_id: organization.id,
       control_id: controlId,
-      file_url: fileUrl,
-      file_name: fileName,
-      file_size: fileSize,
+      file_url: null,
+      ...fileInfo,
       collected_by: user?.id,
     })
     if (error) throw new Error(error.message)
@@ -145,7 +136,7 @@ export function useControlEvidence(controlId) {
   }
 
   const deleteEvidence = async (id) => {
-    await supabase.from('risk_evidence').delete().eq('id', id)
+    await deleteEvidenceRecord(id)
     await fetchEvidence()
   }
 

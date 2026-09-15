@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useConnectors } from '@/hooks/useConnectors'
 import { supabase } from '@/lib/supabase'
 import { Spinner } from '@/components/ui/Spinner'
+import { callEdgeFunction } from '@/lib/functions'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -158,7 +159,6 @@ export function EntraManagePage() {
   const [logsLoading, setLogsLoading] = useState(true)
   const [logFilter, setLogFilter]     = useState('all')
 
-  const { getValidEntraToken } = useConnectors()
 
   const fetchUsers = useCallback(async () => {
     if (!organization?.id) return
@@ -188,16 +188,7 @@ export function EntraManagePage() {
   const handleSync = async () => {
     setSyncing(true); setSyncMsg(null); setSyncError(false)
     try {
-      // Refresh token if expiring within 5 minutes before hitting the edge function
-      await getValidEntraToken()
-
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/entra-directory`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`, 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY },
-        body: JSON.stringify({ org_id: organization.id }),
-      })
-      const data = await res.json()
-      if (!res.ok || data.error) throw new Error(data.error)
+      const data = await callEdgeFunction('entra-directory', { org_id: organization.id })
       setSyncMsg(`Synced ${data.users_synced} users · ${data.signins_synced} sign-in events`)
       await fetchUsers(); await fetchLogs()
     } catch (err) { setSyncMsg(err.message); setSyncError(true) }
