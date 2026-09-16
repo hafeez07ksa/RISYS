@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useNavigate, useParams, Navigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, RefreshCw, Search, ChevronRight, CheckCircle,
   AlertTriangle, ShieldAlert, AlertCircle, FileWarning,
@@ -8,7 +8,7 @@ import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
 import { Spinner } from '@/components/ui/Spinner'
 import { FINDING_PROVIDERS, SEVERITY_CONFIG } from '@/lib/findings'
-import { M365FindingsPlatformPage } from './M365FindingsPlatformPage'
+import { ConnectorFindingsListPage, LIST_VIEW_CONNECTORS } from './ConnectorFindingsListPage'
 
 // ── Shared bits ───────────────────────────────────────────────────────────────
 
@@ -66,15 +66,20 @@ function StatCard({ label, value, icon: Icon, tone, onClick }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function FindingsPlatformPage() {
-  const navigate = useNavigate()
   const { connectorId } = useParams()
-  const { organization } = useAuth()
 
-  // M365 findings are not per-user — they're about mailboxes, sites, and guests.
-  // Delegate to its own layout instead of forcing them into the user-table view.
-  if (connectorId === 'm365')       return <M365FindingsPlatformPage />
-  if (connectorId === 'defender')   return <Navigate to="/app/settings/defender"   replace />
-  if (connectorId === 'sharepoint') return <Navigate to="/app/settings/sharepoint" replace />
+  // M365, Defender and SharePoint findings are about mailboxes, sites, controls and
+  // alerts rather than users, so they use the list view. Entra keeps the per-user view.
+  // Choosing the view here (before any hooks) keeps each page's hook order stable.
+  if (LIST_VIEW_CONNECTORS.includes(connectorId)) {
+    return <ConnectorFindingsListPage key={connectorId} connectorId={connectorId} />
+  }
+  return <UserFindingsPlatformPage key={connectorId} connectorId={connectorId} />
+}
+
+function UserFindingsPlatformPage({ connectorId }) {
+  const navigate = useNavigate()
+  const { organization } = useAuth()
 
   const provider = FINDING_PROVIDERS.find(p => p.connectorId === connectorId)
 

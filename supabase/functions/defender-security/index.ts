@@ -1,9 +1,19 @@
 // defender-security — Defender alerts + Secure Score posture gaps.
 // V6: caller must be an admin of org_id.
-// V4/B3: uses an app-only Graph token (client credentials) instead of a stored delegated token.
-//        Requires application permissions SecurityAlert.Read.All and SecurityEvents.Read.All
-//        with admin consent in the customer tenant.
-import { adminClient, corsHeaders, errorResponse, getMicrosoftAppToken, HttpError, json, requireOrgRole } from '../_shared/auth.ts'
+// V4/B3: app-only Graph token. Requires application permissions SecurityAlert.Read.All
+//        and SecurityEvents.Read.All with admin consent in the customer tenant.
+//
+// FIX (16 Sep 2026): posture-gap detection was using ctrl.implementationStatus and
+// ctrl.currentScore from /security/secureScoreControlProfiles. Neither field exists on
+// that Graph resource (it's a static control catalog — title/rank/remediation/maxScore
+// only). implementationStatus was always undefined, so the "!ctrl.implementationStatus"
+// check discarded every control on every run — posture gaps were hard-locked at 0
+// regardless of the tenant's actual Secure Score. The tenant's real per-control achieved
+// score lives on secureScores[0].controlScores[], keyed by controlName. We now join the
+// two collections and flag a gap whenever achieved < max. Controls the tenant has
+// manually marked ThirdParty/Ignored in the Secure Score UI (controlStateUpdates) are
+// still excluded, matching the original intent.
+import { adminClient, corsHeaders, errorResponse, getMicrosoftAppToken, HttpError, json, requireOrgRole } from './_shared/auth.ts'
 
 const GRAPH = 'https://graph.microsoft.com/v1.0'
 
@@ -38,6 +48,7 @@ Deno.serve(async (req) => {
           graphErrors.push(`${endpoint.split('?')[0]}: ${res.status} ${(err as any)?.error?.code ?? ''}`.trim())
           break
         }
+        // deno-lint-ignore no-explicit-any
         const data: any = await res.json()
         if (data.value) results.push(...data.value)
         url = data['@odata.nextLink'] ?? null
@@ -53,6 +64,16 @@ Deno.serve(async (req) => {
     ])
 
     const latestScore = secureScores[0] ?? null
+
+    // Map of controlName -> achieved score for this tenant, from the score report itself
+    // (secureScoreControlProfiles has no per-tenant score — only static catalog metadata).
+    // deno-lint-ignore no-explicit-any
+    const achievedByControl = new Map<string, number>()
+    // deno-lint-ignore no-explicit-any
+    for (const cs of (latestScore?.controlScores ?? []) as any[]) {
+      if (cs?.controlName) achievedByControl.set(cs.controlName, Number(cs.score ?? 0))
+    }
+
     // deno-lint-ignore no-explicit-any
     const findings: any[] = []
 
@@ -75,8 +96,23 @@ Deno.serve(async (req) => {
     }
 
     for (const ctrl of controlProfiles) {
-      if (!ctrl.implementationStatus || ctrl.implementationStatus === 'thirdParty') continue
-      if (ctrl.implementationStatus === 'implemented') continue
+      if (ctrl.deprecated) continue
+
+      // Latest manual state the tenant set in the Secure Score UI (Default/Ignored/ThirdParty/Reviewed).
+      // deno-lint-ignore no-explicit-any
+      const updates = (ctrl.controlStateUpdates ?? []) as any[]
+      const latestUpdate = updates.length
+        ? updates.slice().sort((x, y) => new Date(y.updatedDateTime ?? 0).getTime() - new Date(x.updatedDateTime ?? 0).getTime())[0]
+        : null
+      const manualState = String(latestUpdate?.state ?? '').toLowerCase()
+      if (manualState === 'thirdparty' || manualState === 'ignored') continue
+
+      const maxScore = Number(ctrl.maxScore ?? 0)
+      if (maxScore <= 0) continue
+      const achieved = achievedByControl.get(ctrl.controlName) ?? 0
+      const gap = maxScore - achieved
+      if (gap <= 0) continue // fully achieved for this tenant — not a finding
+
       const severity = ctrl.rank <= 10 ? 'critical' : ctrl.rank <= 30 ? 'warning' : 'info'
       findings.push({
         org_id,
@@ -84,14 +120,14 @@ Deno.serve(async (req) => {
         source: 'secure_score',
         category: 'posture',
         severity,
-        title: ctrl.title ?? ctrl.id,
-        description: `Control not fully implemented. Status: ${ctrl.implementationStatus}. Score: ${ctrl.currentScore ?? 0}/${ctrl.maxScore ?? 0}.`,
+        title: ctrl.title ?? ctrl.controlName ?? ctrl.id,
+        description: `Control not fully achieved. Score: ${achieved}/${maxScore}${manualState ? ` (marked ${manualState} in Secure Score)` : ''}.`,
         control: mapScoreControl(ctrl.controlCategory ?? ''),
         recommendation: ctrl.remediation ?? 'Review and implement this control in Microsoft Secure Score.',
         subject_id: ctrl.id,
-        subject_name: ctrl.title ?? ctrl.id,
+        subject_name: ctrl.title ?? ctrl.controlName ?? ctrl.id,
         subject_email: null,
-        raw_data: { ...ctrl, latestScoreTotal: latestScore?.currentScore ?? null },
+        raw_data: { ...ctrl, achievedScore: achieved, latestScoreTotal: latestScore?.currentScore ?? null },
       })
     }
 

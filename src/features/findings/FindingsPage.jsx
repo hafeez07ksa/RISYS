@@ -82,7 +82,7 @@ function PlatformCard({ provider, counts, onClick }) {
           </span>
         )}
         <span style={{ fontSize: 11, color: '#8a7070', marginLeft: 'auto', alignSelf: 'center' }}>
-          {total} total → {provider.id === 'm365' ? 'view findings' : 'view users'}
+          {total} total → {provider.id === 'entra' ? 'view users' : 'view findings'}
         </span>
       </div>
     </div>
