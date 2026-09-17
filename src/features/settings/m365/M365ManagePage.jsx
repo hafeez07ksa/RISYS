@@ -4,6 +4,7 @@ import {
   ArrowLeft, RefreshCw, RotateCw, CheckCircle,
   Mail, Globe, Users, ShieldAlert, Shield, ToggleLeft, ToggleRight, Save,
 } from 'lucide-react'
+import { ControlReferences } from '@/components/ui/ControlReferences'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
@@ -21,7 +22,7 @@ export const M365_SCOPES = [
     color:       '#0078D4',
     permission:  'Mail.ReadBasic.All',
     description: 'Detects inbox rules that auto-forward email to external addresses — a primary data exfiltration vector.',
-    control:     'SDAIA PDPL Art.19 · NCA ECC 2-5-1',
+    control:     'NCA ECC 2-7-2, 2-4-2 · SDAIA PDPL-IR Art. 20, PDPL-TR Art. 2',
     defaultOn:   true,
   },
   {
@@ -31,7 +32,7 @@ export const M365_SCOPES = [
     color:       '#038387',
     permission:  'Sites.Read.All',
     description: 'Identifies SharePoint sites with external or anonymous sharing enabled.',
-    control:     'SDAIA PDPL Art.19 · NCA ECC 2-5-3',
+    control:     'NCA ECC 2-7-2, 2-2-3-3 · SDAIA PDPL-IR Art. 23',
     defaultOn:   true,
   },
   {
@@ -41,7 +42,7 @@ export const M365_SCOPES = [
     color:       '#6264A7',
     permission:  'Directory.Read.All',
     description: 'Flags guest accounts older than 30 days that have not been reviewed or removed.',
-    control:     'NCA ECC 2-1-4 · SDAIA PDPL Art.32',
+    control:     'NCA ECC 2-2-3-5 · SDAIA PDPL-IR Art. 23',
     defaultOn:   true,
   },
 ]
@@ -137,7 +138,7 @@ function FindingRow({ finding }) {
         </div>
         <p className="text-sm font-medium mb-0.5" style={{ color: '#1a1314' }}>{finding.title}</p>
         <p className="text-xs leading-relaxed mb-1" style={{ color: '#8a7070' }}>{finding.description}</p>
-        <p className="text-[11px] font-medium" style={{ color: '#5D0F0F' }}>{finding.control}</p>
+        <ControlReferences control={finding.control} compact />
       </div>
       <div className="text-right flex-shrink-0">
         <p className="text-xs font-medium" style={{ color: '#1a1314' }}>{finding.subject_name}</p>

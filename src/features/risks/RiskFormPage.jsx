@@ -314,7 +314,7 @@ export function RiskFormPage() {
                 </Field>
                 <Field label="Framework reference" hint="Optional clause mapping">
                   <input className="risys-input mono" style={{ width: '100%' }} value={form.framework_ref}
-                    onChange={set('framework_ref')} placeholder="e.g. NCA ECC 2-1-2" />
+                    onChange={set('framework_ref')} placeholder="e.g. NCA ECC 2-2-3-2" />
                 </Field>
                 <Field label="Direction">
                   <SelectField value={form.risk_direction} onChange={set('risk_direction')}>

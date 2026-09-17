@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ShieldAlert, AlertCircle, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
-import { SEVERITY_CONFIG } from '@/lib/findings'
+import { SEVERITY_CONFIG, findingDisplayTitle } from '@/lib/findings'
 import { logAudit, AUDIT } from '@/lib/audit'
 import { SelectField } from '@/components/ui/Combobox'
 
@@ -23,7 +23,7 @@ function SourceCard({ finding }) {
         Source finding · {finding.connectorName}
       </p>
       <p style={{ fontSize: 12, fontWeight: 600, color: s.color }}>{finding.title}</p>
-      <p style={{ fontSize: 11, color: s.color, opacity: 0.8 }}>{finding.subject.name} · {finding.control}</p>
+      <p style={{ fontSize: 11, color: s.color, opacity: 0.8 }}>{[finding.subject?.name !== finding.title ? finding.subject?.name : null, finding.control].filter(Boolean).join(' · ')}</p>
     </div>
   )
 }
@@ -34,7 +34,7 @@ export function CreateFindingIncidentModal({ finding, onClose, onCreated }) {
   const navigate = useNavigate()
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState(null)
-  const [title, setTitle]   = useState(`${finding.title} — ${finding.subject.name}`)
+  const [title, setTitle]   = useState(findingDisplayTitle(finding.title, finding.subject?.name))
 
   const sevLabel = finding.severity === 'critical' ? 'High' : finding.severity === 'warning' ? 'Medium' : 'Low'
 
@@ -45,7 +45,14 @@ export function CreateFindingIncidentModal({ finding, onClose, onCreated }) {
         org_id:       organization.id,
         connector_id: finding.connectorId,
         title,
-        description:  `${finding.description}\n\nSubject: ${finding.subject.name}${finding.subject.email ? ` (${finding.subject.email})` : ''}\nControl reference: ${finding.control}\n\nRecommendation: ${finding.recommendation}`,
+        description:  [
+          finding.description,
+          finding.subject?.name && finding.subject.name !== finding.title
+            ? `Subject: ${finding.subject.name}${finding.subject.email ? ` (${finding.subject.email})` : ''}` : null,
+          finding.control ? `Control reference: ${finding.control}` : null,
+          finding.recommendation ? `Recommendation: ${finding.recommendation}` : null,
+          finding.sourceUrl ? `Source: ${finding.sourceUrl}` : null,
+        ].filter(Boolean).join('\n\n'),
         severity:     finding.severity === 'critical' ? 'high' : finding.severity === 'warning' ? 'medium' : 'low',
         status:       'open',
         source_type:  `${finding.connectorName} Security Finding`,

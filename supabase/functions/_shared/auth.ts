@@ -74,6 +74,41 @@ export async function requireOrgRole(
   return { user: data.user, role: (m as any).role }
 }
 
+// ── Internal (scheduled) calls ────────────────────────────────────────────────
+// The scan dispatcher calls connector functions server-to-server. It sends the
+// service-role key as the bearer (to pass the gateway) and the internal secret
+// in x-risys-internal. The secret lives in Vault and is readable only by the
+// service role through internal_scheduler_secret().
+
+export async function isInternalCall(req: Request, admin: SupabaseClient): Promise<boolean> {
+  const presented = req.headers.get('x-risys-internal')
+  if (!presented) return false
+  const { data: expected, error } = await admin.rpc('internal_scheduler_secret')
+  if (error || typeof expected !== 'string' || !expected) return false
+  return timingSafeEqual(await sha256Hex(presented), await sha256Hex(expected))
+}
+
+/**
+ * Either a signed-in org admin (manual scan) or a verified internal call for an
+ * active organisation (scheduled scan).
+ */
+export async function requireOrgAccess(
+  req: Request,
+  admin: SupabaseClient,
+  orgId: unknown,
+  roles: string[] = ORG_ADMIN_ROLES,
+): Promise<{ user: User | null; trigger: 'manual' | 'scheduled' }> {
+  if (req.headers.has('x-risys-internal')) {
+    if (!(await isInternalCall(req, admin))) throw new HttpError(401, 'Invalid internal credential')
+    if (!isUuid(orgId)) throw new HttpError(400, 'Invalid org_id')
+    const { data: org } = await admin.from('organizations').select('status').eq('id', orgId).maybeSingle()
+    if (org?.status !== 'active') throw new HttpError(403, 'Organisation is not active')
+    return { user: null, trigger: 'scheduled' }
+  }
+  const { user } = await requireOrgRole(req, admin, orgId, roles)
+  return { user, trigger: 'manual' }
+}
+
 // ── Constant-time helpers ─────────────────────────────────────────────────────
 
 const enc = new TextEncoder()
@@ -145,7 +180,22 @@ export async function verifyHs256Jwt(token: string, secret: string): Promise<Rec
 
 // ── Microsoft app-only token ──────────────────────────────────────────────────
 
-export async function getMicrosoftAppToken(tenantId: string): Promise<string> {
+export const GRAPH_SCOPE = 'https://graph.microsoft.com/.default'
+export const MDE_SCOPE   = 'https://api.securitycenter.microsoft.com/.default'
+
+/** A token request Microsoft refused. `notProvisioned` means the target API does not exist in the tenant (no licence). */
+export class MicrosoftTokenError extends Error {
+  code: string
+  notProvisioned: boolean
+  constructor(code: string, message: string) {
+    super(message)
+    this.code = code
+    // AADSTS500011: resource principal not found; AADSTS650057: invalid resource for the client.
+    this.notProvisioned = /AADSTS500011|AADSTS650057|invalid_resource/i.test(`${code} ${message}`)
+  }
+}
+
+export async function getMicrosoftAppToken(tenantId: string, scope: string = GRAPH_SCOPE): Promise<string> {
   if (!tenantId || tenantId === 'common' || !isUuid(tenantId)) {
     throw new HttpError(400, 'No valid Entra tenant ID. Reconnect Entra from Settings.')
   }
@@ -156,11 +206,13 @@ export async function getMicrosoftAppToken(tenantId: string): Promise<string> {
       grant_type: 'client_credentials',
       client_id: Deno.env.get('MICROSOFT_CLIENT_ID')!,
       client_secret: Deno.env.get('MICROSOFT_CLIENT_SECRET')!,
-      scope: 'https://graph.microsoft.com/.default',
+      scope,
     }),
   })
-  const data = await res.json()
-  if (!res.ok) throw new Error(`App token failed: ${data.error_description || data.error}`)
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw new MicrosoftTokenError(data.error ?? `http_${res.status}`, `App token failed: ${data.error_description || data.error || res.status}`)
+  }
   return data.access_token
 }
 

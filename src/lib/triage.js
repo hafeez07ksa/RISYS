@@ -127,6 +127,7 @@ export function toTriageState(finding) {
     description: finding.description,
     control: finding.control,
     recommendation: finding.recommendation,
+    sourceUrl: finding.sourceUrl || null,
     subject: finding.subject ? {
       id: finding.subject.id != null ? String(finding.subject.id) : null,
       name: finding.subject.name || null,

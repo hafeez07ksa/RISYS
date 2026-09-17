@@ -6,11 +6,12 @@ import { usePermissions } from '@/hooks/usePermissions'
 import { useRisks, notify } from '@/hooks/useRisks'
 import { useFindingTriage } from '@/hooks/useTriage'
 import { findCandidates, CLOSE_REASON_CODES, draftRiskFromFinding, TRIAGE_DISPOSITIONS, closeReasonMeta } from '@/lib/triage'
-import { SEVERITY_CONFIG } from '@/lib/findings'
+import { SEVERITY_CONFIG, findingDisplayTitle } from '@/lib/findings'
 import { logAudit, AUDIT } from '@/lib/audit'
 import { getWorkflowState } from '@/lib/risks'
 import { bandForScore, bandMeta } from '@/lib/matrix'
 import { Spinner } from '@/components/ui/Spinner'
+import { ControlReferences } from '@/components/ui/ControlReferences'
 import { SelectField } from '@/components/ui/Combobox'
 
 // ============================================================
@@ -51,7 +52,7 @@ export function TriagePage() {
   const [error, setError] = useState('')
   const [attachNote, setAttachNote] = useState('')
   const [draft, setDraft] = useState(() => ({
-    title: finding ? `${finding.title}${finding.subject?.name ? ` — ${finding.subject.name}` : ''}` : '',
+    title: finding ? findingDisplayTitle(finding.title, finding.subject?.name) : '',
     likelihood: finding?.severity === 'critical' ? 4 : 3,
     impact: finding?.severity === 'critical' ? 4 : 3,
   }))
@@ -146,11 +147,19 @@ export function TriagePage() {
                 <span style={{ fontSize: 'var(--t-meta)', color: sev.color }}>{finding.connectorName}</span>
               </div>
               <p style={{ fontSize: 'var(--t-section)', fontWeight: 600, color: 'var(--text)' }}>{finding.title}</p>
-              <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)', marginTop: 2 }}>
-                {finding.subject?.name}{finding.subject?.email ? ` · ${finding.subject.email}` : ''}
-              </p>
+              {finding.subject?.name && finding.subject.name !== finding.title && (
+                <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)', marginTop: 2 }}>
+                  {finding.subject.name}{finding.subject.email ? ` · ${finding.subject.email}` : ''}
+                </p>
+              )}
               {finding.description && <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)', marginTop: 8, lineHeight: 1.55 }}>{finding.description}</p>}
-              {finding.control && <p className="mono" style={{ fontSize: 'var(--t-meta)', color: 'var(--crimson)', marginTop: 8 }}>{finding.control}</p>}
+              {finding.control && <div style={{ marginTop: 8 }}><ControlReferences control={finding.control} /></div>}
+              {finding.sourceUrl && (
+                <a href={finding.sourceUrl} target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'inline-block', fontSize: 'var(--t-meta)', color: 'var(--text-2)', marginTop: 8, textDecoration: 'underline' }}>
+                  View in source system
+                </a>
+              )}
             </div>
 
             {!migrated && (

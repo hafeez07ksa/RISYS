@@ -3,6 +3,13 @@
 import { adminClient, corsHeaders, errorResponse, getMicrosoftAppToken, HttpError, json, requireOrgRole } from '../_shared/auth.ts'
 
 const ALL_SCOPES = ['exchange', 'sharepoint', 'guests'] as const
+
+// Control references (NCA ECC-2:2024 and SDAIA PDPL, verified against nca_ecc and sdaia_pdpl).
+const CONTROL = {
+  forwarding: 'NCA ECC 2-7-2 · Data and Information Protection | NCA ECC 2-4-2 · Email Protection | SDAIA PDPL-IR Art. 20 · Disclosure of Personal Data | SDAIA PDPL-TR Art. 2 · Transfer of Personal Data outside the Kingdom',
+  sharing:    'NCA ECC 2-7-2 · Data and Information Protection | NCA ECC 2-2-3-3 · User Authorization (need-to-know, least privilege) | SDAIA PDPL-IR Art. 23 · Information Security',
+  guests:     'NCA ECC 2-2-3-5 · Periodic Review of Identities and Access Rights | SDAIA PDPL-IR Art. 23 · Information Security',
+}
 type Scope = typeof ALL_SCOPES[number]
 
 // deno-lint-ignore no-explicit-any
@@ -85,7 +92,7 @@ Deno.serve(async (req) => {
                   severity: 'critical',
                   title: 'Mailbox Forwarding to External Address',
                   description: `${user.displayName || user.userPrincipalName} has mailbox-level forwarding enabled to: ${settings.forwardingSmtpAddress}. All incoming email is being copied to this external address.`,
-                  control: 'SDAIA PDPL Art.19 · Cross-border Data Transfer | NCA ECC 2-5-1',
+                  control: CONTROL.forwarding,
                   recommendation: 'Verify this was intentionally configured. If not authorised, disable immediately. Review sign-in logs for account compromise.',
                   subject_id: user.userPrincipalName,
                   subject_name: user.displayName || user.userPrincipalName,
@@ -121,7 +128,7 @@ Deno.serve(async (req) => {
                   severity: 'critical',
                   title: 'Email Forwarding Rule to External Address',
                   description: `${user.displayName || user.userPrincipalName} has inbox rule "${rule.displayName || 'Unnamed'}" forwarding email to: ${externalFwd.join(', ')}.`,
-                  control: 'SDAIA PDPL Art.19 · Cross-border Data Transfer | NCA ECC 2-5-1',
+                  control: CONTROL.forwarding,
                   recommendation: 'Delete the rule if unauthorised and reset the user password. Check sign-in logs.',
                   subject_id: user.userPrincipalName,
                   subject_name: user.displayName || user.userPrincipalName,
@@ -156,7 +163,7 @@ Deno.serve(async (req) => {
               severity: isHighRisk ? 'critical' : 'warning',
               title: isHighRisk ? 'SharePoint Site Open to Anyone' : 'SharePoint Site Shared with External Users',
               description: `"${site.displayName || site.name}" has external sharing: ${site.sharingCapability}.`,
-              control: 'SDAIA PDPL Art.19 · NCA ECC 2-5-3',
+              control: CONTROL.sharing,
               recommendation: isHighRisk ? 'Disable anonymous sharing immediately.' : 'Review external sharing links and remove unnecessary access.',
               subject_id: site.id,
               subject_name: site.displayName || site.name || site.webUrl,
@@ -189,7 +196,7 @@ Deno.serve(async (req) => {
               severity: 'warning',
               title: 'Stale Guest Account — Review Required',
               description: `${guest.displayName || guest.userPrincipalName} has been a guest for ${days} days without review.`,
-              control: 'NCA ECC 2-1-4 · SDAIA PDPL Art.32',
+              control: CONTROL.guests,
               recommendation: 'Confirm access is still needed. Remove if not.',
               subject_id: guest.userPrincipalName,
               subject_name: guest.displayName || guest.userPrincipalName,

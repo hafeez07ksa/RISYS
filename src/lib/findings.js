@@ -1,7 +1,7 @@
 import {
   Smartphone, Crown, Globe, UserX, Clock, Mail, ShieldAlert,
   Shield, AlertTriangle, MonitorSmartphone, Cloud, Fingerprint,
-  FileX, Users, Share2,
+  FileX, Users, Share2, Bug,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
@@ -38,7 +38,27 @@ export const SEVERITY_CONFIG = {
 
 export const SEVERITY_RANK = { critical: 0, warning: 1, info: 2 }
 
+/**
+ * A finding's display title. Adds the subject only when it says something the
+ * title doesn't (posture findings use the control title as their subject).
+ */
+export function findingDisplayTitle(title, subjectName) {
+  const t = String(title || '').trim()
+  const s = String(subjectName || '').trim()
+  if (!s || s.toLowerCase() === t.toLowerCase() || s === 'Tenant') return t
+  return `${t} — ${s}`
+}
+
 // ── Entra ID findings ─────────────────────────────────────────────────────────
+// NCA ECC-2:2024 references, verified against nca_ecc. Identity findings sit in
+// 2-2 (Identity and Access Management); 2-1 is Asset Management and does not apply.
+export const ECC_IAM = {
+  mfa:    'NCA ECC 2-2-3-2 · Multi-factor Authentication',
+  authz:  'NCA ECC 2-2-3-3 · User Authorization (need-to-know, least privilege)',
+  pam:    'NCA ECC 2-2-3-4 · Privileged Access Management',
+  review: 'NCA ECC 2-2-3-5 · Periodic Review of Identities and Access Rights',
+}
+
 export function getEntraFindings(u) {
   const findings = []
 
@@ -47,7 +67,7 @@ export function getEntraFindings(u) {
       id: 'no_mfa', severity: 'critical',
       label: 'No MFA', title: 'MFA Not Registered',
       description: 'This user has not registered any multi-factor authentication method. Any compromised password gives full account access with no additional barrier.',
-      control: 'NCA ECC 2-1-2 · Privileged Access Management',
+      control: u.is_privileged ? `${ECC_IAM.mfa} | ${ECC_IAM.pam}` : ECC_IAM.mfa,
       recommendation: 'Require MFA registration via Microsoft Authenticator. Enable a Conditional Access policy to block sign-ins without MFA. Consider disabling the account temporarily until MFA is set up.',
       icon: Smartphone,
     })
@@ -58,7 +78,7 @@ export function getEntraFindings(u) {
       id: 'privileged', severity: 'warning',
       label: 'Privileged Role', title: 'Holds Privileged Directory Role',
       description: `Assigned: ${(u.directory_roles || []).map(r => r.displayName).join(', ')}. Privileged accounts are the highest-value targets for attackers and require additional access controls beyond standard users.`,
-      control: 'NCA ECC 2-1-3 · Privileged Account Management',
+      control: ECC_IAM.pam,
       recommendation: 'Ensure MFA is enforced on this account. Review whether all assigned roles are necessary (principle of least privilege). Consider enabling Privileged Identity Management (PIM) for just-in-time access.',
       icon: Crown,
     })
@@ -69,7 +89,7 @@ export function getEntraFindings(u) {
       id: 'guest', severity: 'info',
       label: 'Guest Account', title: 'External / Guest Identity',
       description: 'This is an external guest account. Guest access should be time-limited and reviewed regularly to ensure it is still required.',
-      control: 'NCA ECC 2-1-4 · Third-Party Access',
+      control: `${ECC_IAM.review} | ${ECC_IAM.authz}`,
       recommendation: 'Confirm guest access is still required. Set an expiry date on the guest invitation. Restrict guest access to only the specific resources they need.',
       icon: Globe,
     })
@@ -80,7 +100,7 @@ export function getEntraFindings(u) {
       id: 'disabled', severity: 'info',
       label: 'Account Disabled', title: 'Account is Disabled',
       description: 'This account is currently disabled. If the user has left the organisation, the account should be deleted to maintain a clean directory and prevent potential re-activation.',
-      control: 'NCA ECC 2-1-1 · Account Lifecycle Management',
+      control: ECC_IAM.review,
       recommendation: 'Confirm whether the user has left the organisation. If so, delete the account and reclaim any licences. If the disabling is temporary, document the reason and set a review date.',
       icon: UserX,
     })
@@ -93,7 +113,7 @@ export function getEntraFindings(u) {
         id: 'inactive', severity: 'warning',
         label: `Inactive ${daysSince}d`, title: `Inactive for ${daysSince} Days`,
         description: `This user has not signed in for ${daysSince} days. Inactive accounts are an access control risk — they may belong to departed employees or forgotten service accounts that have not been properly off-boarded.`,
-        control: 'NCA ECC 2-1-1 · Account Lifecycle Management',
+        control: ECC_IAM.review,
         recommendation: 'Contact the account owner to confirm active use. If no response within 7 days, disable the account and reclaim the licence. Review group memberships and application assignments.',
         icon: Clock,
       })
@@ -105,21 +125,59 @@ export function getEntraFindings(u) {
 
 // ── Defender category → icon map ──────────────────────────────────────────────
 const DEFENDER_ICON_MAP = {
-  endpoint:  MonitorSmartphone,
-  cloud:     Cloud,
-  identity:  Fingerprint,
-  office:    Mail,
-  posture:   Shield,
-  threat:    AlertTriangle,
+  endpoint:      MonitorSmartphone,
+  cloud:         Cloud,
+  identity:      Fingerprint,
+  office:        Mail,
+  posture:       Shield,
+  threat:        AlertTriangle,
+  vulnerability: Bug,
+  device:        MonitorSmartphone,
 }
+
+const DEFENDER_SOURCE_LABELS = {
+  alert:          'Alert',
+  secure_score:   'Posture Gap',
+  recommendation: 'Vulnerability',
+  device:         'Device Health',
+}
+
+// Columns the finding lists need. raw_data stays out of list queries: it can be
+// large and nothing in the list renders it.
+const DEFENDER_LIST_COLUMNS =
+  'finding_id, source, category, severity, title, description, control, recommendation, ' +
+  'subject_id, subject_name, subject_email, source_url, status, first_seen_at, last_seen_at, ' +
+  'resolved_at, incident_id, updated_at'
 
 // ── SharePoint category → icon map ────────────────────────────────────────────
 const SHAREPOINT_ICON_MAP = {
-  external_sharing:  Share2,
+  tenant_policy:     Shield,
   public_file:       FileX,
+  external_share:    Share2,
+  org_wide_link:     Globe,
   guest_access:      Users,
+  public_group:      Users,
+  // pre-2026-09 categories (resolved rows only)
+  external_sharing:  Share2,
   internal_exposure: Globe,
 }
+
+export const SHAREPOINT_CATEGORY_LABELS = {
+  tenant_policy:     'Sharing Policy',
+  public_file:       '"Anyone" Link',
+  external_share:    'External Share',
+  org_wide_link:     'Org-wide Link',
+  guest_access:      'Guest Access',
+  public_group:      'Public Group',
+  external_sharing:  'External Sharing',
+  internal_exposure: 'Exposure',
+}
+
+// raw_data is left out of list queries (it can be large).
+export const SHAREPOINT_LIST_COLUMNS =
+  'finding_id, source, category, severity, title, description, control, recommendation, ' +
+  'subject_id, subject_name, subject_email, subject_url, source_url, status, first_seen_at, last_seen_at, ' +
+  'resolved_at, incident_id, updated_at'
 
 // ── Provider registry ─────────────────────────────────────────────────────────
 export const FINDING_PROVIDERS = [
@@ -208,14 +266,19 @@ export const FINDING_PROVIDERS = [
     connectorName: 'Microsoft Defender',
     accent: '#00B4D8',
     piggybakcsOn: 'entra',   // reuses Entra token, no separate OAuth
-    async fetch(orgId) {
-      const { data } = await supabase
+    // Open findings by default; { status: 'resolved' } for history.
+    async fetch(orgId, { status = 'open' } = {}) {
+      const { data, error } = await supabase
         .from('defender_findings')
-        .select('*')
+        .select(DEFENDER_LIST_COLUMNS)
         .eq('org_id', orgId)
-        .order('severity')
+        .eq('status', status)
+        .order('last_seen_at', { ascending: false })
+        .limit(5000)
+      if (error) throw new Error(error.message)
       return data || []
     },
+    supportsStatus: true,
     derive(finding) {
       const icon = DEFENDER_ICON_MAP[finding.category] || Shield
       return [{
@@ -224,7 +287,7 @@ export const FINDING_PROVIDERS = [
         connectorName: 'Microsoft Defender',
         accent: '#00B4D8',
         severity: finding.severity,
-        label: finding.source === 'alert' ? 'Alert' : 'Posture Gap',
+        label: DEFENDER_SOURCE_LABELS[finding.source] || 'Finding',
         title: finding.title,
         description: finding.description,
         control: finding.control,
@@ -237,6 +300,12 @@ export const FINDING_PROVIDERS = [
           route: '/app/findings/defender',
           meta:  finding.category,
         },
+        status: finding.status || 'open',
+        sourceUrl: finding.source_url || null,
+        incidentId: finding.incident_id || null,
+        source: finding.source,
+        firstSeenAt: finding.first_seen_at || null,
+        resolvedAt: finding.resolved_at || null,
         raw: finding,
       }]
     },
@@ -248,14 +317,18 @@ export const FINDING_PROVIDERS = [
     connectorName: 'SharePoint Security',
     accent: '#038387',
     piggybakcsOn: 'entra',
-    async fetch(orgId) {
-      const { data } = await supabase
+    async fetch(orgId, { status = 'open' } = {}) {
+      const { data, error } = await supabase
         .from('sharepoint_findings')
-        .select('*')
+        .select(SHAREPOINT_LIST_COLUMNS)
         .eq('org_id', orgId)
-        .order('severity')
+        .eq('status', status)
+        .order('last_seen_at', { ascending: false })
+        .limit(5000)
+      if (error) throw new Error(error.message)
       return data || []
     },
+    supportsStatus: true,
     derive(finding) {
       const icon = SHAREPOINT_ICON_MAP[finding.category] || Globe
       return [{
@@ -264,10 +337,7 @@ export const FINDING_PROVIDERS = [
         connectorName: 'SharePoint Security',
         accent: '#038387',
         severity: finding.severity,
-        label: finding.category === 'external_sharing' ? 'External Sharing'
-             : finding.category === 'public_file'      ? 'Public File'
-             : finding.category === 'guest_access'     ? 'Guest Access'
-             : 'Exposure',
+        label: SHAREPOINT_CATEGORY_LABELS[finding.category] || 'Exposure',
         title: finding.title,
         description: finding.description,
         control: finding.control,
@@ -280,6 +350,12 @@ export const FINDING_PROVIDERS = [
           route: '/app/findings/sharepoint',
           meta:  finding.category,
         },
+        status: finding.status || 'open',
+        sourceUrl: finding.source_url || finding.subject_url || null,
+        incidentId: finding.incident_id || null,
+        source: finding.source,
+        firstSeenAt: finding.first_seen_at || null,
+        resolvedAt: finding.resolved_at || null,
         raw: finding,
       }]
     },

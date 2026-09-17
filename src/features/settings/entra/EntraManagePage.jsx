@@ -299,7 +299,7 @@ export function EntraManagePage() {
                 }} />
               </div>
               <p className="text-[11px] mt-1" style={{ color: '#8a7070' }}>
-                Maps to NCA ECC 2-1-2 · Privileged Access Management
+                Maps to NCA ECC 2-2-3-2 · Multi-factor Authentication
               </p>
             </div>
           </div>

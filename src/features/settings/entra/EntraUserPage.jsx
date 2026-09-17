@@ -11,6 +11,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { getEntraFindings as getFindings, SEVERITY_CONFIG } from '@/lib/findings'
 import { CreateFindingIncidentModal } from '@/features/findings/FindingActionModals'
 import { toTriageState } from '@/lib/triage'
+import { ControlReferences } from '@/components/ui/ControlReferences'
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 function Avatar({ name, size = 56 }) {
@@ -220,7 +221,6 @@ export function EntraUserPage() {
                         </div>
                         <div className="flex-1">
                           <p style={{ fontSize: 14, fontWeight: 700, color: s.color }}>{finding.title}</p>
-                          <p style={{ fontSize: 11.5, color: s.color, opacity: 0.8, marginTop: 1 }}>{finding.control}</p>
                         </div>
                         <span style={{ fontSize: 11, fontWeight: 800, padding: '4px 12px', borderRadius: 20, background: s.color, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                           {s.label}
@@ -232,6 +232,9 @@ export function EntraUserPage() {
                         <p style={{ fontSize: 13, color: '#4a3a3a', lineHeight: 1.7, marginBottom: 14 }}>
                           {finding.description}
                         </p>
+                        <div style={{ marginBottom: 12 }}>
+                          <ControlReferences control={finding.control} />
+                        </div>
                         <div style={{ padding: '12px 14px', borderRadius: 8, background: '#f8f7f7', border: '1px solid #e5e0e0', marginBottom: 16 }}>
                           <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#8a7070', marginBottom: 6 }}>Recommended Action</p>
                           <p style={{ fontSize: 12.5, color: '#1a1314', lineHeight: 1.65 }}>{finding.recommendation}</p>

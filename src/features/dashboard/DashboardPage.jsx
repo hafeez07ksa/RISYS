@@ -310,7 +310,7 @@ function IdentityPosture({ entraUsers, entraConnected }) {
         {[
           {
             label: `${noMfa} user${noMfa !== 1 ? 's' : ''} without MFA`,
-            sub: 'Access control risk — NCA ECC 2-1-2',
+            sub: 'Identity risk — NCA ECC 2-2-3-2 (MFA)',
             warn: noMfa > 0,
             icon: noMfa > 0 ? AlertCircle : CheckCircle,
           },
@@ -590,7 +590,7 @@ export function DashboardPage() {
                 warn={overdueTasks.length > 0} to="/app/tasks" />
               <StatCard
                 label="Users Without MFA" value={entraConnected ? noMfaCount : '—'} icon={ShieldCheck}
-                sub={entraConnected ? (noMfaCount > 0 ? 'Identity risk — NCA ECC 2-1-2' : 'All users protected') : 'Connect Entra ID'}
+                sub={entraConnected ? (noMfaCount > 0 ? 'Identity risk — NCA ECC 2-2-3-2 (MFA)' : 'All users protected') : 'Connect Entra ID'}
                 warn={entraConnected && noMfaCount > 0} to={entraConnected ? '/app/findings/entra' : '/app/settings'} />
             </div>
 

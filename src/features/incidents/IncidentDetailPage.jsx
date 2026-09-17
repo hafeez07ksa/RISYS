@@ -15,6 +15,17 @@ import { SeverityBadge, StatusBadge } from '@/components/ui/IncidentBadges'
 import { STATUSES, SEVERITIES } from '@/lib/incidents'
 import { getSLAStatus, formatTimeRemaining, SLA_DEFAULTS } from '@/lib/sla'
 import { logAudit, AUDIT } from '@/lib/audit'
+import { ControlReferences } from '@/components/ui/ControlReferences'
+
+// Every incident, whatever its source (Jira, Defender, manual), is handled under
+// ECC 2-13. Reporting to NCA applies to significant incidents; PDPL Art. 24 applies
+// when personal data is affected.
+const INCIDENT_CONTROLS = [
+  'NCA ECC 2-13-3-1 · Incident Response Plans and Escalation Procedures',
+  'NCA ECC 2-13-3-2 · Cybersecurity Incident Classification',
+  'NCA ECC 2-13-3-3 · Reporting Cybersecurity Incidents to the NCA',
+  'SDAIA PDPL-IR Art. 24 · Notification of Personal Data Breach',
+].join(' | ')
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -457,6 +468,15 @@ export function IncidentDetailPage() {
                 <p style={{ fontSize: 13, color: '#4a3a3a', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>{incident.description}</p>
               </div>
             )}
+
+            {/* Framework reference */}
+            <div className="rounded-xl p-5" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
+              <p style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070', marginBottom: 6 }}>Framework reference</p>
+              <p style={{ fontSize: 12, color: '#6b5555', marginBottom: 10, lineHeight: 1.6 }}>
+                Handling this incident is evidence for NCA ECC 2-13 (incident and threat management). Report it to the NCA if it is a significant cybersecurity incident, and notify SDAIA within 72 hours if personal data was affected.
+              </p>
+              <ControlReferences control={INCIDENT_CONTROLS} />
+            </div>
 
             {/* Comments */}
             <div className="rounded-xl p-5" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>

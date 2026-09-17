@@ -88,7 +88,23 @@ export function useRiskFindings(riskId) {
       .select('*')
       .eq('risk_id', riskId)
       .order('decided_at', { ascending: false })
-    setLinks(data || [])
+    const rows = data || []
+
+    // Whether the source system still reports each finding. Connectors that
+    // don't keep finding history yet simply have no row here (status unknown).
+    const keys = rows.map(r => r.finding_key).filter(Boolean)
+    let statusByKey = new Map()
+    if (keys.length) {
+      const { data: statuses } = await supabase
+        .from('v_finding_status')
+        .select('finding_key, status, resolved_at, last_seen_at')
+        .in('finding_key', keys)
+      statusByKey = new Map((statuses || []).map(s => [s.finding_key, s]))
+    }
+    setLinks(rows.map(r => {
+      const st = statusByKey.get(r.finding_key)
+      return { ...r, source_status: st?.status || null, source_resolved_at: st?.resolved_at || null }
+    }))
     setLoading(false)
   }, [riskId])
 

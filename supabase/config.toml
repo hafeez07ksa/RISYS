@@ -10,6 +10,11 @@ verify_jwt = false
 [functions.ingest-entra-events]
 verify_jwt = false
 
+# Called by pg_cron via pg_net (no user session). Authenticates the internal
+# scheduler secret from Vault in code and fails closed.
+[functions.scan-dispatcher]
+verify_jwt = false
+
 # Browser-invoked functions: gateway JWT check on, plus org-admin check in code.
 [functions.oauth-exchange]
 verify_jwt = true

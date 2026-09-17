@@ -72,6 +72,7 @@ export const AUDIT = {
   CONNECTOR_CONNECTED:    'connector.connected',
   CONNECTOR_DISCONNECTED: 'connector.disconnected',
   CONNECTOR_SYNCED:       'connector.synced',
+  CONNECTOR_SCHEDULE:     'connector.schedule_updated',
   // Findings → actions
   FINDING_RISK:       'finding.escalated_to_risk',
   FINDING_INCIDENT:   'finding.escalated_to_incident',
