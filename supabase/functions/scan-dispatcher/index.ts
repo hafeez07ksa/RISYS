@@ -13,6 +13,7 @@ import { adminClient, corsHeaders, errorResponse, HttpError, isInternalCall, jso
 // Connectors that accept internal (scheduled) calls.
 const SCHEDULABLE: Record<string, string> = {
   defender: 'defender-security',
+  entra: 'entra-directory',
   sharepoint: 'sharepoint-security',
 }
 

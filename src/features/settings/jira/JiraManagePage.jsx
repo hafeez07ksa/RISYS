@@ -11,6 +11,39 @@ import { useConnectors } from '@/hooks/useConnectors'
 import { SEVERITIES, JIRA_ISSUE_TYPES } from '@/lib/incidents'
 import { Spinner } from '@/components/ui/Spinner'
 import { SelectField } from '@/components/ui/Combobox'
+import { useEffect } from 'react'
+import { ArrowRight, Webhook, Workflow, Info } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { Summary } from '@/features/settings/shared/ConnectorScanSettings'
+import { formatRelative } from '@/hooks/useConnectorScans'
+import { ControlReferences } from '@/components/ui/ControlReferences'
+
+// Incidents that arrive from Jira are the entity's incident-management process in
+// action, so the same ECC 2-13 controls apply as on the incident itself.
+const JIRA_CONTROLS = [
+  'NCA ECC 2-13-3-1 · Incident Response Plans and Escalation Procedures',
+  'NCA ECC 2-13-3-2 · Cybersecurity Incident Classification',
+  'SDAIA PDPL-IR Art. 24 · Notification of Personal Data Breach',
+].join(' | ')
+
+// Jira pushes to RISYS; there is nothing to poll, so instead of scan sources this
+// page shows whether each inbound channel has actually delivered anything.
+const INGEST_CHANNELS = [
+  {
+    key: 'jira',
+    Icon: Webhook,
+    name: 'Jira webhook',
+    what: 'issues created and updated',
+    detail: 'Registered automatically when Jira is connected, and authenticated with a per-tenant token. Reconnect Jira if issues stop arriving.',
+  },
+  {
+    key: 'jira-n8n',
+    Icon: Workflow,
+    name: 'n8n or other automation',
+    what: 'issues pushed by a workflow',
+    detail: 'Optional. POST to the ingest-incident function with the x-risys-token header; generate that token below.',
+  },
+]
 
 // ── Disconnect modal + button ─────────────────────────────────────────────────
 function DisconnectControl({ onDisconnected }) {
@@ -92,6 +125,32 @@ export function JiraManagePage() {
   const { mappings, loading, saveMapping, deleteMapping } = useMappings('jira')
   const [tab, setTab] = useState('mappings')
 
+  const [stats, setStats] = useState(null)
+
+  useEffect(() => {
+    if (!organization?.id) return
+    let cancelled = false
+    ;(async () => {
+      const [{ data: rows }, { count: openCount }] = await Promise.all([
+        supabase.from('incidents').select('created_at, source_type, status')
+          .eq('org_id', organization.id).eq('connector_id', 'jira')
+          .order('created_at', { ascending: false }).limit(500),
+        supabase.from('incidents').select('id', { count: 'exact', head: true })
+          .eq('org_id', organization.id).eq('connector_id', 'jira').neq('status', 'resolved'),
+      ])
+      if (cancelled) return
+      const list = rows || []
+      setStats({
+        total: list.length,
+        open: openCount ?? 0,
+        last: list[0]?.created_at || null,
+        viaWebhook: list.some(r => !String(r.source_type || '').toLowerCase().includes('n8n')),
+        viaN8n: list.some(r => String(r.source_type || '').toLowerCase().includes('n8n')),
+      })
+    })()
+    return () => { cancelled = true }
+  }, [organization?.id])
+
   const [newType, setNewType]         = useState('')
   const [customType, setCustomType]   = useState('')
   const [newSeverity, setNewSeverity] = useState('medium')
@@ -120,11 +179,18 @@ export function JiraManagePage() {
         title="Jira"
         subtitle="Integration Settings"
         actions={
-          <button onClick={() => navigate('/app/settings')}
-            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border transition-colors hover:bg-[#f5f3f3]"
-            style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
-            <ArrowLeft size={13} /> Back to Settings
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => navigate('/app/incidents')}
+              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border transition-colors hover:bg-[#f5f3f3]"
+              style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
+              View incidents <ArrowRight size={13} />
+            </button>
+            <button onClick={() => navigate('/app/settings')}
+              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border transition-colors hover:bg-[#f5f3f3]"
+              style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
+              <ArrowLeft size={13} /> Back
+            </button>
+          </div>
         }
       />
 
@@ -159,6 +225,53 @@ export function JiraManagePage() {
                 <p style={{ fontSize: 20, fontWeight: 300, color: '#1a1314' }}>{/* dynamic later */}—</p>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* ── Summary ──────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <Summary label="Incidents from Jira" value={stats ? stats.total : '—'} sub="Last 500 ingested" />
+          <Summary label="Open" value={stats ? stats.open : '—'} sub="Not yet resolved" warn={!!stats?.open} />
+          <Summary label="Last received" value={stats?.last ? formatRelative(stats.last) : '—'}
+            sub={stats && !stats.last ? 'Nothing has arrived yet' : 'Most recent Jira issue'}
+            warn={!!stats && !stats.last} />
+          <Summary label="Issue type mappings" value={loading ? '—' : mappings.length} sub="Type → severity rules" />
+        </div>
+
+        {/* ── Inbound channels ─────────────────────────────────────────── */}
+        <div className="rounded-xl mb-4" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
+          <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid #f0ecec' }}>
+            <Info size={14} style={{ color: '#5D0F0F' }} />
+            <p className="text-sm font-medium flex-1" style={{ color: '#1a1314' }}>Inbound channels</p>
+            <span className="text-[11px]" style={{ color: '#8a7070' }}>Jira pushes to RISYS — there is no scan to run</span>
+          </div>
+          <div className="px-4">
+            {INGEST_CHANNELS.map((ch, i) => {
+              const delivered = ch.key === 'jira' ? stats?.viaWebhook : stats?.viaN8n
+              return (
+                <div key={ch.key} className="flex gap-3 py-3" style={{ borderTop: i ? '1px solid #f5f3f3' : 'none' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: '#0052CC12', border: '1px solid #0052CC30', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <ch.Icon size={14} style={{ color: '#0052CC' }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium" style={{ color: '#1a1314' }}>{ch.name}</p>
+                      <span className="text-xs" style={{ color: '#8a7070' }}>{ch.what}</span>
+                      <span style={{ marginInlineStart: 'auto', fontSize: 10.5, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+                        color: delivered ? '#166534' : '#6b5555', background: delivered ? '#f0fdf4' : '#f8f7f7',
+                        border: `1px solid ${delivered ? '#bbf7d0' : '#e5e0e0'}` }}>
+                        {delivered ? 'Receiving' : 'Nothing received yet'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] mt-1" style={{ color: '#8a7070' }}>{ch.detail}</p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <div className="px-4 py-3" style={{ borderTop: '1px solid #f0ecec' }}>
+            <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: '#8a7070' }}>Framework reference</p>
+            <ControlReferences control={JIRA_CONTROLS} />
           </div>
         </div>
 

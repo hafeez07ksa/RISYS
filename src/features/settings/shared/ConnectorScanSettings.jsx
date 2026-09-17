@@ -62,21 +62,10 @@ export function ConnectorScanSettings({
 }) {
   const navigate = useNavigate()
   const { isAdmin } = usePermissions()
-  const {
-    runs, latestRun, lastCompletedRun, schedule, loading, available, scanning,
-    scanNow, saveSchedule, refresh,
-  } = useConnectorScans(connectorId, { historyLimit: 10 })
+  const scansApi = useConnectorScans(connectorId, { historyLimit: 10 })
+  const { runs, latestRun, lastCompletedRun, loading, available, scanning, scanNow, refresh } = scansApi
 
   const [msg, setMsg] = useState(null) // { tone: 'ok'|'warn'|'error', text }
-  const [schedEnabled, setSchedEnabled] = useState(false)
-  const [schedInterval, setSchedInterval] = useState(360)
-  const [savingSched, setSavingSched] = useState(false)
-
-  useEffect(() => {
-    setSchedEnabled(!!schedule?.enabled)
-    setSchedInterval(schedule?.interval_minutes ?? 360)
-  }, [schedule])
-
   const handleScan = async () => {
     setMsg(null)
     try {
@@ -90,22 +79,7 @@ export function ConnectorScanSettings({
     }
   }
 
-  const handleSaveSchedule = async () => {
-    setSavingSched(true)
-    try {
-      await saveSchedule({ enabled: schedEnabled, intervalMinutes: Number(schedInterval) })
-      setMsg({ tone: 'ok', text: schedEnabled ? 'Automatic scans saved. The first one runs within 15 minutes.' : 'Automatic scans turned off.' })
-    } catch (e) {
-      setMsg({ tone: 'error', text: e.message })
-    } finally {
-      setSavingSched(false)
-    }
-  }
-
   const running = isActiveRun(latestRun) || scanning
-  const lastSources = lastCompletedRun?.sources || {}
-  const labels = SOURCE_LABELS[connectorId] || {}
-  const schedDirty = schedEnabled !== !!schedule?.enabled || Number(schedInterval) !== (schedule?.interval_minutes ?? 360)
   const msgStyle = {
     ok:    { bg: '#f0fdf4', bd: '#bbf7d0', color: '#166534', Icon: CheckCircle },
     warn:  { bg: '#fffbeb', bd: '#fde68a', color: '#92400e', Icon: AlertTriangle },
@@ -173,116 +147,9 @@ export function ConnectorScanSettings({
             </div>
             {notes}
 
-            {/* Data sources */}
-            <Card title="Data sources" icon={Info}
-              right={lastCompletedRun && <span className="text-[11px]" style={{ color: '#8a7070' }}>As of {fmt(lastCompletedRun.finished_at || lastCompletedRun.started_at)}</span>}>
-              <div className="flex flex-col">
-                {sources.map((src, i) => {
-                  const res = lastSources[src.key]
-                  const label = labels[src.key] || { name: src.key, what: '' }
-                  return (
-                    <div key={src.key} className="flex gap-3 py-3" style={{ borderTop: i ? '1px solid #f5f3f3' : 'none' }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 8, background: `${accent}12`, border: `1px solid ${accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <src.Icon size={14} style={{ color: accent }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-medium" style={{ color: '#1a1314' }}>{label.name}</p>
-                          <span className="text-xs" style={{ color: '#8a7070' }}>{label.what}</span>
-                          <span style={{ marginInlineStart: 'auto' }}>
-                            {res ? <SourceStatePill state={res.state} /> : <span className="text-[11px]" style={{ color: '#a09090' }}>Not scanned</span>}
-                          </span>
-                        </div>
-                        {res && res.state !== 'ok' && res.detail && (
-                          <p className="text-xs mt-1" style={{ color: res.state === 'not_licensed' ? '#6b5555' : res.state === 'partial' ? '#92400e' : '#b91c1c' }}>{res.detail}</p>
-                        )}
-                        <p className="text-[11px] mt-1" style={{ color: '#8a7070' }}>
-                          <strong>Permission:</strong> {src.permissions} · <strong>Requires:</strong> {src.requires}
-                        </p>
-                        {src.note && <p className="text-[11px] mt-0.5" style={{ color: '#8a7070' }}>{src.note}</p>}
-                        {src.howTo && res && res.state !== 'ok' && res.state !== 'partial' && (
-                          <p className="text-[11px] mt-1 px-2 py-1.5 rounded" style={{ color: '#4a3a3a', background: '#f8f7f7' }}>
-                            <strong>How to fix:</strong> {src.howTo}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </Card>
-
-            {/* Schedule */}
-            <Card title="Automatic scans" icon={CalendarClock}>
-              <div className="flex items-center gap-4 flex-wrap">
-                <label className="flex items-center gap-2 text-sm" style={{ color: '#1a1314', cursor: isAdmin ? 'pointer' : 'default' }}>
-                  <input type="checkbox" checked={schedEnabled} disabled={!isAdmin}
-                    onChange={e => setSchedEnabled(e.target.checked)} />
-                  Scan automatically
-                </label>
-                <select value={schedInterval} disabled={!isAdmin || !schedEnabled}
-                  onChange={e => setSchedInterval(Number(e.target.value))}
-                  className="text-xs px-2 py-1.5 rounded-md"
-                  style={{ border: '1px solid #e5e0e0', background: '#fff', color: '#1a1314' }}>
-                  {SCAN_INTERVALS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                {isAdmin && (
-                  <button onClick={handleSaveSchedule} disabled={!schedDirty || savingSched}
-                    className="text-xs px-3 py-1.5 rounded-lg"
-                    style={{ background: '#5D0F0F', color: '#fff', border: 'none', opacity: !schedDirty || savingSched ? 0.5 : 1 }}>
-                    {savingSched ? 'Saving…' : 'Save'}
-                  </button>
-                )}
-                <span className="text-xs" style={{ color: '#8a7070', marginInlineStart: 'auto' }}>
-                  {schedule?.enabled
-                    ? <>Next scan {formatRelative(schedule.next_run_at)}{schedule.last_run_at ? ` · last ${formatRelative(schedule.last_run_at)} (${schedule.last_status})` : ''}</>
-                    : 'Off — scans run only when someone clicks Scan now.'}
-                </span>
-              </div>
-              {schedule?.consecutive_failures > 0 && (
-                <p className="text-xs mt-2" style={{ color: '#b91c1c' }}>
-                  The last {schedule.consecutive_failures} automatic scan(s) failed, so RISYS is retrying less often. Check Data sources above.
-                </p>
-              )}
-              {!isAdmin && <p className="text-xs mt-2" style={{ color: '#8a7070' }}>Only organisation admins can change the schedule.</p>}
-            </Card>
-
-            {/* History */}
-            <Card title="Recent scans" icon={History}>
-              {runs.length === 0 ? (
-                <p className="text-xs" style={{ color: '#8a7070' }}>No scans yet.</p>
-              ) : (
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr style={{ color: '#8a7070', textAlign: 'start' }}>
-                      <th className="font-normal py-1" style={{ textAlign: 'start' }}>Started</th>
-                      <th className="font-normal py-1" style={{ textAlign: 'start' }}>Trigger</th>
-                      <th className="font-normal py-1" style={{ textAlign: 'start' }}>Result</th>
-                      <th className="font-normal py-1" style={{ textAlign: 'start' }}>Open findings</th>
-                      <th className="font-normal py-1" style={{ textAlign: 'start' }}>Changes</th>
-                      <th className="font-normal py-1" style={{ textAlign: 'start' }}>Duration</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {runs.map(r => {
-                      const total = openTotal(r)
-                      const secs = r.finished_at ? Math.max(1, Math.round((new Date(r.finished_at) - new Date(r.started_at)) / 1000)) : null
-                      const change = changes(r)
-                      return (
-                        <tr key={r.id} style={{ borderTop: '1px solid #f5f3f3', color: '#1a1314' }} title={r.error || (r.warnings || []).join('\n') || undefined}>
-                          <td className="py-2">{fmt(r.started_at)}</td>
-                          <td className="py-2 capitalize">{r.trigger}</td>
-                          <td className="py-2"><StatusBadge status={runStatus(r)} /></td>
-                          <td className="py-2">{r.status === 'running' ? '—' : total}</td>
-                          <td className="py-2" style={{ color: '#6b5555' }}>{change || '—'}</td>
-                          <td className="py-2" style={{ color: '#6b5555' }}>{secs ? `${secs}s` : '—'}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </Card>
+            <ScanSourcesCard connectorId={connectorId} accent={accent} sources={sources} lastCompletedRun={lastCompletedRun} />
+            <ScanScheduleCard scans={scansApi} isAdmin={isAdmin} onMessage={setMsg} />
+            <ScanHistoryCard runs={runs} openTotal={openTotal} changes={changes} />
           </>
         )}
       </div>
@@ -297,5 +164,156 @@ export function Summary({ label, value, sub, warn }) {
       <p style={{ fontSize: 26, fontWeight: 300, color: warn ? '#b91c1c' : '#1a1314', marginTop: 4 }}>{value}</p>
       <p style={{ fontSize: 11, color: warn ? '#b91c1c' : '#8a7070' }}>{sub}</p>
     </div>
+  )
+}
+
+/** What the connector reads, and whether the last scan could read it. */
+export function ScanSourcesCard({ connectorId, accent, sources, lastCompletedRun }) {
+  const lastSources = lastCompletedRun?.sources || {}
+  const labels = SOURCE_LABELS[connectorId] || {}
+  return (
+    <Card title="Data sources" icon={Info}
+      right={lastCompletedRun && <span className="text-[11px]" style={{ color: '#8a7070' }}>As of {fmt(lastCompletedRun.finished_at || lastCompletedRun.started_at)}</span>}>
+      <div className="flex flex-col">
+        {sources.map((src, i) => {
+          const res = lastSources[src.key]
+          const label = labels[src.key] || { name: src.key, what: '' }
+          return (
+            <div key={src.key} className="flex gap-3 py-3" style={{ borderTop: i ? '1px solid #f5f3f3' : 'none' }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: `${accent}12`, border: `1px solid ${accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <src.Icon size={14} style={{ color: accent }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-medium" style={{ color: '#1a1314' }}>{label.name}</p>
+                  <span className="text-xs" style={{ color: '#8a7070' }}>{label.what}</span>
+                  <span style={{ marginInlineStart: 'auto' }}>
+                    {res ? <SourceStatePill state={res.state} /> : <span className="text-[11px]" style={{ color: '#a09090' }}>Not scanned</span>}
+                  </span>
+                </div>
+                {res && res.state !== 'ok' && res.detail && (
+                  <p className="text-xs mt-1" style={{ color: res.state === 'not_licensed' ? '#6b5555' : res.state === 'partial' ? '#92400e' : '#b91c1c' }}>{res.detail}</p>
+                )}
+                {res && res.state === 'ok' && res.detail && (
+                  <p className="text-xs mt-1" style={{ color: '#6b5555' }}>{res.detail}</p>
+                )}
+                <p className="text-[11px] mt-1" style={{ color: '#8a7070' }}>
+                  <strong>Permission:</strong> {src.permissions} · <strong>Requires:</strong> {src.requires}
+                </p>
+                {src.note && <p className="text-[11px] mt-0.5" style={{ color: '#8a7070' }}>{src.note}</p>}
+                {src.howTo && res && res.state !== 'ok' && res.state !== 'partial' && (
+                  <p className="text-[11px] mt-1 px-2 py-1.5 rounded" style={{ color: '#4a3a3a', background: '#f8f7f7' }}>
+                    <strong>How to fix:</strong> {src.howTo}
+                  </p>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </Card>
+  )
+}
+
+/** Automatic scan schedule. `scans` is the object returned by useConnectorScans. */
+export function ScanScheduleCard({ scans, isAdmin, onMessage }) {
+  const { schedule, saveSchedule } = scans
+  const [enabled, setEnabled] = useState(false)
+  const [interval, setInterval] = useState(360)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setEnabled(!!schedule?.enabled)
+    setInterval(schedule?.interval_minutes ?? 360)
+  }, [schedule])
+
+  const dirty = enabled !== !!schedule?.enabled || Number(interval) !== (schedule?.interval_minutes ?? 360)
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      await saveSchedule({ enabled, intervalMinutes: Number(interval) })
+      onMessage?.({ tone: 'ok', text: enabled ? 'Automatic scans saved. The first one runs within 15 minutes.' : 'Automatic scans turned off.' })
+    } catch (e) {
+      onMessage?.({ tone: 'error', text: e.message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card title="Automatic scans" icon={CalendarClock}>
+      <div className="flex items-center gap-4 flex-wrap">
+        <label className="flex items-center gap-2 text-sm" style={{ color: '#1a1314', cursor: isAdmin ? 'pointer' : 'default' }}>
+          <input type="checkbox" checked={enabled} disabled={!isAdmin} onChange={e => setEnabled(e.target.checked)} />
+          Scan automatically
+        </label>
+        <select value={interval} disabled={!isAdmin || !enabled}
+          onChange={e => setInterval(Number(e.target.value))}
+          className="text-xs px-2 py-1.5 rounded-md"
+          style={{ border: '1px solid #e5e0e0', background: '#fff', color: '#1a1314' }}>
+          {SCAN_INTERVALS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        {isAdmin && (
+          <button onClick={save} disabled={!dirty || saving}
+            className="text-xs px-3 py-1.5 rounded-lg"
+            style={{ background: '#5D0F0F', color: '#fff', border: 'none', opacity: !dirty || saving ? 0.5 : 1 }}>
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        )}
+        <span className="text-xs" style={{ color: '#8a7070', marginInlineStart: 'auto' }}>
+          {schedule?.enabled
+            ? <>Next scan {formatRelative(schedule.next_run_at)}{schedule.last_run_at ? ` · last ${formatRelative(schedule.last_run_at)} (${schedule.last_status})` : ''}</>
+            : 'Off — scans run only when someone clicks Scan now.'}
+        </span>
+      </div>
+      {schedule?.consecutive_failures > 0 && (
+        <p className="text-xs mt-2" style={{ color: '#b91c1c' }}>
+          The last {schedule.consecutive_failures} automatic scan(s) failed, so RISYS is retrying less often. Check Data sources above.
+        </p>
+      )}
+      {!isAdmin && <p className="text-xs mt-2" style={{ color: '#8a7070' }}>Only organisation admins can change the schedule.</p>}
+    </Card>
+  )
+}
+
+/** Recent scan runs, with what each one found and changed. */
+export function ScanHistoryCard({ runs, openTotal, changes, countLabel = 'Open findings' }) {
+  return (
+    <Card title="Recent scans" icon={History}>
+      {runs.length === 0 ? (
+        <p className="text-xs" style={{ color: '#8a7070' }}>No scans yet.</p>
+      ) : (
+        <table className="w-full text-xs">
+          <thead>
+            <tr style={{ color: '#8a7070', textAlign: 'start' }}>
+              <th className="font-normal py-1" style={{ textAlign: 'start' }}>Started</th>
+              <th className="font-normal py-1" style={{ textAlign: 'start' }}>Trigger</th>
+              <th className="font-normal py-1" style={{ textAlign: 'start' }}>Result</th>
+              <th className="font-normal py-1" style={{ textAlign: 'start' }}>{countLabel}</th>
+              <th className="font-normal py-1" style={{ textAlign: 'start' }}>Changes</th>
+              <th className="font-normal py-1" style={{ textAlign: 'start' }}>Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            {runs.map(r => {
+              const total = openTotal(r)
+              const secs = r.finished_at ? Math.max(1, Math.round((new Date(r.finished_at) - new Date(r.started_at)) / 1000)) : null
+              const change = changes(r)
+              return (
+                <tr key={r.id} style={{ borderTop: '1px solid #f5f3f3', color: '#1a1314' }} title={r.error || (r.warnings || []).join('\n') || undefined}>
+                  <td className="py-2">{fmt(r.started_at)}</td>
+                  <td className="py-2 capitalize">{r.trigger}</td>
+                  <td className="py-2"><StatusBadge status={runStatus(r)} /></td>
+                  <td className="py-2">{r.status === 'running' ? '—' : total}</td>
+                  <td className="py-2" style={{ color: '#6b5555' }}>{change || '—'}</td>
+                  <td className="py-2" style={{ color: '#6b5555' }}>{secs ? `${secs}s` : '—'}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      )}
+    </Card>
   )
 }

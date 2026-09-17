@@ -10,7 +10,54 @@ import { useAuth } from '@/hooks/useAuth'
 import { useConnectors } from '@/hooks/useConnectors'
 import { supabase } from '@/lib/supabase'
 import { Spinner } from '@/components/ui/Spinner'
-import { callEdgeFunction } from '@/lib/functions'
+import { usePermissions } from '@/hooks/usePermissions'
+import { useConnectorScans, isActiveRun } from '@/hooks/useConnectorScans'
+import { ScanSourcesCard, ScanScheduleCard, ScanHistoryCard } from '@/features/settings/shared/ConnectorScanSettings'
+import { ScanHealthBanner } from '@/features/findings/ScanHealth'
+import { ArrowRight, KeyRound, Crown as CrownIcon, Activity as ActivityIcon, Users as UsersIcon } from 'lucide-react'
+
+// What the Entra scan reads, and the permission each part needs.
+const ENTRA_SOURCES = [
+  {
+    key: 'directory',
+    Icon: UsersIcon,
+    permissions: 'Microsoft Graph → User.Read.All (or Directory.Read.All)',
+    requires: 'Any Microsoft 365 or Entra ID tenant.',
+    note: 'Last sign-in dates come from the directory with Microsoft Entra ID P1; without P1 they are taken from the 7 days of sign-in logs below.',
+  },
+  {
+    key: 'mfa',
+    Icon: KeyRound,
+    permissions: 'Microsoft Graph → Reports.Read.All, or UserAuthenticationMethod.Read.All for the fallback',
+    requires: 'The MFA registration report needs Microsoft Entra ID P1. Without P1, RISYS reads each user\'s registered methods instead.',
+    note: 'On a tenant without P1 this costs one call per user, so the first 600 users are checked on each scan.',
+    howTo: 'In the Entra app registration: API permissions → Add a permission → Microsoft Graph → Application permissions → add Reports.Read.All (with P1) and UserAuthenticationMethod.Read.All (without P1) → Add → Grant admin consent.',
+  },
+  {
+    key: 'roles',
+    Icon: CrownIcon,
+    permissions: 'Microsoft Graph → Directory.Read.All (or RoleManagement.Read.Directory)',
+    requires: 'Any Microsoft 365 or Entra ID tenant.',
+    howTo: 'In the Entra app registration: API permissions → Microsoft Graph → Application permissions → Directory.Read.All → Grant admin consent.',
+  },
+  {
+    key: 'signins',
+    Icon: ActivityIcon,
+    permissions: 'Microsoft Graph → AuditLog.Read.All',
+    requires: 'Microsoft Entra ID P1 or P2. Sign-in logs are not available on the free tier.',
+  },
+]
+
+const entraOpenTotal = r => {
+  const o = r?.counts?.open || {}
+  return (o.no_mfa || 0) + (o.privileged || 0) + (o.guests || 0) + (o.disabled || 0) + (o.inactive || 0)
+}
+
+const entraChanges = r => [
+  r?.counts?.users_synced != null ? `${r.counts.users_synced} users` : null,
+  r?.counts?.users_removed ? `${r.counts.users_removed} removed` : null,
+  r?.counts?.signins_synced ? `${r.counts.signins_synced} sign-ins` : null,
+].filter(Boolean).join(' · ')
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -145,6 +192,8 @@ export function EntraManagePage() {
   const navigate = useNavigate()
   const { organization } = useAuth()
 
+  const { isAdmin } = usePermissions()
+  const scans = useConnectorScans('entra', { historyLimit: 10 })
   const [tab, setTab]           = useState('users')
   const [syncing, setSyncing]   = useState(false)
   const [syncMsg, setSyncMsg]   = useState(null)
@@ -188,8 +237,12 @@ export function EntraManagePage() {
   const handleSync = async () => {
     setSyncing(true); setSyncMsg(null); setSyncError(false)
     try {
-      const data = await callEdgeFunction('entra-directory', { org_id: organization.id })
-      setSyncMsg(`Synced ${data.users_synced} users · ${data.signins_synced} sign-in events`)
+      const data = await scans.scanNow('entra-directory')
+      const o = data?.counts?.open || {}
+      setSyncMsg(
+        `Scan complete: ${data?.counts?.users_synced ?? 0} users · ${o.no_mfa ?? 0} without MFA · ` +
+        `${o.privileged ?? 0} privileged · ${data?.counts?.signins_synced ?? 0} sign-in events`)
+      setSyncError(data?.status !== 'success')
       await fetchUsers(); await fetchLogs()
     } catch (err) { setSyncMsg(err.message); setSyncError(true) }
     finally { setSyncing(false) }
@@ -197,6 +250,9 @@ export function EntraManagePage() {
 
   // Directory counts — plain directory attributes, no findings logic here.
   // (Security findings now live in the dedicated Findings page.)
+  // MFA is unknown when the tenant has no Entra ID P1: the registration report is
+  // refused, so "0 without MFA" would be a lie.
+  const mfaKnown = users.length === 0 || users.some(u => u.raw_data?.mfa_known !== false)
   const c = {
     total:      users.length,
     no_mfa:     users.filter(u => u.account_enabled && !u.is_mfa_registered).length,
@@ -241,6 +297,19 @@ export function EntraManagePage() {
               style={{ borderColor: '#e5e0e0', color: '#8a7070' }}>
               <RefreshCw size={13} />
             </button>
+            {isAdmin && (
+              <button onClick={handleSync} disabled={syncing || isActiveRun(scans.latestRun)}
+                className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-lg flex-shrink-0"
+                style={{ background: '#0078D4', color: '#fff', border: 'none', opacity: syncing ? 0.6 : 1 }}>
+                {syncing ? <Spinner size="sm" /> : <RotateCw size={13} />}
+                {syncing ? 'Scanning…' : 'Scan now'}
+              </button>
+            )}
+            <button onClick={() => navigate('/app/findings/entra')}
+              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border hover:bg-[#f5f3f3]"
+              style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
+              View findings <ArrowRight size={13} />
+            </button>
             <button onClick={() => navigate('/app/settings')}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border hover:bg-[#f5f3f3]"
               style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
@@ -251,6 +320,12 @@ export function EntraManagePage() {
       />
 
       <div className="flex-1 overflow-y-auto page-content">
+
+        {scans.available && !scans.loading && (
+          <ScanHealthBanner connectorId="entra" latestRun={scans.latestRun}
+            lastCompletedRun={scans.lastCompletedRun} schedule={scans.schedule}
+            onOpenSettings={() => setTab('settings')} />
+        )}
 
         {/* ── Connection card ───────────────────────────────────────────── */}
         <div className="rounded-xl mb-5 overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
@@ -267,7 +342,7 @@ export function EntraManagePage() {
                   style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>● Active</span>
               </div>
               <p className="text-xs" style={{ color: '#8a7070' }}>
-                {c.total} users · {c.mfa_on} of {c.total} with MFA
+                {c.total} users · {mfaKnown ? `${c.mfa_on} of ${c.total} with MFA` : 'MFA status needs Entra ID P1'}
               </p>
               {syncMsg && (
                 <p className="text-[11px] mt-1 font-medium" style={{ color: syncError ? '#b91c1c' : '#166534' }}>
@@ -279,7 +354,7 @@ export function EntraManagePage() {
               className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-lg flex-shrink-0"
               style={{ background: '#5D0F0F', color: '#fff', border: 'none', opacity: syncing ? 0.6 : 1 }}>
               {syncing ? <Spinner size="sm" /> : <RotateCw size={13} />}
-              {syncing ? 'Syncing...' : 'Sync Now'}
+              {syncing ? 'Scanning…' : 'Scan now'}
             </button>
           </div>
 
@@ -308,7 +383,7 @@ export function EntraManagePage() {
         {/* ── Stat cards (directory facets) ─────────────────────────────── */}
         <div className="grid grid-cols-5 gap-3 mb-5">
           <StatCard label="Total Users" value={c.total}      icon={Users}       onClick={() => { setTab('users'); setUserFilter('all') }} />
-          <StatCard label="No MFA"      value={c.no_mfa}     icon={ShieldAlert} warn={c.no_mfa > 0}      onClick={() => { setTab('users'); setUserFilter('no_mfa') }} />
+          <StatCard label="No MFA"      value={mfaKnown ? c.no_mfa : '—'} icon={ShieldAlert} warn={mfaKnown && c.no_mfa > 0} onClick={() => { setTab('users'); setUserFilter('no_mfa') }} />
           <StatCard label="Privileged"  value={c.privileged} icon={Crown}       amber={c.privileged > 0} onClick={() => { setTab('users'); setUserFilter('privileged') }} />
           <StatCard label="Disabled"    value={c.disabled}   icon={UserX}       onClick={() => { setTab('users'); setUserFilter('disabled') }} />
           <StatCard label="Guests"      value={c.guests}     icon={Globe}       onClick={() => { setTab('users'); setUserFilter('guests') }} />
@@ -339,7 +414,7 @@ export function EntraManagePage() {
               <div className="flex gap-1 p-1 rounded-lg flex-shrink-0" style={{ background: '#f5f3f3' }}>
                 {[
                   ['all',       'All'],
-                  ['no_mfa',    `No MFA${c.no_mfa > 0 ? ` (${c.no_mfa})` : ''}`],
+                  ['no_mfa',    mfaKnown ? `No MFA${c.no_mfa > 0 ? ` (${c.no_mfa})` : ''}` : 'No MFA (unknown)'],
                   ['privileged',`Privileged${c.privileged > 0 ? ` (${c.privileged})` : ''}`],
                   ['guests',    'Guests'],
                   ['disabled',  'Disabled'],
@@ -373,11 +448,11 @@ export function EntraManagePage() {
                 </p>
                 {users.length === 0 && (
                   <>
-                    <p className="text-xs mb-4" style={{ color: '#8a7070' }}>Click Sync Now to pull your Entra directory</p>
+                    <p className="text-xs mb-4" style={{ color: '#8a7070' }}>Click Scan now to pull your Entra directory</p>
                     <button onClick={handleSync} disabled={syncing}
                       className="text-xs px-4 py-2 rounded-lg"
                       style={{ background: '#5D0F0F', color: '#fff', border: 'none' }}>
-                      {syncing ? 'Syncing...' : 'Sync Now'}
+                      {syncing ? 'Scanning…' : 'Scan now'}
                     </button>
                   </>
                 )}
@@ -443,7 +518,12 @@ export function EntraManagePage() {
 
                       {/* MFA — plain directory attribute */}
                       <div>
-                        {u.is_mfa_registered ? (
+                        {!mfaKnown ? (
+                          <span style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, color: '#8a7070' }}
+                            title="The MFA registration report needs Microsoft Entra ID P1">
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#d4cccc' }} /> Needs P1
+                          </span>
+                        ) : u.is_mfa_registered ? (
                           <span style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, color: '#166534' }}>
                             <CheckCircle size={12} style={{ color: '#22c55e' }} /> Registered
                           </span>
@@ -507,9 +587,9 @@ export function EntraManagePage() {
               <div className="rounded-xl py-14 text-center" style={{ background: '#fff', border: '1px dashed #e5e0e0' }}>
                 <Activity size={30} strokeWidth={1} className="mx-auto mb-3" style={{ color: '#d4cccc' }} />
                 <p className="text-sm font-medium mb-1" style={{ color: '#4a3a3a' }}>No sign-in events</p>
-                <p className="text-xs mb-4" style={{ color: '#8a7070' }}>Requires Entra ID P1 · Click Sync Now to pull events</p>
+                <p className="text-xs mb-4" style={{ color: '#8a7070' }}>Requires Entra ID P1 · Click Scan now to pull events</p>
                 <button onClick={handleSync} disabled={syncing} className="text-xs px-4 py-2 rounded-lg" style={{ background: '#5D0F0F', color: '#fff', border: 'none' }}>
-                  {syncing ? 'Syncing...' : 'Sync Now'}
+                  {syncing ? 'Scanning…' : 'Scan now'}
                 </button>
               </div>
             ) : (
@@ -555,6 +635,13 @@ export function EntraManagePage() {
         {tab === 'settings' && (
           <div className="flex flex-col gap-5">
 
+            <div>
+              <ScanSourcesCard connectorId="entra" accent="#0078D4" sources={ENTRA_SOURCES}
+                lastCompletedRun={scans.lastCompletedRun} />
+              <ScanScheduleCard scans={scans} isAdmin={isAdmin} onMessage={m => { setSyncMsg(m.text); setSyncError(m.tone === 'error') }} />
+              <ScanHistoryCard runs={scans.runs} openTotal={entraOpenTotal} changes={entraChanges} countLabel="Findings" />
+            </div>
+
             {/* Connection info */}
             <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
               <div style={{ padding: '12px 20px', borderBottom: '1px solid #f0eded', background: '#f8f7f7' }}>
@@ -565,7 +652,7 @@ export function EntraManagePage() {
                   { label: 'Connector',     value: 'Microsoft Entra ID' },
                   { label: 'Status',        value: 'Active', color: '#166534' },
                   { label: 'Sync scope',    value: 'Users, MFA registration, directory roles, sign-in logs' },
-                  { label: 'Sync method',   value: 'Manual (click Sync Now) · Auto-sync coming in Q3 2026' },
+                  { label: 'Sync method',   value: 'On demand (Scan now) and on a schedule — see Automatic scans above' },
                   { label: 'Data retained', value: 'All synced data is kept if disconnected' },
                 ].map(item => (
                   <div key={item.label} style={{ display: 'flex', gap: 16 }}>

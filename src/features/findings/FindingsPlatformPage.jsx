@@ -9,6 +9,9 @@ import { useAuth } from '@/hooks/useAuth'
 import { Spinner } from '@/components/ui/Spinner'
 import { FINDING_PROVIDERS, SEVERITY_CONFIG } from '@/lib/findings'
 import { ConnectorFindingsListPage, LIST_VIEW_CONNECTORS } from './ConnectorFindingsListPage'
+import { ScanHealthBanner } from './ScanHealth'
+import { useConnectorScans } from '@/hooks/useConnectorScans'
+import { Settings } from 'lucide-react'
 
 // ── Shared bits ───────────────────────────────────────────────────────────────
 
@@ -43,7 +46,7 @@ function FindingBadge({ finding }) {
   )
 }
 
-function StatCard({ label, value, icon: Icon, tone, onClick }) {
+function StatCard({ label, value, icon: Icon, tone, active, onClick }) {
   const map = {
     total:    { color: '#1a1314', bd: '#e5e0e0', bg: '#fff',    ic: '#d4cccc' },
     critical: { color: '#b91c1c', bd: '#fecaca', bg: '#fef2f2', ic: '#fca5a5' },
@@ -51,15 +54,18 @@ function StatCard({ label, value, icon: Icon, tone, onClick }) {
     info:     { color: '#1e40af', bd: '#bfdbfe', bg: '#eff6ff', ic: '#93c5fd' },
   }[tone]
   return (
-    <div onClick={onClick}
-      className="rounded-xl p-4 flex flex-col gap-2 transition-all"
-      style={{ background: map.bg, border: `1px solid ${map.bd}`, cursor: onClick ? 'pointer' : 'default' }}>
-      <div className="flex items-center justify-between">
+    <button type="button" onClick={onClick}
+      className="rounded-xl p-4 flex flex-col gap-2 transition-all text-left"
+      style={{
+        background: map.bg, border: `1px solid ${active ? map.color : map.bd}`, cursor: 'pointer',
+        boxShadow: active ? `0 0 0 1px ${map.color}` : 'none',
+      }}>
+      <div className="flex items-center justify-between w-full">
         <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: map.color === '#1a1314' ? '#8a7070' : map.color }}>{label}</p>
         <Icon size={13} strokeWidth={1.5} style={{ color: map.ic }} />
       </div>
       <p style={{ fontSize: 28, fontWeight: 300, color: map.color }}>{value}</p>
-    </div>
+    </button>
   )
 }
 
@@ -82,6 +88,7 @@ function UserFindingsPlatformPage({ connectorId }) {
   const { organization } = useAuth()
 
   const provider = FINDING_PROVIDERS.find(p => p.connectorId === connectorId)
+  const scans = useConnectorScans(connectorId, { historyLimit: 3 })
 
   const [loading, setLoading]     = useState(true)
   const [rows, setRows]           = useState([]) // { subject, findings }
@@ -92,6 +99,7 @@ function UserFindingsPlatformPage({ connectorId }) {
     if (!organization?.id || !provider) return
     setLoading(true)
     const rawRows = await provider.fetch(organization.id)
+    scans.refresh?.()
     // Pair each source row with its derived findings
     const paired = rawRows.map(raw => ({
       raw,
@@ -165,6 +173,11 @@ function UserFindingsPlatformPage({ connectorId }) {
               style={{ borderColor: '#e5e0e0', color: '#8a7070' }}>
               <RefreshCw size={13} />
             </button>
+            <button onClick={() => navigate(`/app/settings/${connectorId}`)}
+              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border hover:bg-[#f5f3f3]"
+              style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
+              <Settings size={13} /> Scan settings
+            </button>
             <button onClick={() => navigate('/app/findings')}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border hover:bg-[#f5f3f3]"
               style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
@@ -176,12 +189,22 @@ function UserFindingsPlatformPage({ connectorId }) {
 
       <div className="flex-1 overflow-y-auto page-content">
 
+        {scans.available && !scans.loading && (
+          <ScanHealthBanner connectorId={connectorId} latestRun={scans.latestRun}
+            lastCompletedRun={scans.lastCompletedRun} schedule={scans.schedule}
+            onOpenSettings={() => navigate(`/app/settings/${connectorId}`)} />
+        )}
+
         {/* Stat row */}
         <div className="grid grid-cols-4 gap-3 mb-5">
-          <StatCard label="Total Findings" value={counts.total}    icon={FileWarning}   tone="total" />
-          <StatCard label="Critical"       value={counts.critical} icon={AlertTriangle} tone="critical" onClick={() => setSevFilter('critical')} />
-          <StatCard label="Warning"        value={counts.warning}  icon={ShieldAlert}   tone="warning"  onClick={() => setSevFilter('warning')} />
-          <StatCard label="Informational"  value={counts.info}     icon={AlertCircle}   tone="info"     onClick={() => setSevFilter('info')} />
+          <StatCard label="Total findings" value={counts.total}    icon={FileWarning}   tone="total"
+            active={sevFilter === 'all'}      onClick={() => setSevFilter('all')} />
+          <StatCard label="Critical"       value={counts.critical} icon={AlertTriangle} tone="critical"
+            active={sevFilter === 'critical'} onClick={() => setSevFilter(sevFilter === 'critical' ? 'all' : 'critical')} />
+          <StatCard label="Warning"        value={counts.warning}  icon={ShieldAlert}   tone="warning"
+            active={sevFilter === 'warning'}  onClick={() => setSevFilter(sevFilter === 'warning' ? 'all' : 'warning')} />
+          <StatCard label="Informational"  value={counts.info}     icon={AlertCircle}   tone="info"
+            active={sevFilter === 'info'}     onClick={() => setSevFilter(sevFilter === 'info' ? 'all' : 'info')} />
         </div>
 
         {/* Filter + search */}

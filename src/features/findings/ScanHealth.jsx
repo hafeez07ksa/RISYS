@@ -8,6 +8,12 @@ export const SOURCE_LABELS = {
     alerts:   { name: 'Alerts',                what: 'active threats' },
     endpoint: { name: 'Defender for Endpoint', what: 'vulnerabilities and device health' },
   },
+  entra: {
+    directory: { name: 'Directory',       what: 'users, account status and guests' },
+    mfa:       { name: 'MFA registration', what: 'who has registered MFA' },
+    roles:     { name: 'Directory roles',  what: 'privileged accounts' },
+    signins:   { name: 'Sign-in logs',     what: 'last 7 days of sign-ins' },
+  },
   sharepoint: {
     tenant:  { name: 'Tenant sharing policy', what: 'SharePoint and OneDrive sharing settings' },
     groups:  { name: 'Microsoft 365 groups',  what: 'guests and public groups' },

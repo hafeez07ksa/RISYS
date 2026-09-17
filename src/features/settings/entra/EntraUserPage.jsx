@@ -8,7 +8,7 @@ import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { Spinner } from '@/components/ui/Spinner'
-import { getEntraFindings as getFindings, SEVERITY_CONFIG } from '@/lib/findings'
+import { getEntraFindings as getFindings, SEVERITY_CONFIG, mfaMethodLabel } from '@/lib/findings'
 import { CreateFindingIncidentModal } from '@/features/findings/FindingActionModals'
 import { toTriageState } from '@/lib/triage'
 import { ControlReferences } from '@/components/ui/ControlReferences'
@@ -285,7 +285,7 @@ export function EntraUserPage() {
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                       {user.methods_registered.map(m => (
                         <span key={m} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 20, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
-                          {m.replace('microsoftAuthenticatorPush','Auth App').replace('softwareOneTimePasscode','TOTP').replace('windowsHelloForBusiness','Windows Hello')}
+                          {mfaMethodLabel(m)}
                         </span>
                       ))}
                     </div>

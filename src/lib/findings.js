@@ -59,10 +59,31 @@ export const ECC_IAM = {
   review: 'NCA ECC 2-2-3-5 · Periodic Review of Identities and Access Rights',
 }
 
+// Method names come either from the registration report ("microsoftAuthenticatorPush")
+// or, on tenants without Entra ID P1, from each user's registered methods
+// ("microsoftauthenticatorauthenticationmethod"). Both are shown in plain words.
+export function mfaMethodLabel(raw) {
+  const m = String(raw || '').toLowerCase().replace(/authenticationmethod$/, '')
+  if (m.includes('microsoftauthenticator') || m.includes('authenticatorpush')) return 'Microsoft Authenticator'
+  if (m.includes('passwordless')) return 'Passwordless sign-in'
+  if (m.includes('fido2')) return 'Security key (FIDO2)'
+  if (m.includes('windowshello')) return 'Windows Hello'
+  if (m.includes('softwareoath') || m.includes('onetimepasscode') || m.includes('totp')) return 'Authenticator app code (TOTP)'
+  if (m.includes('temporaryaccesspass')) return 'Temporary Access Pass'
+  if (m.includes('certificatebased')) return 'Certificate'
+  if (m.includes('phone') || m.includes('sms') || m.includes('voice')) return 'Phone (SMS or call)'
+  if (m.includes('email')) return 'Email (password reset only)'
+  if (m.includes('password')) return 'Password'
+  return raw
+}
+
 export function getEntraFindings(u) {
   const findings = []
 
-  if (!u.is_mfa_registered && u.account_enabled) {
+  // raw_data.mfa_known is false when the tenant has no Entra ID P1, so the MFA
+  // registration report could not be read. Silence is better than a false finding.
+  const mfaKnown = u.raw_data?.mfa_known !== false
+  if (mfaKnown && !u.is_mfa_registered && u.account_enabled) {
     findings.push({
       id: 'no_mfa', severity: 'critical',
       label: 'No MFA', title: 'MFA Not Registered',
