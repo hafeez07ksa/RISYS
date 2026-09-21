@@ -404,7 +404,19 @@ export function useRequirementAutomation(frameworkId) {
 
   useEffect(() => { fetchAutomation() }, [fetchAutomation])
 
-  return { automation, loading, refetch: fetchAutomation }
+  // Recompute the signals from what the connectors last collected, then re-read.
+  // Signals are also recomputed automatically when a connector scan finishes and
+  // nightly; this is for when someone wants the number to be current right now.
+  const refresh = useCallback(async () => {
+    if (!organization?.id) return null
+    setLoading(true)
+    const { data, error } = await supabase.rpc('refresh_org_signals', { p_org: organization.id })
+    await fetchAutomation()
+    if (error) throw new Error(error.message)
+    return data
+  }, [organization?.id, fetchAutomation])
+
+  return { automation, loading, refetch: fetchAutomation, refresh }
 }
 
 // Is this requirement covered by at least one signal that has actually run?

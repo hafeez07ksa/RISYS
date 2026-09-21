@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom'
 import { ShieldAlert } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { roleLabel } from '@/lib/roles'
 import { Spinner } from '@/components/ui/Spinner'
 
 /**
@@ -24,6 +25,10 @@ export function RequireRole({ roles, children, redirectTo = '/app/dashboard' }) 
 
   const role = organization?.memberRole
   if (!role || !roles.includes(role)) {
+    const names = roles.map(roleLabel)
+    const allowed = names.length > 1
+      ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+      : names[0]
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-24 px-6 text-center">
         <div style={{
@@ -37,9 +42,10 @@ export function RequireRole({ roles, children, redirectTo = '/app/dashboard' }) 
         <h2 style={{ fontSize: 15, fontWeight: 600, color: '#1a1314', marginBottom: 6 }}>
           Access restricted
         </h2>
-        <p style={{ fontSize: 13, color: '#8a7070', maxWidth: 340, lineHeight: 1.6, marginBottom: 20 }}>
-          This section is only available to administrators.
-          Contact your organization's admin if you need access.
+        <p style={{ fontSize: 13, color: '#8a7070', maxWidth: 380, lineHeight: 1.6, marginBottom: 20 }}>
+          {role
+            ? <>You are signed in as <strong style={{ color: '#5D0F0F' }}>{roleLabel(role)}</strong>. This section is open to {allowed}. Ask an admin in your organisation if you need it.</>
+            : <>You are not a member of an organisation yet.</>}
         </p>
         <a href="/app/dashboard"
           style={{

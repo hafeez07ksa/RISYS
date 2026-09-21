@@ -1,14 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
+import { isAdminRole } from '@/lib/roles'
 
-export const ROLES = [
-  { value: 'admin',        label: 'Admin',        desc: 'Full access — manages people, settings, and all records' },
-  { value: 'risk_manager', label: 'Risk Manager', desc: 'Second line — reviews and approves risks, runs assessments' },
-  { value: 'member',       label: 'Member',       desc: 'First line — owns risks, controls, evidence, and actions' },
-  { value: 'viewer',       label: 'Viewer',       desc: 'Read-only — sees the register and reports, changes nothing' },
-]
-export const roleLabel = (v) => ROLES.find(r => r.value === v)?.label || v
+// Roles come from lib/roles.js — one definition for the invite dropdown, the
+// permission matrix and the database (B10). Re-exported here so the People
+// page's existing imports keep working.
+export { ROLES, ALL_ROLES, roleLabel, roleDef, isReadOnlyRole } from '@/lib/roles'
 
 export function invitationState(inv) {
   if (inv.status === 'pending' && new Date(inv.expires_at) < new Date()) return 'expired'
@@ -25,7 +23,7 @@ export function usePeople() {
   const [invitations, setInvitations] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const isAdmin = ['admin', 'owner'].includes(organization?.memberRole)
+  const isAdmin = isAdminRole(organization?.memberRole)
 
   const fetchMembers = useCallback(async () => {
     if (!organization?.id) { setLoading(false); return }

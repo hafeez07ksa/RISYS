@@ -35,7 +35,7 @@ const SEGMENT_LABELS = {
   app: null,
   dashboard: 'Dashboard', incidents: 'Incidents', findings: 'Findings',
   risks: 'Risk Register', controls: 'Controls', compliance: 'Compliance',
-  tasks: 'Tasks', people: 'People', audit: 'Audit Log', settings: 'Settings',
+  tasks: 'Tasks', people: 'People', audit: 'Audit Log', audits: 'Audits', reports: 'Reports', settings: 'Settings',
   frameworks: 'Frameworks', new: 'New', tolerances: 'Tolerances', edit: 'Edit', assess: 'Assessment', triage: 'Triage',
 }
 

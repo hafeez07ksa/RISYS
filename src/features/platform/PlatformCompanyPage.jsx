@@ -11,6 +11,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import {
   CopyBtn, PlatformHeader, EditLimitsModal, ReissueModal, SuspendModal, DeleteCompanyModal
 } from './shared'
+import { isAdminRole } from '@/lib/roles'
 
 const ROLE_PILL = {
   admin:        { bg: '#F6EBE8', color: '#5D0F0F', border: '#E6CFC9', label: 'Admin' },
@@ -99,7 +100,7 @@ export function PlatformCompanyPage() {
   const seatsFull = detail.member_count >= org.max_members
 
   // For the shared modals, shape the org like the console list rows expect
-  const orgForModals = { ...org, member_count: detail.member_count, risk_count: detail.risk_count, admins: members.filter(m => ['admin','owner'].includes(m.role)) }
+  const orgForModals = { ...org, member_count: detail.member_count, risk_count: detail.risk_count, admins: members.filter(m => isAdminRole(m.role)) }
 
   const stats = [
     { icon: Users, label: 'Seats', value: `${detail.member_count}/${org.max_members}`, warn: seatsFull },

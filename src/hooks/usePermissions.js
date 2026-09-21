@@ -1,18 +1,19 @@
 import { useAuth } from './useAuth'
+import {
+  roleCan, roleRank, roleLabel, isReadOnlyRole, isKnownRole,
+  isAdminRole, isRiskManagerOrAdmin, isComplianceWriter,
+  ROLE_LABELS,
+} from '@/lib/roles'
 
 /*
- * Single source of truth for what each role can do, mirroring the RLS
- * policies in the database. The UI uses this to hide/disable actions;
- * the database enforces the same rules independently, so a blocked button
- * is never the only thing standing between a user and an action.
- *
- * Roles: viewer < member < risk_manager < admin (+ owner == admin)
+ * What the signed-in user may do, derived from the capability matrix in
+ * lib/roles.js — the one place roles are defined (B10). The UI uses this to
+ * hide and disable actions; the database enforces the same model in RLS, so a
+ * hidden button is never the only thing standing between a user and an action.
  */
 
-const RANK = { viewer: 0, member: 1, risk_manager: 2, admin: 3, owner: 3 }
-
 // Can `me` WORK this risk? — owner, creator, assignee, or collaborator.
-// Grants edit + child-record management.
+// Grants edit + child-record management for the contributor tier.
 function canWorkRisk(risk, userId) {
   if (!risk) return false
   if (risk.owner_id === userId || risk.created_by === userId || risk.assigned_to === userId) return true
@@ -27,42 +28,62 @@ function canSubmitRisk(risk, userId) {
 }
 
 export function buildPermissions(role, userId) {
-  const rank = RANK[role] ?? -1
-  const isManager = rank >= RANK.risk_manager   // risk_manager or admin/owner
-  const isAdmin = rank >= RANK.admin
-  const isMember = rank >= RANK.member
+  const can = (cap) => roleCan(role, cap)
+  // "any risk" beats "own risk"; a contributor falls back to ownership.
+  const onOwn = (cap) => (risk) => can('risk.write.any') || (can(cap) && canWorkRisk(risk, userId))
 
   return {
     role,
-    rank,
+    roleLabel: roleLabel(role),
+    rank: roleRank(role),
+    known: isKnownRole(role),
+    can,                                    // raw capability check: can('compliance.write')
+
+    isReadOnly: isReadOnlyRole(role),
     isViewer: role === 'viewer',
-    isMember,
-    isManager,
-    isAdmin,
+    isAuditor: role === 'auditor',
+    isMember: isKnownRole(role),            // any recognised role is a member of the org
+    isManager: isRiskManagerOrAdmin(role),
+    isComplianceWriter: isComplianceWriter(role),
+    isAdmin: isAdminRole(role),
 
     // ── Risk-level (some need the risk object to check ownership) ──
-    canCreateRisk: isMember,
-    canEditRisk: (risk) => isManager || (role === 'member' && canWorkRisk(risk, userId)),
-    canDeleteRisk: isManager,
-    canSubmitForReview: (risk) => isManager || (role === 'member' && canSubmitRisk(risk, userId)),
-    canApproveReject: isManager,        // approve / reject a submitted risk
-    canCloseReopen: isManager,
+    canCreateRisk: can('risk.create'),
+    canEditRisk: onOwn('risk.write.own'),
+    canDeleteRisk: can('risk.delete'),
+    canSubmitForReview: (risk) =>
+      can('risk.write.any') || (can('risk.write.own') && canSubmitRisk(risk, userId)),
+    canApproveReject: can('risk.approve'),  // approve / reject a submitted risk
+    canCloseReopen: can('risk.approve'),
 
     // ── Child records (controls/evidence/KRIs/loss/treatment) ──
-    // members may manage these only on risks they own
-    canManageRiskChildren: (risk) => isManager || (role === 'member' && canWorkRisk(risk, userId)),
-    canLogControlTest: isManager,       // testing is a 2nd-line act
-    canRequestException: (risk) => isManager || (role === 'member' && canWorkRisk(risk, userId)),
-    canDecideException: isManager,      // accept/reject risk acceptance
-    canAddReview: isManager,
+    // the contributor tier may manage these only on risks they own
+    canManageRiskChildren: onOwn('risk.write.own'),
+    canLogControlTest: can('risk.test'),    // testing is a 2nd-line act
+    canRequestException: onOwn('risk.exception.request'),
+    canDecideException: can('risk.exception.decide'),
+    canAddReview: can('risk.review'),
 
-    // ── Always-available to any member incl. viewer ──
-    canComment: rank >= RANK.viewer,    // everyone signed into the org
+    // ── Controls library & compliance ──
+    canManageControls: can('controls.write'),
+    canEditCompliance: can('compliance.write'),
+    canUploadComplianceEvidence: can('compliance.write'),
 
-    // ── People & org administration ──
-    canManagePeople: isAdmin,
-    canDeleteAccounts: isAdmin,
-    canEditOrgSettings: isAdmin,
+    // ── Findings & connectors ──
+    canTriageFindings: can('findings.triage'),
+    canManageConnectors: can('connectors.manage'),
+    canRunScan: can('connectors.manage'),
+
+    // ── Everyone signed into the org, read-only roles included ──
+    canComment: can('comment'),
+
+    // ── Audit & administration ──
+    canViewAudit: can('audit.view'),
+    canManageAudits: can('audit.manage'),     // engagements, testing, findings, evidence requests
+    canGenerateReports: can('reports.generate'),
+    canManagePeople: can('people.manage'),
+    canDeleteAccounts: can('people.manage'),
+    canEditOrgSettings: can('org.settings'),
   }
 }
 
@@ -71,6 +92,4 @@ export function usePermissions() {
   return buildPermissions(organization?.memberRole, user?.id)
 }
 
-export const ROLE_LABELS = {
-  viewer: 'Viewer', member: 'Member', risk_manager: 'Risk Manager', admin: 'Admin', owner: 'Owner',
-}
+export { ROLE_LABELS }

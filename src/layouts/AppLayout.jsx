@@ -74,7 +74,11 @@ export function AppLayout() {
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
         <AppTopbar onOpenSearch={() => search.setOpen(true)} />
-        <div className="flex-1 overflow-y-auto">
+        {/* Keyed on the workspace id: switching organisations remounts the
+            routed subtree, so no list, filter or form state from the previous
+            workspace survives the switch in memory (B5). RLS would refuse the
+            rows anyway; this stops the stale render. */}
+        <div className="flex-1 overflow-y-auto" key={organization.id}>
           <Outlet />
         </div>
       </main>

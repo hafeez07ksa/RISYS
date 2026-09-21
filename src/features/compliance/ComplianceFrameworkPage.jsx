@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import {
   ArrowLeft, ChevronRight, ChevronDown, ChevronUp,
   Search, Check, X, Plus, Link2, Trash2, SlidersHorizontal,
-  ShieldCheck, AlertTriangle, Minus, Loader2, Zap, Layers, Contrast, FileText,
+  ShieldCheck, AlertTriangle, Minus, Loader2, Zap, Layers, Contrast, FileText, RefreshCw,
 } from 'lucide-react'
 import {
   FRAMEWORKS, STATUS_CONFIG, STATUS_OPTIONS,
@@ -518,7 +518,22 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
   const { requirements, loading: reqLoading } = useFrameworkRequirements(frameworkId)
   const { statuses, loading: statusLoading, setStatus } = useComplianceStatuses(frameworkId)
   const { mappings, controls, loading: mapLoading, linkControl, unlinkControl, mappingsFor, controlsFor } = useFrameworkMappings(frameworkId)
-  const { automation } = useRequirementAutomation(frameworkId)
+  const { automation, refresh: refreshSignals } = useRequirementAutomation(frameworkId)
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshNote, setRefreshNote] = useState('')
+
+  const onRefreshSignals = async () => {
+    setRefreshing(true); setRefreshNote('')
+    try {
+      const r = await refreshSignals()
+      setRefreshNote(`Signals recomputed across ${r?.requirements_covered ?? 0} requirements.`)
+    } catch (e) {
+      setRefreshNote(e.message || 'Could not recompute the signals.')
+    } finally {
+      setRefreshing(false)
+      setTimeout(() => setRefreshNote(''), 6000)
+    }
+  }
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -618,6 +633,14 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
             </h1>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Automated status comes from the connector signals. It refreshes
+                when a scan finishes and nightly; this is for "recompute now". */}
+            {refreshNote && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{refreshNote}</span>}
+            <button onClick={onRefreshSignals} disabled={refreshing} className="btn-secondary"
+              style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <RefreshCw size={12} className={refreshing ? 'animate-spin' : undefined} />
+              {refreshing ? 'Recomputing…' : 'Refresh signals'}
+            </button>
             <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{fw.version}</span>
             <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, fontWeight: 600, color: fw.color, background: fw.bg, border: `1px solid ${fw.color}22` }}>
               {fw.tag}

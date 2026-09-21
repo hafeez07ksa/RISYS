@@ -147,6 +147,8 @@ export const NAV_ITEMS = [
   { id: 'controls',   label: 'Controls',       icon: 'CheckSquare',     section: 'workspace' },
   { id: 'compliance', label: 'Compliance',     icon: 'BookCheck',       section: 'workspace' },
   { id: 'tasks',      label: 'Tasks',          icon: 'CheckSquare2',    section: 'workspace' },
+  { id: 'audits',     label: 'Audits',         icon: 'ClipboardCheck',  section: 'workspace' },
+  { id: 'reports',    label: 'Reports',        icon: 'FileText',        section: 'workspace' },
   { id: 'people',     label: 'People',         icon: 'Users',           section: 'workspace' },
   { id: 'audit',      label: 'Audit Log',      icon: 'ScrollText',      section: 'workspace' },
   { id: 'settings',   label: 'Settings',       icon: 'Settings',        section: 'system'    },
@@ -155,13 +157,9 @@ export const NAV_ITEMS = [
   { id: 'frameworks', label: 'Frameworks',     icon: 'Library',         section: 'library'   },
 ]
 
-export const ROLES = [
-  { value: 'admin',              label: 'Admin',              desc: 'Full access, manage users & settings' },
-  { value: 'compliance_officer', label: 'Compliance Officer', desc: 'Policy & compliance oversight' },
-  { value: 'risk_manager',       label: 'Risk Manager',       desc: 'Risk register & control management' },
-  { value: 'auditor',            label: 'Auditor',            desc: 'Audit trails & evidence collection' },
-  { value: 'viewer',             label: 'Viewer',             desc: 'Read-only access to all modules' },
-]
+// Roles live in lib/roles.js — the single definition shared by the invite
+// dropdowns, the permission matrix and the database CHECK constraint (B10).
+export { ROLES, ALL_ROLES, ROLE_LABELS, roleLabel } from './roles'
 
 export const INDUSTRIES = [
   'Financial Services', 'Healthcare', 'Technology', 'Manufacturing',

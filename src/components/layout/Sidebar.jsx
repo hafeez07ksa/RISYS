@@ -3,11 +3,13 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, ShieldAlert, AlertTriangle, CheckSquare,
   BookCheck, ScrollText, Settings, ChevronDown, LogOut, Users, Users2, CheckSquare2, FileWarning,
-  Library, PanelLeftClose, PanelLeftOpen,
+  Library, PanelLeftClose, PanelLeftOpen, Check, ClipboardCheck, FileText,
 } from 'lucide-react'
 import { RisysLogo } from '@/components/ui/RisysLogo'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { useAuth } from '@/hooks/useAuth'
+import { usePermissions } from '@/hooks/usePermissions'
+import { roleLabel } from '@/lib/roles'
 import { NAV_ITEMS } from '@/lib/constants'
 import clsx from 'clsx'
 
@@ -29,9 +31,18 @@ import clsx from 'clsx'
 const ICONS = {
   LayoutDashboard, ShieldAlert, AlertTriangle, CheckSquare,
   BookCheck, ScrollText, Settings, Users, Users2, CheckSquare2, FileWarning, Library,
+  ClipboardCheck, FileText,
 }
 
-const ADMIN_ONLY_NAV = new Set(['people', 'settings', 'findings'])
+/* Which capability a nav item needs. Anything not listed is open to every
+   role, read-only ones included. Mirrors the route guards in router/routes.jsx
+   and, behind both, the RLS policies. */
+const NAV_GATE = {
+  findings: (p) => p.canTriageFindings || p.isAuditor,
+  people:   (p) => p.canManagePeople,
+  settings: (p) => p.canEditOrgSettings,
+  audit:    (p) => p.canViewAudit,
+}
 const COLLAPSE_KEY = 'risys.sidebar.collapsed'
 
 function NavItem({ to, icon: iconName, label, collapsed }) {
@@ -66,8 +77,91 @@ function Section({ title, items, collapsed }) {
   )
 }
 
+
+/* ── Workspace switcher ───────────────────────────────────────────────────── */
+function WorkspaceSwitcher({ collapsed }) {
+  const { organization, memberships, switchOrganization } = useAuth()
+  const [open, setOpen] = useState(false)
+  const many = (memberships?.length || 0) > 1
+
+  const label = organization?.name || 'My Organization'
+
+  const trigger = (
+    <button
+      onClick={() => many && setOpen(o => !o)}
+      aria-haspopup={many ? 'listbox' : undefined}
+      aria-expanded={many ? open : undefined}
+      className="w-full flex items-center gap-2 rounded-md text-left transition-colors"
+      style={{
+        padding: collapsed ? '6px 0' : '6px 8px',
+        justifyContent: collapsed ? 'center' : undefined,
+        background: 'transparent', border: 'none',
+        cursor: many ? 'pointer' : 'default',
+      }}
+      onMouseEnter={(e) => many && (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+    >
+      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--taupe)' }} />
+      {!collapsed && (
+        <>
+          <span className="flex-1 truncate" style={{ fontSize: 'var(--t-sm)', color: 'var(--blush)' }}>
+            {label}
+          </span>
+          {many && <ChevronDown size={12} style={{ color: 'var(--text-3)', flexShrink: 0, transform: open ? 'rotate(180deg)' : undefined, transition: 'transform var(--dur-2) var(--ease)' }} />}
+        </>
+      )}
+    </button>
+  )
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <Tooltip label={collapsed ? `${label}${many ? ` · ${memberships.length} workspaces` : ''}` : null}>
+        {trigger}
+      </Tooltip>
+
+      {open && many && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setOpen(false)} />
+          <div role="listbox" style={{
+            position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: collapsed ? 'auto' : 0,
+            minWidth: 230, zIndex: 50, background: 'var(--ink-2, #2b1f20)',
+            border: '1px solid rgba(255,255,255,0.10)', borderRadius: 10,
+            boxShadow: '0 10px 30px rgba(0,0,0,0.35)', overflow: 'hidden', padding: 4,
+          }}>
+            <p style={{ fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-3)', padding: '6px 8px 4px' }}>
+              Workspaces
+            </p>
+            {memberships.map(o => {
+              const active = o.id === organization?.id
+              return (
+                <button key={o.id} role="option" aria-selected={active}
+                  onClick={() => { setOpen(false); if (!active) switchOrganization(o.id) }}
+                  className="w-full flex items-center gap-2 rounded-md text-left"
+                  style={{
+                    padding: '7px 8px', border: 'none', cursor: 'pointer',
+                    background: active ? 'rgba(255,255,255,0.08)' : 'transparent',
+                  }}
+                  onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                  onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
+                >
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span className="block truncate" style={{ fontSize: 'var(--t-sm)', color: 'var(--blush)' }}>{o.name}</span>
+                    <span className="block truncate" style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{roleLabel(o.memberRole)}</span>
+                  </span>
+                  {active && <Check size={13} style={{ color: 'var(--taupe)', flexShrink: 0 }} />}
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 export function Sidebar() {
   const { user, organization, signOut } = useAuth()
+  const perms = usePermissions()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem(COLLAPSE_KEY) === '1' } catch { return false }
@@ -86,16 +180,14 @@ export function Sidebar() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  const role = organization?.memberRole || 'viewer'
-  const isAdmin = ['admin', 'owner'].includes(role)
-  const roleLabel = role.replace('_', ' ')
+  const roleLabel = perms.roleLabel
 
   const initials = user?.user_metadata?.full_name
     ? user.user_metadata.full_name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
     : user?.email?.slice(0, 2).toUpperCase() || 'U'
 
   const visible = (section) =>
-    NAV_ITEMS.filter((n) => n.section === section).filter((n) => !ADMIN_ONLY_NAV.has(n.id) || isAdmin)
+    NAV_ITEMS.filter((n) => n.section === section).filter((n) => (NAV_GATE[n.id] ? NAV_GATE[n.id](perms) : true))
 
   const handleSignOut = async () => { await signOut(); navigate('/login') }
 
@@ -116,30 +208,12 @@ export function Sidebar() {
         <RisysLogo size={collapsed ? 'xs' : 'sm'} tone="light" showText={!collapsed} />
       </div>
 
-      {/* Workspace selector (§5) */}
+      {/* Workspace switcher (§5, B5) — a user can belong to several
+          organisations (an advisory firm running its clients, a RISYS staff
+          account). This is how they move between them. With exactly one
+          membership it stays a plain label: no dropdown for a list of one. */}
       <div style={{ padding: collapsed ? '8px 6px' : '8px 10px', borderBottom: line, flexShrink: 0 }}>
-        <Tooltip label={collapsed ? (organization?.name || 'Workspace') : null}>
-          <button
-            className="w-full flex items-center gap-2 rounded-md text-left transition-colors"
-            style={{
-              padding: collapsed ? '6px 0' : '6px 8px',
-              justifyContent: collapsed ? 'center' : undefined,
-              background: 'transparent', border: 'none', cursor: 'pointer',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-          >
-            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--taupe)' }} />
-            {!collapsed && (
-              <>
-                <span className="flex-1 truncate" style={{ fontSize: 'var(--t-sm)', color: 'var(--blush)' }}>
-                  {organization?.name || 'My Organization'}
-                </span>
-                <ChevronDown size={12} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
-              </>
-            )}
-          </button>
-        </Tooltip>
+        <WorkspaceSwitcher collapsed={collapsed} />
       </div>
 
       {/* Primary nav */}

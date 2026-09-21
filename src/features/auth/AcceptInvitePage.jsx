@@ -24,7 +24,7 @@ function Shell({ children }) {
 export function AcceptInvitePage() {
   const { token } = useParams()
   const navigate = useNavigate()
-  const { user, signIn, signUp, signOut, fetchOrganization } = useAuthStore()
+  const { user, signIn, signUp, signOut, fetchOrganization, switchOrganization } = useAuthStore()
 
   const [invite, setInvite] = useState(null)      // result of get_invitation_by_token
   const [checking, setChecking] = useState(true)
@@ -63,6 +63,9 @@ export function AcceptInvitePage() {
       const { data, error } = await supabase.rpc('accept_invitation', { p_token: token })
       if (error) throw error
       await fetchOrganization(useAuthStore.getState().user.id)
+      // A user may already belong to another workspace (B5) — land them in the
+      // one they just accepted, not in whichever one sorted first.
+      if (data?.org_id) await switchOrganization(data.org_id)
       setJoined(data)
       setTimeout(() => navigate('/app/dashboard'), 1200)
     } catch (err) {

@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/layouts/AppLayout'
 import { RequireRole } from '@/layouts/RequireRole'
+import { ROLE_SETS } from '@/lib/roles'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { OAuthCallbackPage } from '@/features/auth/OAuthCallbackPage'
 import { AcceptInvitePage } from '@/features/auth/AcceptInvitePage'
@@ -34,6 +35,9 @@ import { ControlDetailPage } from '@/features/controls/ControlDetailPage'
 import { CompliancePage } from '@/features/compliance/CompliancePage'
 import { ComplianceFrameworkRoute, ComplianceControlRoute } from '@/features/compliance/ComplianceRoutes'
 import { FrameworksPage } from '@/features/frameworks/FrameworksPage'
+import { AuditsPage } from '@/features/audits/AuditsPage'
+import { AuditDetailPage } from '@/features/audits/AuditDetailPage'
+import { ReportsPage } from '@/features/reports/ReportsPage'
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/app/dashboard" replace /> },
@@ -58,12 +62,12 @@ export const router = createBrowserRouter([
       { path: 'risks',        element: <RiskRegisterPage /> },
       // Declared before ':id' so the literal segment is not swallowed by the param.
       { path: 'risks/tolerances', element: (
-        <RequireRole roles={['admin', 'owner', 'risk_manager']}>
+        <RequireRole roles={ROLE_SETS.riskManager}>
           <TolerancePage />
         </RequireRole>
       ) },
       // Literal segments come before ':id' so they are not swallowed by the param.
-      { path: 'risks/triage',     element: <TriagePage /> },
+      { path: 'risks/triage',     element: <RequireRole roles={ROLE_SETS.findingsReader}><TriagePage /></RequireRole> },
       { path: 'risks/new',        element: <RiskFormPage /> },
       { path: 'risks/:id',        element: <RiskDetailPage /> },
       { path: 'risks/:id/edit',   element: <RiskFormPage /> },
@@ -77,7 +81,13 @@ export const router = createBrowserRouter([
       { path: 'frameworks',   element: <FrameworksPage /> },
       { path: 'tasks',        element: <TasksPage /> },
       { path: 'tasks/:id',   element: <TaskDetailPage /> },
-      { path: 'audit',        element: <AuditLogPage /> },
+      { path: 'audit',        element: <RequireRole roles={ROLE_SETS.auditReader}><AuditLogPage /></RequireRole> },
+      // Audit engagements are visible to every member: the people audited are
+      // the ones who answer evidence requests and respond to findings. Who may
+      // change what is enforced per action (and in RLS), not by the route.
+      { path: 'audits',       element: <AuditsPage /> },
+      { path: 'audits/:id',   element: <AuditDetailPage /> },
+      { path: 'reports',      element: <ReportsPage /> },
 
       // ── Admin only ──────────────────────────────────────────────
 
@@ -87,47 +97,47 @@ export const router = createBrowserRouter([
       //   /app/findings/:connectorId/users/:id     → user profile (full page)
       {
         path: 'findings',
-        element: <RequireRole roles={['admin', 'owner']}><FindingsPage /></RequireRole>,
+        element: <RequireRole roles={ROLE_SETS.findingsReader}><FindingsPage /></RequireRole>,
       },
       {
         path: 'findings/:connectorId',
-        element: <RequireRole roles={['admin', 'owner']}><FindingsPlatformPage /></RequireRole>,
+        element: <RequireRole roles={ROLE_SETS.findingsReader}><FindingsPlatformPage /></RequireRole>,
       },
       {
         path: 'findings/entra/users/:entraId',
-        element: <RequireRole roles={['admin', 'owner']}><EntraUserPage /></RequireRole>,
+        element: <RequireRole roles={ROLE_SETS.findingsReader}><EntraUserPage /></RequireRole>,
       },
 
       // People
       {
         path: 'people',
-        element: <RequireRole roles={['admin', 'owner']}><PeoplePage /></RequireRole>,
+        element: <RequireRole roles={ROLE_SETS.admin}><PeoplePage /></RequireRole>,
       },
 
       // Settings = connection management only, no findings
       {
         path: 'settings',
-        element: <RequireRole roles={['admin', 'owner']}><SettingsPage /></RequireRole>,
+        element: <RequireRole roles={ROLE_SETS.admin}><SettingsPage /></RequireRole>,
       },
       {
         path: 'settings/jira',
-        element: <RequireRole roles={['admin', 'owner']}><JiraManagePage /></RequireRole>,
+        element: <RequireRole roles={ROLE_SETS.admin}><JiraManagePage /></RequireRole>,
       },
       {
         path: 'settings/m365',
-        element: <RequireRole roles={['admin', 'owner']}><M365ManagePage /></RequireRole>,
+        element: <RequireRole roles={ROLE_SETS.admin}><M365ManagePage /></RequireRole>,
       },
       {
         path: 'settings/defender',
-        element: <RequireRole roles={['admin', 'owner']}><DefenderManagePage /></RequireRole>,
+        element: <RequireRole roles={ROLE_SETS.admin}><DefenderManagePage /></RequireRole>,
       },
       {
         path: 'settings/sharepoint',
-        element: <RequireRole roles={['admin', 'owner']}><SharePointManagePage /></RequireRole>,
+        element: <RequireRole roles={ROLE_SETS.admin}><SharePointManagePage /></RequireRole>,
       },
       {
         path: 'settings/entra',
-        element: <RequireRole roles={['admin', 'owner']}><EntraManagePage /></RequireRole>,
+        element: <RequireRole roles={ROLE_SETS.admin}><EntraManagePage /></RequireRole>,
       },
 
       // Old direct link to user profile via settings → redirect to findings hierarchy

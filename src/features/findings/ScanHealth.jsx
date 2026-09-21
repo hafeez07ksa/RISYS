@@ -14,6 +14,12 @@ export const SOURCE_LABELS = {
     roles:     { name: 'Directory roles',  what: 'privileged accounts' },
     signins:   { name: 'Sign-in logs',     what: 'last 7 days of sign-ins' },
   },
+  m365: {
+    forwarding: { name: 'Mail forwarding',  what: 'mailbox forwarding and inbox rules' },
+    guests:     { name: 'Guest accounts',   what: 'guests nobody has reviewed' },
+    consent:    { name: 'App consent',      what: 'third-party apps holding tenant permissions' },
+    dns:        { name: 'Mail domain DNS',  what: 'SPF, DKIM and DMARC on your mail domains' },
+  },
   sharepoint: {
     tenant:  { name: 'Tenant sharing policy', what: 'SharePoint and OneDrive sharing settings' },
     groups:  { name: 'Microsoft 365 groups',  what: 'guests and public groups' },
@@ -65,8 +71,10 @@ export function ScanHealthBanner({ connectorId, latestRun, lastCompletedRun, sch
   const problems = Object.entries(run?.sources || {})
     .filter(([, s]) => s.state !== 'ok')
     .map(([key, s]) => ({ key, ...s, label: labels[key]?.name || key, what: labels[key]?.what }))
-  // 'partial' means a large tenant is still being worked through; it isn't a failure.
-  const blocking = problems.filter(p => p.state !== 'not_licensed' && p.state !== 'partial')
+  // 'partial' means a large tenant is still being worked through, and 'skipped'
+  // means there was nothing there to look at or the admin turned the source off.
+  // Neither is a failure, and neither should make an accurate list look doubtful.
+  const blocking = problems.filter(p => !['not_licensed', 'partial', 'skipped'].includes(p.state))
   const inProgress = problems.filter(p => p.state === 'partial')
 
   const schedText = schedule?.enabled
@@ -102,6 +110,9 @@ export function ScanHealthBanner({ connectorId, latestRun, lastCompletedRun, sch
           <span>Last scanned {formatRelative(run.finished_at || run.started_at)} ({run.trigger}). {schedText}</span>
           {problems.filter(p => p.state === 'not_licensed').map(p => (
             <span key={p.key} title={p.detail}>· {p.label} not available in this tenant</span>
+          ))}
+          {problems.filter(p => p.state === 'skipped').map(p => (
+            <span key={p.key} title={p.detail}>· {p.label} not checked</span>
           ))}
           {inProgress.map(p => (
             <span key={p.key} style={{ color: '#92400e' }}>· {p.label}: {p.detail}</span>

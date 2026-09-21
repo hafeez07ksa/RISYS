@@ -15,6 +15,7 @@ const SCHEDULABLE: Record<string, string> = {
   defender: 'defender-security',
   entra: 'entra-directory',
   sharepoint: 'sharepoint-security',
+  m365: 'm365-security',
 }
 
 const BATCH = 10        // schedules claimed per dispatcher run

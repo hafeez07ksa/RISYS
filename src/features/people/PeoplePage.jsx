@@ -10,6 +10,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { usePeople, ROLES, roleLabel, invitationState, inviteLink } from '@/hooks/usePeople'
+import { isAdminRole } from '@/lib/roles'
 import { logAudit, AUDIT } from '@/lib/audit'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -18,7 +19,9 @@ const ROLE_PILL = {
   admin:        { bg: '#F6EBE8', color: '#5D0F0F', border: '#E6CFC9' },
   owner:        { bg: '#F6EBE8', color: '#5D0F0F', border: '#E6CFC9' },
   risk_manager: { bg: '#FAF3E2', color: '#9C6F0F', border: '#EBDCB6' },
+  compliance_officer: { bg: '#EFF1FA', color: '#3B4A8C', border: '#CFD5EB' },
   member:       { bg: '#ECF4EE', color: '#2F6B3C', border: '#C8DECD' },
+  auditor:      { bg: '#F2F0F6', color: '#5B4B79', border: '#DCD5E6' },
   viewer:       { bg: '#f8f7f7', color: '#8a7070', border: '#e5e0e0' },
 }
 const INV_PILL = {
@@ -67,7 +70,9 @@ function CopyButton({ text, label = 'Copy link' }) {
 function RoleDropdown({ value, onChange, disabled }) {
   const [open, setOpen] = useState(false)
   const pill = ROLE_PILL[value] || ROLE_PILL.viewer
-  const current = ROLES.find(r => r.value === value)
+  // roleLabel, not a lookup in the assignable list: `owner` is a real role
+  // that is never offered in the dropdown, and it still has to render.
+  const currentLabel = roleLabel(value)
 
   return (
     <div style={{ position: 'relative' }}>
@@ -82,7 +87,7 @@ function RoleDropdown({ value, onChange, disabled }) {
           border: `1px solid ${pill.border}`, outline: 'none',
           whiteSpace: 'nowrap',
         }}>
-        {current?.label}
+        {currentLabel}
         {!disabled && <ChevronDown size={10} style={{ opacity: 0.6 }} />}
       </button>
 
@@ -269,10 +274,10 @@ export function PeoplePage() {
   // ── Role change handler ────────────────────────────────────────────────────
   const handleRole = async (m, role) => {
     // Guard: cannot demote the last admin/owner
-    const wasAdmin = ['admin', 'owner'].includes(m.role)
-    const becomingNonAdmin = !['admin', 'owner'].includes(role)
+    const wasAdmin = isAdminRole(m.role)
+    const becomingNonAdmin = !isAdminRole(role)
     if (wasAdmin && becomingNonAdmin) {
-      const adminCount = members.filter(x => ['admin', 'owner'].includes(x.role)).length
+      const adminCount = members.filter(x => isAdminRole(x.role)).length
       if (adminCount <= 1) {
         setError('Cannot demote the last admin. Promote another member to admin first.')
         return
@@ -289,9 +294,9 @@ export function PeoplePage() {
 
   const handleRemove = async (m) => {
     // Guard: cannot remove the last admin/owner
-    const isAdminOrOwner = ['admin', 'owner'].includes(m.role)
+    const isAdminOrOwner = isAdminRole(m.role)
     if (isAdminOrOwner) {
-      const adminCount = members.filter(x => ['admin', 'owner'].includes(x.role)).length
+      const adminCount = members.filter(x => isAdminRole(x.role)).length
       if (adminCount <= 1) {
         setError('Cannot remove the last admin. Promote another member to admin first.')
         setConfirmRemove(null)
@@ -372,7 +377,7 @@ export function PeoplePage() {
           {[
             { icon: Users,       label: 'Workspace Members',   value: members.length },
             { icon: Clock,       label: 'Pending Invitations', value: pendingCount },
-            { icon: ShieldCheck, label: 'Admins',              value: members.filter(m => ['admin','owner'].includes(m.role)).length },
+            { icon: ShieldCheck, label: 'Admins',              value: members.filter(m => isAdminRole(m.role)).length },
             { icon: Building2,   label: 'Directory Users',     value: entraUsers.length || '—' },
           ].map((s, i) => (
             <div key={s.label} style={{
@@ -467,7 +472,7 @@ export function PeoplePage() {
                         </div>
 
                         {/* Role — custom dropdown for admin, pill for self */}
-                        {isAdmin && !isSelf ? (
+                        {isAdmin && !isSelf && m.role !== 'owner' ? (
                           <RoleDropdown
                             value={m.role}
                             onChange={role => handleRole(m, role)}

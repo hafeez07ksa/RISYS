@@ -200,6 +200,36 @@ export const SHAREPOINT_LIST_COLUMNS =
   'subject_id, subject_name, subject_email, subject_url, source_url, status, first_seen_at, last_seen_at, ' +
   'resolved_at, incident_id, updated_at'
 
+// ── Microsoft 365 category → icon / label ─────────────────────────────────────
+const M365_ICON_MAP = {
+  external_forwarding: Mail,
+  guest_access:        Users,
+  app_consent:         ShieldAlert,
+  app_privilege:       ShieldAlert,
+  mail_dns:            Mail,
+  // pre-2026-09 categories (resolved rows only)
+  exchange:            Mail,
+  sharepoint:          Globe,
+  guests:              Users,
+}
+
+export const M365_CATEGORY_LABELS = {
+  external_forwarding: 'External Forwarding',
+  guest_access:        'Guest Access',
+  app_consent:         'App Consent',
+  app_privilege:       'App Privilege',
+  mail_dns:            'Mail Domain DNS',
+  exchange:            'Exchange',
+  sharepoint:          'SharePoint',
+  guests:              'Guests',
+}
+
+// raw_data is left out of list queries (it can be large).
+export const M365_LIST_COLUMNS =
+  'finding_id, source, category, severity, title, description, control, recommendation, ' +
+  'subject_id, subject_name, subject_email, subject_url, source_url, status, first_seen_at, last_seen_at, ' +
+  'resolved_at, incident_id, updated_at'
+
 // ── Provider registry ─────────────────────────────────────────────────────────
 export const FINDING_PROVIDERS = [
   // ── Microsoft Entra ID ────────────────────────────────────────────────────
@@ -246,24 +276,29 @@ export const FINDING_PROVIDERS = [
     connectorName: 'Microsoft 365 Security',
     accent: '#0078D4',
     piggybakcsOn: 'entra',
-    async fetch(orgId) {
-      const { data } = await supabase
+    // Open findings by default; { status: 'resolved' } for history. M365
+    // findings are resolved, never deleted, like the other connectors (B11).
+    async fetch(orgId, { status = 'open' } = {}) {
+      const { data, error } = await supabase
         .from('m365_findings')
-        .select('*')
+        .select(M365_LIST_COLUMNS)
         .eq('org_id', orgId)
-        .order('severity')
+        .eq('status', status)
+        .order('last_seen_at', { ascending: false })
+        .limit(5000)
+      if (error) throw new Error(error.message)
       return data || []
     },
+    supportsStatus: true,
     derive(finding) {
-      const ICON_MAP = { exchange: Mail, sharepoint: Globe, teams: Users }
-      const icon = ICON_MAP[finding.category] || ShieldAlert
+      const icon = M365_ICON_MAP[finding.category] || ShieldAlert
       return [{
         key: `m365:${finding.finding_id}`,
         connectorId: 'm365',
         connectorName: 'Microsoft 365 Security',
         accent: '#0078D4',
         severity: finding.severity,
-        label: finding.category === 'exchange' ? 'Exchange' : finding.category === 'sharepoint' ? 'SharePoint' : 'M365',
+        label: M365_CATEGORY_LABELS[finding.category] || 'M365',
         title: finding.title,
         description: finding.description,
         control: finding.control,
@@ -274,8 +309,14 @@ export const FINDING_PROVIDERS = [
           name:  finding.subject_name,
           email: finding.subject_email,
           route: '/app/findings/m365',
-          meta:  finding.category,
+          meta:  M365_CATEGORY_LABELS[finding.category] || finding.category,
         },
+        status: finding.status || 'open',
+        sourceUrl: finding.source_url || finding.subject_url || null,
+        incidentId: finding.incident_id || null,
+        source: finding.source,
+        firstSeenAt: finding.first_seen_at || null,
+        resolvedAt: finding.resolved_at || null,
         raw: finding,
       }]
     },

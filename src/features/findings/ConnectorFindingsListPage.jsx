@@ -26,14 +26,24 @@ import { ControlReferences } from '@/components/ui/ControlReferences'
 const CONNECTOR_VIEWS = {
   m365: {
     title:        'Microsoft 365 Security',
-    subtitle:     'Security Findings · Data Exposure',
+    subtitle:     'Security Findings · Mail, Guests, App Consent & DNS',
     settingsPath: '/app/settings/m365',
     settingsName: 'M365 Security',
-    canRaiseIncident: f => f.subject.meta === 'exchange',
+    portalName:   'Microsoft 365',
+    scans:        true,
+    // Mail leaving the organisation and an app that can rewrite the directory
+    // are happening now; guest review and ordinary consent go to triage.
+    canRaiseIncident: f => f.source === 'forwarding' || f.raw?.category === 'app_privilege',
     categories: {
-      exchange:   { label: 'Exchange Online', Icon: Mail,  color: '#0078D4' },
-      sharepoint: { label: 'SharePoint',      Icon: Globe, color: '#038387' },
-      guests:     { label: 'Guest Access',    Icon: Users, color: '#6264A7' },
+      external_forwarding: { label: 'External Forwarding', Icon: Mail,        color: '#b91c1c' },
+      guest_access:        { label: 'Guest Access',        Icon: Users,       color: '#6264A7' },
+      app_privilege:       { label: 'App Privilege',       Icon: ShieldAlert, color: '#5D0F0F' },
+      app_consent:         { label: 'App Consent',         Icon: ShieldAlert, color: '#b45309' },
+      mail_dns:            { label: 'Mail Domain DNS',     Icon: Globe,       color: '#0F5A8A' },
+      // pre-2026-09 categories, on resolved rows only
+      exchange:            { label: 'Exchange Online',     Icon: Mail,        color: '#0078D4' },
+      sharepoint:          { label: 'SharePoint',          Icon: Globe,       color: '#038387' },
+      guests:              { label: 'Guest Access',        Icon: Users,       color: '#6264A7' },
     },
   },
   defender: {
