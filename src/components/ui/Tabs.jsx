@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { tx } from '@/lib/i18n'
 
 /* Tabs (§15, §16). Underline rather than filled pills: a filled tab competes
  * with the primary action button for the eye, and on a detail page the primary
@@ -32,7 +33,7 @@ export function Tabs({ tabs, value, onChange, className }) {
               transition: 'color var(--dur-2) var(--ease)',
             }}
           >
-            {t.label}
+            {tx(t.label)}
             {t.count != null && (
               <span className="tnum" style={{
                 fontSize: 'var(--t-micro)', padding: '1px 5px', borderRadius: 'var(--r-full)',

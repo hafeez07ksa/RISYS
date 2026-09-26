@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { tx } from '@/lib/i18n'
 
 export const RISK_EVIDENCE_BUCKET = 'risk-evidence'
 const SIGNED_URL_TTL_SECONDS = 60
@@ -14,7 +15,7 @@ export async function getEvidenceSignedUrl(path) {
 }
 
 export async function openEvidenceFile(evidence) {
-  if (!evidence?.file_path) throw new Error('This evidence has no file attached.')
+  if (!evidence?.file_path) throw new Error(tx('This evidence has no file attached.'))
   // Open the tab synchronously (inside the click) so popup blockers allow it,
   // then point it at the signed URL once we have one.
   const win = window.open('', '_blank')

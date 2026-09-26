@@ -9,6 +9,7 @@
  * risk that is "High" in the app is "High" in the board pack.
  * -------------------------------------------------------------------------- */
 import { bandFor, bandForScore, DEFAULT_MATRIX } from '../matrix'
+import { tx, isRtl } from '@/lib/i18n'
 
 const ORDER = { critical: 4, high: 3, medium: 2, low: 1 }
 const ACTIVE_FINDING = ['open', 'in_remediation', 'ready_for_validation']
@@ -21,18 +22,21 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 /* Formatted by hand: toLocaleDateString differs between browsers and Node
  * ("Sep" vs "Sept"), and a report must read the same wherever it is built. */
 const asDate = (d) => (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(`${d}T00:00:00`) : new Date(d))
+const MONTHS_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
 export function fmtDate(d) {
   if (!d) return '—'
   const x = asDate(d)
   if (Number.isNaN(x.getTime())) return '—'
-  return `${x.getDate()} ${MONTHS[x.getMonth()]} ${x.getFullYear()}`
+  return `${x.getDate()} ${(isRtl() ? MONTHS_AR : MONTHS)[x.getMonth()]} ${x.getFullYear()}`
 }
+const QUARTERS_AR = ['الربع الأول', 'الربع الثاني', 'الربع الثالث', 'الربع الرابع']
+export const quarterLabel = (q, y) => (isRtl() ? `${QUARTERS_AR[q]} ${y}` : `Q${q + 1} ${y}`)
 export function fmtDateTime(d) {
   if (!d) return '—'
   const x = new Date(d)
   if (Number.isNaN(x.getTime())) return '—'
   const hh = String(x.getHours()).padStart(2, '0'), mm = String(x.getMinutes()).padStart(2, '0')
-  return `${fmtDate(x)}, ${hh}:${mm}`
+  return `${fmtDate(x)}${isRtl() ? '،' : ','} ${hh}:${mm}`
 }
 const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0)
 const plural = (k, one, many = `${one}s`) => `${k} ${k === 1 ? one : many}`
@@ -152,18 +156,18 @@ export function buildBoardPackModel(raw) {
   // ── What the board should look at ──
   const attention = []
   const breached = risks.filter((r) => r.tolerance_status === 'breached')
-  if (breached.length) attention.push(`${plural(breached.length, 'risk')} outside the organisation's risk tolerance: ${breached.slice(0, 3).map((r) => r.ref).join(', ')}${breached.length > 3 ? ' and others' : ''}.`)
+  if (breached.length) attention.push(tx('{{n}} risk(s) outside the organisation\'s risk tolerance: {{refs}}.', { n: breached.length, refs: breached.slice(0, 3).map((r) => r.ref).join(', ') + (breached.length > 3 ? tx(' and others') : '') }))
   if (byResidual.critical) {
     const unassessed = risks.filter((r) => r.residualBand === 'critical' && !r.hasResidualAxes).length
-    attention.push(`${plural(byResidual.critical, 'risk')} rated Critical on current score${unassessed ? ` — ${unassessed} of them not yet assessed after controls, so shown at their inherent rating` : ' after controls'}.`)
+    attention.push(unassessed ? tx('{{n}} risk(s) rated Critical on current score — {{u}} of them not yet assessed after controls, so shown at their inherent rating.', { n: byResidual.critical, u: unassessed }) : tx('{{n}} risk(s) rated Critical on current score after controls.', { n: byResidual.critical }))
   }
-  if (tolerance.not_evaluated) attention.push(`${tolerance.not_evaluated} of ${risks.length} registered risks have not yet been evaluated against tolerance, so the register cannot yet show which of them need treatment.`)
-  if (expiringSoon.length) attention.push(`${plural(expiringSoon.length, 'risk acceptance')} expire within 60 days and will need re-approval or treatment.`)
-  if (n(raw.treatment_plans?.overdue)) attention.push(`${plural(n(raw.treatment_plans.overdue), 'treatment plan')} past their due date.`)
-  if (audit.high) attention.push(`${plural(audit.high, 'high-rated audit finding')} open${audit.overdue ? `; ${audit.overdue} past remediation date` : ''}.`)
-  if (connectorCritical) attention.push(`${connectorCritical} critical findings from connected systems are open and untriaged or unresolved.`)
-  if (mainTotal && pct(assessed, mainTotal) < 50) attention.push(`Only ${assessed} of ${mainTotal} NCA ECC main controls (${pct(assessed, mainTotal)}%) have a recorded assessment.`)
-  if (incidents.slaBreached) attention.push(`${plural(incidents.slaBreached, 'incident')} resolved in the period missed their SLA.`)
+  if (tolerance.not_evaluated) attention.push(tx('{{n}} of {{total}} registered risks have not yet been evaluated against tolerance, so the register cannot yet show which of them need treatment.', { n: tolerance.not_evaluated, total: risks.length }))
+  if (expiringSoon.length) attention.push(tx('{{n}} risk acceptance(s) expire within 60 days and will need re-approval or treatment.', { n: expiringSoon.length }))
+  if (n(raw.treatment_plans?.overdue)) attention.push(tx('{{n}} treatment plan(s) past their due date.', { n: n(raw.treatment_plans.overdue) }))
+  if (audit.high) attention.push(audit.overdue ? tx('{{n}} high-rated audit finding(s) open; {{o}} past remediation date.', { n: audit.high, o: audit.overdue }) : tx('{{n}} high-rated audit finding(s) open.', { n: audit.high }))
+  if (connectorCritical) attention.push(tx('{{n}} critical findings from connected systems are open and untriaged or unresolved.', { n: connectorCritical }))
+  if (mainTotal && pct(assessed, mainTotal) < 50) attention.push(tx('Only {{n}} of {{total}} NCA ECC main controls ({{pct}}%) have a recorded assessment.', { n: assessed, total: mainTotal, pct: pct(assessed, mainTotal) }))
+  if (incidents.slaBreached) attention.push(tx('{{n}} incident(s) resolved in the period missed their SLA.', { n: incidents.slaBreached }))
 
   return {
     orgName: raw.org?.name ?? 'Organisation',

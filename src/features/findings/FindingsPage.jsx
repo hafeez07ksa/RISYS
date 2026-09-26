@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useConnectors } from '@/hooks/useConnectors'
 import { Spinner } from '@/components/ui/Spinner'
 import { aggregateFindings } from '@/lib/findings'
+import { tx } from '@/lib/i18n'
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon: Icon, tone }) {
@@ -58,31 +59,27 @@ function PlatformCard({ provider, counts, onClick }) {
           </div>
           <div>
             <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1314' }}>{provider.name}</p>
-            <p style={{ fontSize: 11, color: '#8a7070' }}>Connected</p>
+            <p style={{ fontSize: 11, color: '#8a7070' }}>{tx('Connected')}</p>
           </div>
         </div>
-        <ChevronRight size={16} style={{ color: '#b6acac' }} />
+        <ChevronRight size={16} style={{ color: '#b6acac' }} className='rtl-flip' />
       </div>
 
       {/* Finding counts */}
       <div className="flex gap-2 flex-wrap">
         {critCount > 0 && (
           <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}>
-            {critCount} critical
-          </span>
+            {critCount} {tx('critical')}</span>
         )}
         {warnCount > 0 && (
           <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a' }}>
-            {warnCount} warning
-          </span>
+            {warnCount} {tx('warning')}</span>
         )}
         {total === 0 && (
-          <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
-            No findings
-          </span>
+          <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>{tx('No findings')}</span>
         )}
-        <span style={{ fontSize: 11, color: '#8a7070', marginLeft: 'auto', alignSelf: 'center' }}>
-          {total} total → {provider.id === 'entra' ? 'view users' : 'view findings'}
+        <span style={{ fontSize: 11, color: '#8a7070', marginInlineStart: 'auto', alignSelf: 'center' }}>
+          {total} {tx('total →')} {provider.id === 'entra' ? tx('view users') : tx('view findings')}
         </span>
       </div>
     </div>
@@ -136,7 +133,7 @@ export function FindingsPage() {
   return (
     <div className="h-full flex flex-col">
       <Topbar
-        title="Security Findings"
+        title={tx('Security Findings')}
         subtitle={organization?.name}
         actions={
           <button onClick={load}
@@ -151,17 +148,15 @@ export function FindingsPage() {
 
         {/* Stat cards */}
         <div className="grid grid-cols-4 gap-3 mb-6">
-          <StatCard label="Total Findings" value={counts.total}    icon={FileWarning}   tone="total" />
-          <StatCard label="Critical"       value={counts.critical} icon={AlertTriangle} tone="critical" />
-          <StatCard label="Warning"        value={counts.warning}  icon={ShieldAlert}   tone="warning" />
-          <StatCard label="Informational"  value={counts.info}     icon={AlertCircle}   tone="info" />
+          <StatCard label={tx('Total Findings')} value={counts.total}    icon={FileWarning}   tone="total" />
+          <StatCard label={tx('Critical')}       value={counts.critical} icon={AlertTriangle} tone="critical" />
+          <StatCard label={tx('Warning')}        value={counts.warning}  icon={ShieldAlert}   tone="warning" />
+          <StatCard label={tx('Informational')}  value={counts.info}     icon={AlertCircle}   tone="info" />
         </div>
 
         {/* Section header */}
         <div className="mb-3">
-          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>
-            Connected Platforms
-          </p>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>{tx('Connected Platforms')}</p>
         </div>
 
         {loading ? (
@@ -171,15 +166,13 @@ export function FindingsPage() {
             <div style={{ width: 46, height: 46, borderRadius: 12, background: '#f8f7f7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
               <Plug size={22} strokeWidth={1.5} style={{ color: '#b6acac' }} />
             </div>
-            <p className="text-sm font-medium mb-1" style={{ color: '#4a3a3a' }}>No connected platforms yet</p>
-            <p className="text-xs mb-5" style={{ color: '#8a7070', maxWidth: 360, margin: '0 auto 20px', lineHeight: 1.6 }}>
-              Connect a platform like Microsoft Entra ID to start surfacing security findings here.
-            </p>
+            <p className="text-sm font-medium mb-1" style={{ color: '#4a3a3a' }}>{tx('No connected platforms yet')}</p>
+            <p className="text-xs mb-5" style={{ color: '#8a7070', maxWidth: 360, margin: '0 auto 20px', lineHeight: 1.6 }}>{tx(
+              'Connect a platform like Microsoft Entra ID to start surfacing security findings here.'
+            )}</p>
             <button onClick={() => navigate('/app/settings')}
               className="text-xs px-4 py-2 rounded-lg"
-              style={{ background: '#5D0F0F', color: '#fff', border: 'none' }}>
-              Go to Integrations
-            </button>
+              style={{ background: '#5D0F0F', color: '#fff', border: 'none' }}>{tx('Go to Integrations')}</button>
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-4">

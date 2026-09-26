@@ -4,16 +4,18 @@
  * report and an audit report share one visual language: the ink cover with the
  * cream mark, DM Serif section titles in wine, crimson rules, blush table heads.
  * -------------------------------------------------------------------------- */
-import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
+import { Document, Page, Image, StyleSheet } from '@react-pdf/renderer'
+import { View, Text } from './rtl'
 import { C, BAND } from './theme'
-import { FONT_SANS, FONT_DISPLAY, reportAssets } from './assets'
+import { FONT_SANS, FONT_DISPLAY, reportAssets, FONT_ARABIC } from './assets'
+import { tx } from '@/lib/i18n'
 
 const PAD_X = 42
 const PAD_TOP = 64
 const PAD_BOTTOM = 56
 
 export const s = StyleSheet.create({
-  page:      { fontFamily: FONT_SANS, fontSize: 8.6, color: C.text, lineHeight: 1.45,
+  page:      { fontFamily: [FONT_SANS, FONT_ARABIC], fontSize: 8.6, color: C.text, lineHeight: 1.45,
                paddingTop: PAD_TOP, paddingBottom: PAD_BOTTOM, paddingHorizontal: PAD_X, backgroundColor: C.white },
   p:         { marginBottom: 6 },
   muted:     { color: C.text3 },
@@ -53,8 +55,8 @@ export function CoverPage({ meta }) {
       <View style={{ backgroundColor: C.ink, height: '58%', paddingHorizontal: 48, paddingTop: 54, paddingBottom: 40,
                      justifyContent: 'space-between' }}>
         <View style={[s.row, { alignItems: 'center' }]}>
-          {markLight ? <Image src={markLight} style={{ width: 30, height: 31, marginRight: 10 }} /> : null}
-          <Text style={{ fontSize: 9, fontWeight: 600, color: C.taupe, letterSpacing: 3 }}>RISYS</Text>
+          {markLight ? <Image src={markLight} style={{ width: 30, height: 31, marginHorizontal: 5 }} /> : null}
+          <Text style={{ fontSize: 9, fontWeight: 600, color: C.taupe, letterSpacing: 3 }}>{tx('RISYS')}</Text>
         </View>
         <View>
           <Text style={{ fontSize: 8, fontWeight: 600, color: C.taupe, letterSpacing: 1.6, textTransform: 'uppercase', marginBottom: 10 }}>
@@ -77,7 +79,9 @@ export function CoverPage({ meta }) {
         ))}
         <Text style={{ fontSize: 7.2, color: C.text3, marginTop: 18, lineHeight: 1.5 }}>
           {meta.coverNote ??
-            'Generated from the organisation’s records in RISYS at the time shown. A copy of this file and the data it was built from are archived in RISYS under the Report ID above, with a SHA-256 fingerprint of the file.'}
+            tx(
+              'Generated from the organisation’s records in RISYS at the time shown. A copy of this file and the data it was built from are archived in RISYS under the Report ID above, with a SHA-256 fingerprint of the file.'
+            )}
         </Text>
       </View>
     </Page>
@@ -86,23 +90,35 @@ export function CoverPage({ meta }) {
 
 export function ContentPage({ meta, children }) {
   const { markDark } = reportAssets()
+  // Header and footer are drawn by render functions so react-pdf builds them
+  // afresh on every page. As plain `fixed` children they were re-laid-out from
+  // the previous page, and the inherited line height compounded page by page
+  // (1.45 × font size, then × font size again …) until, around page 15, the
+  // numbers overflowed and generation failed with "unsupported number".
+  const header = () => (
+    <>
+      {markDark ? <Image src={markDark} style={{ width: 11, height: 11, marginHorizontal: 3 }} /> : null}
+      <Text style={{ fontSize: 7, lineHeight: 1.3, fontWeight: 600, color: C.crimson, letterSpacing: 1.2 }}>RISYS</Text>
+      <Text style={{ fontSize: 7, lineHeight: 1.3, color: C.text3, marginLeft: 8, flex: 1 }}>{meta.orgName} · {meta.shortTitle ?? meta.title}</Text>
+      {meta.periodLabel ? <Text style={{ fontSize: 7, lineHeight: 1.3, color: C.text3 }}>{meta.periodLabel}</Text> : null}
+    </>
+  )
+  const footer = ({ pageNumber, totalPages }) => (
+    <>
+      <Text style={{ fontSize: 6.8, lineHeight: 1.3, color: C.text3, flex: 1 }}>{meta.classification}</Text>
+      {meta.reportId ? <Text style={{ fontSize: 6.8, lineHeight: 1.3, color: C.text3, marginRight: 14 }}>{tx('Report ID')} {meta.reportId.slice(0, 8)}</Text> : null}
+      <Text style={{ fontSize: 6.8, lineHeight: 1.3, color: C.crimson, fontWeight: 600 }}>{`${pageNumber} / ${totalPages}`}</Text>
+    </>
+  )
   return (
     <Page size="A4" style={s.page} wrap>
-      <View fixed style={{ position: 'absolute', top: 24, left: PAD_X, right: PAD_X, flexDirection: 'row',
-                           alignItems: 'center', borderBottomWidth: 0.6, borderBottomColor: C.border, paddingBottom: 7 }}>
-        {markDark ? <Image src={markDark} style={{ width: 11, height: 11, marginRight: 6 }} /> : null}
-        <Text style={{ fontSize: 7, fontWeight: 600, color: C.crimson, letterSpacing: 1.2 }}>RISYS</Text>
-        <Text style={{ fontSize: 7, color: C.text3, marginLeft: 8, flex: 1 }}>{meta.orgName}  ·  {meta.shortTitle ?? meta.title}</Text>
-        {meta.periodLabel ? <Text style={{ fontSize: 7, color: C.text3 }}>{meta.periodLabel}</Text> : null}
-      </View>
+      <View fixed render={header}
+            style={{ position: 'absolute', top: 24, left: PAD_X, right: PAD_X, flexDirection: 'row',
+                     alignItems: 'center', borderBottomWidth: 0.6, borderBottomColor: C.border, paddingBottom: 7 }} />
       {children}
-      <View fixed style={{ position: 'absolute', bottom: 22, left: PAD_X, right: PAD_X, flexDirection: 'row',
-                           borderTopWidth: 0.6, borderTopColor: C.border, paddingTop: 6 }}>
-        <Text style={{ fontSize: 6.8, color: C.text3, flex: 1 }}>{meta.classification}</Text>
-        {meta.reportId ? <Text style={{ fontSize: 6.8, color: C.text3, marginRight: 14 }}>Report ID {meta.reportId.slice(0, 8)}</Text> : null}
-        <Text style={{ fontSize: 6.8, color: C.crimson, fontWeight: 600 }}
-              render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
-      </View>
+      <View fixed render={footer}
+            style={{ position: 'absolute', bottom: 22, left: PAD_X, right: PAD_X, flexDirection: 'row',
+                     borderTopWidth: 0.6, borderTopColor: C.border, paddingTop: 6 }} />
     </Page>
   )
 }
@@ -217,9 +233,11 @@ export function Table({ columns, rows, empty = 'None recorded.', dense, indentKe
       ))}
     </View>
   )
+  // Rows may split across a page. Unbreakable rows (wrap={false}) made
+  // react-pdf squeeze whole tables into a strip at the foot of some pages.
   const row = (r, i) => (
-    <View key={i} wrap={false}
-          style={[s.row, { backgroundColor: i % 2 ? C.hover : C.white, borderBottomWidth: 0.6,
+    <View key={i}
+          style={[s.row, { flexShrink: 0, backgroundColor: i % 2 ? C.hover : C.white, borderBottomWidth: 0.6,
                            borderBottomColor: C.border3, alignItems: 'flex-start' }]}>
       {columns.map((c, ci) => {
         const v = c.render ? c.render(r) : r[c.key]
@@ -238,20 +256,19 @@ export function Table({ columns, rows, empty = 'None recorded.', dense, indentKe
       })}
     </View>
   )
-  // The heading, the column header and the first row travel together, so a
-  // heading or a header is never left alone at the foot of a page.
+  // The headings and the column header carry minPresenceAhead, so they move to
+  // the next page rather than sit alone at its foot. (This used to be one wrap={false} group holding the heading,
+  // header and first row; react-pdf then squeezed whole tables into a strip
+  // at the bottom of the page when that group had to move.)
   return (
     <View style={{ marginBottom: 10 }}>
-      <View wrap={false}>
-        {heading}
-        {header}
-        {rows.length === 0 ? (
-          <Text style={{ paddingVertical: 8, paddingHorizontal: 5, color: C.text3, borderBottomWidth: 0.6, borderBottomColor: C.border }}>
-            {empty}
-          </Text>
-        ) : row(rows[0], 0)}
-      </View>
-      {rows.slice(1).map((r, i) => row(r, i + 1))}
+      {heading}
+      <View minPresenceAhead={30}>{header}</View>
+      {rows.length === 0 ? (
+        <Text style={{ paddingVertical: 8, paddingHorizontal: 5, color: C.text3, borderBottomWidth: 0.6, borderBottomColor: C.border }}>
+          {empty}
+        </Text>
+      ) : rows.map((r, i) => row(r, i))}
     </View>
   )
 }
@@ -269,11 +286,11 @@ export function HeatMap({ title, cells, dims = 5, total, cellSize = 27 }) {
   return (
     <View wrap={false} style={{ alignItems: 'flex-start' }}>
       <Text style={{ fontSize: 8, fontWeight: 600, color: C.crimson, marginBottom: 5 }}>
-        {title}{typeof total === 'number' ? <Text style={{ color: C.text3, fontWeight: 400 }}>  ·  {total} scored</Text> : null}
+        {title}{typeof total === 'number' ? <Text style={{ color: C.text3, fontWeight: 400 }}> · {total} {tx('scored')}</Text> : null}
       </Text>
       <View style={s.row}>
         <View style={{ width: 12, justifyContent: 'center' }}>
-          <Text style={{ fontSize: 6, color: C.text3, transform: 'rotate(-90deg)', width: 60, marginLeft: -24 }}>LIKELIHOOD</Text>
+          <Text style={{ fontSize: 6, color: C.text3, transform: 'rotate(-90deg)', width: 60, marginLeft: -24 }}>{tx('LIKELIHOOD')}</Text>
         </View>
         <View>
           {rowsL.map((l) => (
@@ -297,7 +314,7 @@ export function HeatMap({ title, cells, dims = 5, total, cellSize = 27 }) {
               <Text key={i} style={{ width: cellSize, margin: 1, fontSize: 6.2, color: C.text3, textAlign: 'center' }}>{i}</Text>
             ))}
           </View>
-          <Text style={{ fontSize: 6, color: C.text3, textAlign: 'center', marginLeft: 10 }}>IMPACT</Text>
+          <Text style={{ fontSize: 6, color: C.text3, textAlign: 'center', marginLeft: 10 }}>{tx('IMPACT')}</Text>
         </View>
       </View>
     </View>

@@ -3,6 +3,7 @@ import { CONNECTORS, CONNECTOR_CATEGORIES } from '@/lib/constants'
 import { ConnectorCard } from './ConnectorCard'
 import { useConnectors } from '@/hooks/useConnectors'
 import clsx from 'clsx'
+import { tx } from '@/lib/i18n'
 
 export function IntegrationsPage() {
   const [activeCategory, setActiveCategory] = useState('All')
@@ -13,15 +14,16 @@ export function IntegrationsPage() {
   return (
     <div>
       <div className="mb-5">
-        <h2 className="section-title">Integrations & Connectors</h2>
-        <p className="section-desc">Connect your platforms to let RISYS automatically capture risks, incidents, and compliance signals.</p>
+        <h2 className="section-title">{tx('Integrations & Connectors')}</h2>
+        <p className="section-desc">{tx(
+          'Connect your platforms to let RISYS automatically capture risks, incidents, and compliance signals.'
+        )}</p>
       </div>
 
       {activeCount > 0 && (
         <div className="notice-bar">
           <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#5D0F0F' }} />
-          {activeCount} connector{activeCount > 1 ? 's' : ''} active — RISYS is monitoring your connected platforms
-        </div>
+          {activeCount} {tx('connector')}{activeCount > 1 ? 's' : ''} {tx('active — RISYS is monitoring your connected platforms')}</div>
       )}
 
       <div className="flex gap-1 p-1 rounded-lg w-fit mb-5" style={{ background: '#f5f3f3' }}>
@@ -33,7 +35,7 @@ export function IntegrationsPage() {
               color: activeCategory === cat ? '#1a1314' : '#8a7070',
               border: activeCategory === cat ? '1px solid #e5e0e0' : '1px solid transparent',
             }}>
-            {cat}
+            {tx(cat)}
           </button>
         ))}
       </div>

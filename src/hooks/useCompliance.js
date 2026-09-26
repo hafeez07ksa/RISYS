@@ -2,18 +2,19 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
 import { localISO } from '@/lib/manualCompliance'
+import { tx, localizeRow } from '@/lib/i18n'
 
 // ── FRAMEWORK REGISTRY ────────────────────────────────────────────────────────
 export const FRAMEWORKS = [
   {
     id: 'NCA ECC',
     label: 'NCA ECC',
-    fullName: 'Essential Cybersecurity Controls',
+    fullName: tx('Essential Cybersecurity Controls'),
     version: 'ECC-2:2024',
     table: 'nca_ecc',
     color: '#5D0F0F',
     bg: '#fdf5f5',
-    tag: 'Critical Sector',
+    tag: tx('Critical Sector'),
     requirementKey: 'control_id',
     textKey: 'control_text',
     groupBy: 'domain',
@@ -21,12 +22,12 @@ export const FRAMEWORKS = [
   {
     id: 'SAMA CSF',
     label: 'SAMA CSF',
-    fullName: 'Cybersecurity Framework',
+    fullName: tx('Cybersecurity Framework'),
     version: 'v1.0',
     table: 'sama_csf',
     color: '#1e40af',
     bg: '#eff6ff',
-    tag: 'Financial Sector',
+    tag: tx('Financial Sector'),
     requirementKey: 'control_id',
     textKey: 'control_text',
     groupBy: 'subdomain',        // SAMA CSF groups by subdomain (3.1.1, 3.1.2 etc.)
@@ -35,12 +36,12 @@ export const FRAMEWORKS = [
   {
     id: 'SDAIA PDPL',
     label: 'SDAIA PDPL',
-    fullName: 'Personal Data Protection Law',
+    fullName: tx('Personal Data Protection Law'),
     version: 'PDPL-IR:2023',
     table: 'sdaia_pdpl',
     color: '#166534',
     bg: '#f0fdf4',
-    tag: 'Data Privacy',
+    tag: tx('Data Privacy'),
     requirementKey: 'clause_id',
     textKey: 'clause_text',
     groupBy: 'article',
@@ -48,12 +49,12 @@ export const FRAMEWORKS = [
   {
     id: 'NCA CCC',
     label: 'NCA CCC',
-    fullName: 'Cloud Cybersecurity Controls',
+    fullName: tx('Cloud Cybersecurity Controls'),
     version: 'CCC-1:2020',
     table: 'nca_ccc',
     color: '#6d28d9',
     bg: '#f5f3ff',
-    tag: 'Cloud',
+    tag: tx('Cloud'),
     requirementKey: 'control_id',
     textKey: 'control_text',
     groupBy: 'domain',
@@ -61,12 +62,12 @@ export const FRAMEWORKS = [
   {
     id: 'NCA DCC',
     label: 'NCA DCC',
-    fullName: 'Data Cybersecurity Controls',
+    fullName: tx('Data Cybersecurity Controls'),
     version: 'DCC-1:2022',
     table: 'nca_dcc',
     color: '#92400e',
     bg: '#fffbeb',
-    tag: 'Data',
+    tag: tx('Data'),
     requirementKey: 'control_id',
     textKey: 'control_text',
     groupBy: 'domain',
@@ -74,12 +75,12 @@ export const FRAMEWORKS = [
   {
     id: 'NCA TCC',
     label: 'NCA TCC',
-    fullName: 'Telework Cybersecurity Controls',
+    fullName: tx('Telework Cybersecurity Controls'),
     version: 'TCC-1:2021',
     table: 'nca_tcc',
     color: '#0e7490',
     bg: '#ecfeff',
-    tag: 'Telework',
+    tag: tx('Telework'),
     requirementKey: 'control_id',
     textKey: 'control_text',
     groupBy: 'domain',
@@ -87,12 +88,12 @@ export const FRAMEWORKS = [
   {
     id: 'NCA CSCC',
     label: 'NCA CSCC',
-    fullName: 'Cybersecurity Controls for Communication Sector',
+    fullName: tx('Cybersecurity Controls for Communication Sector'),
     version: 'CSCC-1:2021',
     table: 'nca_cscc',
     color: '#be185d',
     bg: '#fdf2f8',
-    tag: 'Telecom',
+    tag: tx('Telecom'),
     requirementKey: 'control_id',
     textKey: 'control_text',
     groupBy: 'domain',
@@ -100,12 +101,12 @@ export const FRAMEWORKS = [
   {
     id: 'NCA NCNICC',
     label: 'NCA NCNICC',
-    fullName: 'Non-CNI Private Sector Controls',
+    fullName: tx('Non-CNI Private Sector Controls'),
     version: 'NCNICC-1:2024',
     table: 'nca_ncnicc',
     color: '#b45309',
     bg: '#fffbeb',
-    tag: 'Private Sector',
+    tag: tx('Private Sector'),
     requirementKey: 'control_id',
     textKey: 'control_text',
     groupBy: 'domain',
@@ -127,12 +128,12 @@ export const isPrimaryFramework = (id) => id === PRIMARY_FRAMEWORK_ID
 
 // ── COMPLIANCE STATUS HELPERS ─────────────────────────────────────────────────
 export const STATUS_CONFIG = {
-  compliant:      { label: 'Compliant',      color: '#166534', bg: '#f0fdf4', border: '#bbf7d0', dot: '#22c55e' },
-  partial:        { label: 'Partial',         color: '#92400e', bg: '#fffbeb', border: '#fde68a', dot: '#eab308' },
-  not_compliant:  { label: 'Non-Compliant',   color: '#991b1b', bg: '#fef2f2', border: '#fecaca', dot: '#ef4444' },
-  in_progress:    { label: 'In Progress',     color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe', dot: '#3b82f6' },
+  compliant:      { label: tx('Compliant'),      color: '#166534', bg: '#f0fdf4', border: '#bbf7d0', dot: '#22c55e' },
+  partial:        { label: tx('Partial'),         color: '#92400e', bg: '#fffbeb', border: '#fde68a', dot: '#eab308' },
+  not_compliant:  { label: tx('Non-Compliant'),   color: '#991b1b', bg: '#fef2f2', border: '#fecaca', dot: '#ef4444' },
+  in_progress:    { label: tx('In Progress'),     color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe', dot: '#3b82f6' },
   not_applicable: { label: 'N/A',             color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb', dot: '#9ca3af' },
-  not_started:    { label: 'Not Started',     color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb', dot: '#d1d5db' },
+  not_started:    { label: tx('Not Started'),     color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb', dot: '#d1d5db' },
 }
 
 export const STATUS_OPTIONS = Object.entries(STATUS_CONFIG).map(([value, cfg]) => ({ value, ...cfg }))
@@ -148,7 +149,7 @@ export function useFrameworkRequirements(frameworkId) {
     if (!fw) return
     setLoading(true)
     const { data, error } = await supabase.from(fw.table).select('*').order('id')
-    if (!error) setRequirements(data || [])
+    if (!error) setRequirements((data || []).map(localizeRow))
     setLoading(false)
   }, [fw?.table])
 

@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useAuthStore } from '@/store/authStore'
 import { Spinner } from '@/components/ui/Spinner'
 import { RisysLogo } from '@/components/ui/RisysLogo'
+import { tx } from '@/lib/i18n'
 
 // Shown when a signed-in user has no workspace membership —
 // i.e. they were removed, their org was suspended, or they never joined one.
@@ -20,17 +21,13 @@ function AccessGate() {
         <div style={{ width: 44, height: 44, borderRadius: 12, background: '#FBEAEA', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
           <ShieldAlert size={20} style={{ color: '#8C1616' }} />
         </div>
-        <h1 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>No workspace access</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.6 }}>
-          Your account is not a member of any workspace. If you were part of one,
-          your access may have been revoked — contact your organization's administrator.
-        </p>
+        <h1 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>{tx('No workspace access')}</h1>
+        <p style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.6 }}>{tx(
+          'Your account is not a member of any workspace. If you were part of one, your access may have been revoked — contact your organization\'s administrator.'
+        )}</p>
         <button onClick={signOut} className="btn-secondary" style={{ width: '100%', marginTop: 18 }}>
-          <LogOut size={13} /> Sign out
-        </button>
-        <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 14 }}>
-          Workspaces are provisioned by RISYS — contact our team to set one up.
-        </p>
+          <LogOut size={13} className='rtl-flip' /> {tx('Sign out')}</button>
+        <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 14 }}>{tx('Workspaces are provisioned by RISYS — contact our team to set one up.')}</p>
       </div>
     </div>
   )

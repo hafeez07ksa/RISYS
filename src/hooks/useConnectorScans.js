@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { callEdgeFunction } from '@/lib/functions'
 import { useAuth } from './useAuth'
 import { logAudit, AUDIT } from '@/lib/audit'
+import { tx } from '@/lib/i18n'
 
 // ============================================================
 // Connector scans: history (connector_scan_runs), automatic schedule
@@ -13,20 +14,20 @@ import { logAudit, AUDIT } from '@/lib/audit'
 // ============================================================
 
 export const SCAN_INTERVALS = [
-  { value: 60,    label: 'Every hour' },
-  { value: 360,   label: 'Every 6 hours' },
-  { value: 720,   label: 'Every 12 hours' },
-  { value: 1440,  label: 'Daily' },
-  { value: 10080, label: 'Weekly' },
+  { value: 60,    label: tx('Every hour') },
+  { value: 360,   label: tx('Every 6 hours') },
+  { value: 720,   label: tx('Every 12 hours') },
+  { value: 1440,  label: tx('Daily') },
+  { value: 10080, label: tx('Weekly') },
 ]
 
 export const SOURCE_STATE_META = {
-  ok:            { label: 'Working',        tone: 'ok' },
-  partial:       { label: 'In progress',    tone: 'warn' },
-  not_licensed:  { label: 'Not available',  tone: 'muted' },
-  no_permission: { label: 'Access refused', tone: 'error' },
-  error:         { label: 'Failed',         tone: 'error' },
-  skipped:       { label: 'Skipped',        tone: 'muted' },
+  ok:            { label: tx('Working'),        tone: 'ok' },
+  partial:       { label: tx('In progress'),    tone: 'warn' },
+  not_licensed:  { label: tx('Not available'),  tone: 'muted' },
+  no_permission: { label: tx('Access refused'), tone: 'error' },
+  error:         { label: tx('Failed'),         tone: 'error' },
+  skipped:       { label: tx('Skipped'),        tone: 'muted' },
 }
 
 export function useConnectorScans(connectorId, { historyLimit = 10 } = {}) {

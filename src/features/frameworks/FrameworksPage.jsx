@@ -8,6 +8,7 @@ import {
   useFrameworkRequirements,
 } from '@/hooks/useCompliance'
 import { FrameworkReaderPage } from './FrameworkReaderPage'
+import { tx } from '@/lib/i18n'
 
 /*
  * Frameworks library.
@@ -31,7 +32,7 @@ function FrameworkRow({ fw, active, onOpen }) {
       onClick={() => onOpen(fw.id)}
       className="card"
       style={{
-        padding: 0, textAlign: 'left', cursor: 'pointer', width: '100%',
+        padding: 0, textAlign: 'start', cursor: 'pointer', width: '100%',
         display: 'flex', alignItems: 'stretch',
         transition: 'box-shadow 0.15s, transform 0.15s',
         opacity: active ? 1 : 0.92,
@@ -55,33 +56,34 @@ function FrameworkRow({ fw, active, onOpen }) {
                 color: '#166534', background: '#f0fdf4', border: '1px solid #bbf7d0',
                 display: 'inline-flex', alignItems: 'center', gap: 3,
               }}>
-                <CheckCircle2 size={10} /> In scope
-              </span>
+                <CheckCircle2 size={10} /> {tx('In scope')}</span>
             ) : (
               <span style={{
                 fontSize: 10, padding: '2px 7px', borderRadius: 99, fontWeight: 500,
                 color: 'var(--text-3)', background: 'var(--surface-2)', border: '1px solid var(--border)',
                 display: 'inline-flex', alignItems: 'center', gap: 3,
               }}>
-                <Lock size={10} /> Not assessed
-              </span>
+                <Lock size={10} /> {tx('Not assessed')}</span>
             )}
           </div>
           <p style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.4 }}>{fw.fullName}</p>
         </div>
 
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <div style={{ textAlign: 'end', flexShrink: 0 }}>
           <p className="tnum" style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
             {loading ? '—' : mainCount}
           </p>
-          <p style={{ fontSize: 10.5, color: 'var(--text-3)' }}>requirements</p>
+          <p style={{ fontSize: 10.5, color: 'var(--text-3)' }}>{tx('requirements')}</p>
         </div>
 
-        <div style={{ textAlign: 'right', flexShrink: 0, minWidth: 76 }}>
+        <div style={{ textAlign: 'end', flexShrink: 0, minWidth: 76 }}>
           <p style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{fw.version}</p>
         </div>
 
-        <ChevronRight size={15} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
+        <ChevronRight
+          size={15}
+          style={{ color: 'var(--text-3)', flexShrink: 0 }}
+          className='rtl-flip' />
       </div>
     </button>
   )
@@ -106,28 +108,22 @@ export function FrameworksPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title="Frameworks" subtitle={organization?.name} />
+      <Topbar title={tx('Frameworks')} subtitle={organization?.name} />
 
       <div className="page-content" style={{ flex: 1, overflowY: 'auto' }}>
 
         <div style={{ marginBottom: 22 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>
-            Framework library
-          </h2>
-          <p style={{ fontSize: 13, color: 'var(--text-3)', maxWidth: 660, lineHeight: 1.55 }}>
-            Every Saudi regulatory framework loaded into RISYS. Control text is browsable
-            here for reference. Only frameworks marked in scope are scored, mapped to
-            controls, or included in reporting.
-          </p>
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{tx('Framework library')}</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-3)', maxWidth: 660, lineHeight: 1.55 }}>{tx(
+            'Every Saudi regulatory framework loaded into RISYS. Control text is browsable here for reference. Only frameworks marked in scope are scored, mapped to controls, or included in reporting.'
+          )}</p>
         </div>
 
         {/* Active */}
         <p style={{
           fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.12em',
           color: 'var(--text-3)', fontWeight: 600, marginBottom: 10,
-        }}>
-          In scope
-        </p>
+        }}>{tx('In scope')}</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
           {PRIMARY_FRAMEWORKS.map(fw => (
             <FrameworkRow key={fw.id} fw={fw} active onOpen={setOpenFramework} />
@@ -138,9 +134,7 @@ export function FrameworksPage() {
         <p style={{
           fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.12em',
           color: 'var(--text-3)', fontWeight: 600, marginBottom: 10,
-        }}>
-          Available — not currently assessed
-        </p>
+        }}>{tx('Available — not currently assessed')}</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {SECONDARY_FRAMEWORKS.map(fw => (
             <FrameworkRow key={fw.id} fw={fw} active={false} onOpen={setOpenFramework} />
@@ -153,11 +147,9 @@ export function FrameworksPage() {
           display: 'flex', gap: 10, alignItems: 'flex-start',
         }}>
           <Library size={14} style={{ color: 'var(--text-3)', marginTop: 2, flexShrink: 0 }} />
-          <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.55 }}>
-            Opening a framework here shows the published control text as issued — no
-            scoring, no control mapping, no interpretation. Assessment happens under
-            Compliance, and only for the framework in scope.
-          </p>
+          <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.55 }}>{tx(
+            'Opening a framework here shows the published control text as issued — no scoring, no control mapping, no interpretation. Assessment happens under Compliance, and only for the framework in scope.'
+          )}</p>
         </div>
       </div>
     </div>

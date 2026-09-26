@@ -11,12 +11,13 @@ import {
   useConnectorScans, SCAN_INTERVALS, formatRelative, isActiveRun, runStatus,
 } from '@/hooks/useConnectorScans'
 import { SourceStatePill, SOURCE_LABELS } from '@/features/findings/ScanHealth'
+import { tx, appLocale } from '@/lib/i18n'
 
 const STATUS_STYLE = {
-  success: { label: 'Success',    color: '#166534', bg: '#f0fdf4', bd: '#bbf7d0' },
-  partial: { label: 'Incomplete', color: '#92400e', bg: '#fffbeb', bd: '#fde68a' },
-  failed:  { label: 'Failed',     color: '#b91c1c', bg: '#fef2f2', bd: '#fecaca' },
-  running: { label: 'Running',    color: '#1e40af', bg: '#eff6ff', bd: '#bfdbfe' },
+  success: { label: tx('Success'),    color: '#166534', bg: '#f0fdf4', bd: '#bbf7d0' },
+  partial: { label: tx('Incomplete'), color: '#92400e', bg: '#fffbeb', bd: '#fde68a' },
+  failed:  { label: tx('Failed'),     color: '#b91c1c', bg: '#fef2f2', bd: '#fecaca' },
+  running: { label: tx('Running'),    color: '#1e40af', bg: '#eff6ff', bd: '#bfdbfe' },
 }
 
 function Card({ title, icon: Icon, right, children }) {
@@ -41,7 +42,7 @@ function StatusBadge({ status }) {
   )
 }
 
-const fmt = iso => iso ? new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'
+const fmt = iso => iso ? new Date(iso).toLocaleString(appLocale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'
 
 /**
  * Shared settings page for scan-based connectors: summary cards, data sources
@@ -90,10 +91,10 @@ export function ConnectorScanSettings({
     <div className="h-full flex flex-col">
       <Topbar
         title={title}
-        subtitle="Connection, data sources and scan schedule"
+        subtitle={tx('Connection, data sources and scan schedule')}
         actions={
           <div className="flex items-center gap-2">
-            <button onClick={refresh} title="Refresh"
+            <button onClick={refresh} title={tx('Refresh')}
               className="w-8 h-8 flex items-center justify-center rounded-md border hover:bg-[#f5f3f3]"
               style={{ borderColor: '#e5e0e0', color: '#8a7070' }}>
               <RefreshCw size={13} />
@@ -103,19 +104,17 @@ export function ConnectorScanSettings({
                 className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-lg flex-shrink-0"
                 style={{ background: accent, color: '#fff', border: 'none', opacity: running ? 0.6 : 1 }}>
                 {running ? <Spinner size="sm" /> : <RotateCw size={13} />}
-                {running ? 'Scanning…' : 'Scan now'}
+                {running ? tx('Scanning…') : tx('Scan now')}
               </button>
             )}
             <button onClick={() => navigate(findingsPath)}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border hover:bg-[#f5f3f3]"
-              style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
-              View findings <ArrowRight size={13} />
+              style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>{tx('View findings')} <ArrowRight size={13} className='rtl-flip' />
             </button>
             <button onClick={() => navigate('/app/settings')}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border hover:bg-[#f5f3f3]"
               style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
-              <ArrowLeft size={13} /> Back
-            </button>
+              <ArrowLeft size={13} className='rtl-flip' /> {tx('Back')}</button>
           </div>
         }
       />
@@ -127,14 +126,13 @@ export function ConnectorScanSettings({
             style={{ background: msgStyle.bg, border: `1px solid ${msgStyle.bd}`, color: msgStyle.color }}>
             <msgStyle.Icon size={13} style={{ flexShrink: 0, marginTop: 1 }} />
             <span className="flex-1">{msg.text}</span>
-            <button onClick={() => setMsg(null)} aria-label="Dismiss"><X size={12} /></button>
+            <button onClick={() => setMsg(null)} aria-label={tx('Dismiss')}><X size={12} /></button>
           </div>
         )}
 
         {!available && (
-          <div className="mb-4 px-4 py-3 rounded-lg text-xs" style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>
-            Scan history needs the database migration <span className="font-mono">20260917090000_conn_01_finding_lifecycle_and_scan_runs.sql</span>.
-          </div>
+          <div className="mb-4 px-4 py-3 rounded-lg text-xs" style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>{tx('Scan history needs the database migration')} <span className="font-mono">{tx('20260917090000_conn_01_finding_lifecycle_and_scan_runs.sql')}</span>.
+                      </div>
         )}
 
         {loading ? (
@@ -172,8 +170,8 @@ export function ScanSourcesCard({ connectorId, accent, sources, lastCompletedRun
   const lastSources = lastCompletedRun?.sources || {}
   const labels = SOURCE_LABELS[connectorId] || {}
   return (
-    <Card title="Data sources" icon={Info}
-      right={lastCompletedRun && <span className="text-[11px]" style={{ color: '#8a7070' }}>As of {fmt(lastCompletedRun.finished_at || lastCompletedRun.started_at)}</span>}>
+    <Card title={tx('Data sources')} icon={Info}
+      right={lastCompletedRun && <span className="text-[11px]" style={{ color: '#8a7070' }}>{tx('As of')} {fmt(lastCompletedRun.finished_at || lastCompletedRun.started_at)}</span>}>
       <div className="flex flex-col">
         {sources.map((src, i) => {
           const res = lastSources[src.key]
@@ -188,7 +186,7 @@ export function ScanSourcesCard({ connectorId, accent, sources, lastCompletedRun
                   <p className="text-sm font-medium" style={{ color: '#1a1314' }}>{label.name}</p>
                   <span className="text-xs" style={{ color: '#8a7070' }}>{label.what}</span>
                   <span style={{ marginInlineStart: 'auto' }}>
-                    {res ? <SourceStatePill state={res.state} /> : <span className="text-[11px]" style={{ color: '#a09090' }}>Not scanned</span>}
+                    {res ? <SourceStatePill state={res.state} /> : <span className="text-[11px]" style={{ color: '#a09090' }}>{tx('Not scanned')}</span>}
                   </span>
                 </div>
                 {res && res.state !== 'ok' && res.detail && (
@@ -198,12 +196,12 @@ export function ScanSourcesCard({ connectorId, accent, sources, lastCompletedRun
                   <p className="text-xs mt-1" style={{ color: '#6b5555' }}>{res.detail}</p>
                 )}
                 <p className="text-[11px] mt-1" style={{ color: '#8a7070' }}>
-                  <strong>Permission:</strong> {src.permissions} · <strong>Requires:</strong> {src.requires}
+                  <strong>{tx('Permission:')}</strong> {src.permissions} · <strong>{tx('Requires:')}</strong> {src.requires}
                 </p>
                 {src.note && <p className="text-[11px] mt-0.5" style={{ color: '#8a7070' }}>{src.note}</p>}
                 {src.howTo && res && res.state !== 'ok' && res.state !== 'partial' && (
                   <p className="text-[11px] mt-1 px-2 py-1.5 rounded" style={{ color: '#4a3a3a', background: '#f8f7f7' }}>
-                    <strong>How to fix:</strong> {src.howTo}
+                    <strong>{tx('How to fix:')}</strong> {src.howTo}
                   </p>
                 )}
               </div>
@@ -233,7 +231,7 @@ export function ScanScheduleCard({ scans, isAdmin, onMessage }) {
     setSaving(true)
     try {
       await saveSchedule({ enabled, intervalMinutes: Number(interval) })
-      onMessage?.({ tone: 'ok', text: enabled ? 'Automatic scans saved. The first one runs within 15 minutes.' : 'Automatic scans turned off.' })
+      onMessage?.({ tone: 'ok', text: enabled ? tx('Automatic scans saved. The first one runs within 15 minutes.') : tx('Automatic scans turned off.') })
     } catch (e) {
       onMessage?.({ tone: 'error', text: e.message })
     } finally {
@@ -242,12 +240,10 @@ export function ScanScheduleCard({ scans, isAdmin, onMessage }) {
   }
 
   return (
-    <Card title="Automatic scans" icon={CalendarClock}>
+    <Card title={tx('Automatic scans')} icon={CalendarClock}>
       <div className="flex items-center gap-4 flex-wrap">
         <label className="flex items-center gap-2 text-sm" style={{ color: '#1a1314', cursor: isAdmin ? 'pointer' : 'default' }}>
-          <input type="checkbox" checked={enabled} disabled={!isAdmin} onChange={e => setEnabled(e.target.checked)} />
-          Scan automatically
-        </label>
+          <input type="checkbox" checked={enabled} disabled={!isAdmin} onChange={e => setEnabled(e.target.checked)} />{tx('Scan automatically')}</label>
         <select value={interval} disabled={!isAdmin || !enabled}
           onChange={e => setInterval(Number(e.target.value))}
           className="text-xs px-2 py-1.5 rounded-md"
@@ -258,21 +254,21 @@ export function ScanScheduleCard({ scans, isAdmin, onMessage }) {
           <button onClick={save} disabled={!dirty || saving}
             className="text-xs px-3 py-1.5 rounded-lg"
             style={{ background: '#5D0F0F', color: '#fff', border: 'none', opacity: !dirty || saving ? 0.5 : 1 }}>
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? tx('Saving…') : tx('Save')}
           </button>
         )}
         <span className="text-xs" style={{ color: '#8a7070', marginInlineStart: 'auto' }}>
           {schedule?.enabled
-            ? <>Next scan {formatRelative(schedule.next_run_at)}{schedule.last_run_at ? ` · last ${formatRelative(schedule.last_run_at)} (${schedule.last_status})` : ''}</>
-            : 'Off — scans run only when someone clicks Scan now.'}
+            ? <>{tx('Next scan')} {formatRelative(schedule.next_run_at)}{schedule.last_run_at ? ` · last ${formatRelative(schedule.last_run_at)} (${schedule.last_status})` : ''}</>
+            : tx('Off — scans run only when someone clicks Scan now.')}
         </span>
       </div>
       {schedule?.consecutive_failures > 0 && (
-        <p className="text-xs mt-2" style={{ color: '#b91c1c' }}>
-          The last {schedule.consecutive_failures} automatic scan(s) failed, so RISYS is retrying less often. Check Data sources above.
-        </p>
+        <p className="text-xs mt-2" style={{ color: '#b91c1c' }}>{tx('The last')} {schedule.consecutive_failures} {tx(
+            'automatic scan(s) failed, so RISYS is retrying less often. Check Data sources above.'
+          )}</p>
       )}
-      {!isAdmin && <p className="text-xs mt-2" style={{ color: '#8a7070' }}>Only organisation admins can change the schedule.</p>}
+      {!isAdmin && <p className="text-xs mt-2" style={{ color: '#8a7070' }}>{tx('Only organisation admins can change the schedule.')}</p>}
     </Card>
   )
 }
@@ -280,19 +276,19 @@ export function ScanScheduleCard({ scans, isAdmin, onMessage }) {
 /** Recent scan runs, with what each one found and changed. */
 export function ScanHistoryCard({ runs, openTotal, changes, countLabel = 'Open findings' }) {
   return (
-    <Card title="Recent scans" icon={History}>
+    <Card title={tx('Recent scans')} icon={History}>
       {runs.length === 0 ? (
-        <p className="text-xs" style={{ color: '#8a7070' }}>No scans yet.</p>
+        <p className="text-xs" style={{ color: '#8a7070' }}>{tx('No scans yet.')}</p>
       ) : (
         <table className="w-full text-xs">
           <thead>
             <tr style={{ color: '#8a7070', textAlign: 'start' }}>
-              <th className="font-normal py-1" style={{ textAlign: 'start' }}>Started</th>
-              <th className="font-normal py-1" style={{ textAlign: 'start' }}>Trigger</th>
-              <th className="font-normal py-1" style={{ textAlign: 'start' }}>Result</th>
+              <th className="font-normal py-1" style={{ textAlign: 'start' }}>{tx('Started')}</th>
+              <th className="font-normal py-1" style={{ textAlign: 'start' }}>{tx('Trigger')}</th>
+              <th className="font-normal py-1" style={{ textAlign: 'start' }}>{tx('Result')}</th>
               <th className="font-normal py-1" style={{ textAlign: 'start' }}>{countLabel}</th>
-              <th className="font-normal py-1" style={{ textAlign: 'start' }}>Changes</th>
-              <th className="font-normal py-1" style={{ textAlign: 'start' }}>Duration</th>
+              <th className="font-normal py-1" style={{ textAlign: 'start' }}>{tx('Changes')}</th>
+              <th className="font-normal py-1" style={{ textAlign: 'start' }}>{tx('Duration')}</th>
             </tr>
           </thead>
           <tbody>

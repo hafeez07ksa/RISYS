@@ -8,6 +8,7 @@ import { useComplianceEvidence } from '@/hooks/useCompliance'
 import { evaluateSubmission, isFilled, isVisible, pruneSubmission, localISO } from '@/lib/manualCompliance'
 import { DateField } from '@/components/ui/DateField'
 import { SelectField } from '@/components/ui/Combobox'
+import { tx, appLocale } from '@/lib/i18n'
 
 /* ── Evidenced compliance ────────────────────────────────────────────────────
  *
@@ -35,20 +36,28 @@ const TONES = {
 
 const MODE_COPY = {
   manual: {
-    heading: 'Evidence & compliance', Icon: ShieldCheck, action: 'Comply',
-    intro: 'No system holds the answer to this control. Put on record what an assessor will ask to see — Comply unlocks once every item is complete.',
+    heading: tx('Evidence & compliance'), Icon: ShieldCheck, action: 'Comply',
+    intro: tx(
+      'No system holds the answer to this control. Put on record what an assessor will ask to see — Comply unlocks once every item is complete.'
+    ),
   },
   semi: {
-    heading: 'Evidence & compliance', Icon: ShieldCheck, action: 'Comply',
-    intro: 'A connector can measure part of this control; the policy and judgement around it cannot be measured. Put both on record — Comply unlocks once every item is complete.',
+    heading: tx('Evidence & compliance'), Icon: ShieldCheck, action: 'Comply',
+    intro: tx(
+      'A connector can measure part of this control; the policy and judgement around it cannot be measured. Put both on record — Comply unlocks once every item is complete.'
+    ),
   },
   interim: {
-    heading: 'Interim evidence', Icon: ShieldCheck, action: 'Comply with interim evidence',
-    intro: 'No connector measures this control yet. Record the platform’s own export as interim evidence — it holds for at most 90 days, or until the platform is connected and measured.',
+    heading: tx('Interim evidence'), Icon: ShieldCheck, action: 'Comply with interim evidence',
+    intro: tx(
+      'No connector measures this control yet. Record the platform’s own export as interim evidence — it holds for at most 90 days, or until the platform is connected and measured.'
+    ),
   },
   attestation: {
-    heading: 'Reviewer attestation', Icon: ClipboardCheck, action: 'Record attestation',
-    intro: 'The connector sets this control’s status. Record a reviewer confirming the measurement covers the full scope — this does not change the status.',
+    heading: tx('Reviewer attestation'), Icon: ClipboardCheck, action: 'Record attestation',
+    intro: tx(
+      'The connector sets this control’s status. Record a reviewer confirming the measurement covers the full scope — this does not change the status.'
+    ),
   },
 }
 
@@ -57,7 +66,7 @@ function formatDate(value) {
   if (!value) return ''
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value))
   const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(value)
-  return d.toLocaleDateString('en-GB')
+  return d.toLocaleDateString(appLocale())
 }
 
 function formatSize(bytes) {
@@ -203,9 +212,9 @@ export function EvidenceCompliancePanel({
     if (latestForMode) {
       const overdue = latestForMode.next_review_date && String(latestForMode.next_review_date).slice(0, 10) < today
       banner = overdue
-        ? { tone: 'medium', Icon: AlertTriangle, title: 'Attestation overdue',
+        ? { tone: 'medium', Icon: AlertTriangle, title: tx('Attestation overdue'),
             text: `The last attestation was due for review ${formatDate(latestForMode.next_review_date)}. The measured status is unaffected; record a fresh attestation.` }
-        : { tone: 'info', Icon: ClipboardCheck, title: 'Attested',
+        : { tone: 'info', Icon: ClipboardCheck, title: tx('Attested'),
             text: [
               `${formatDate(latestForMode.submitted_at)} by ${nameOf(latestForMode.answers?.reviewer) || nameOf(latestForMode.submitted_by)}`,
               latestForMode.next_review_date ? `next review ${formatDate(latestForMode.next_review_date)}` : null,
@@ -214,18 +223,20 @@ export function EvidenceCompliancePanel({
   } else {
     const evidenced = statusRow?.status === 'compliant' && !!statusRow?.evidence_id
     if (statusRow?.review_overdue) {
-      banner = { tone: 'critical', Icon: AlertTriangle, title: 'Review overdue',
+      banner = { tone: 'critical', Icon: AlertTriangle, title: tx('Review overdue'),
         text: `The next review was due ${formatDate(statusRow.review_due_at)}. This control counts as Partial until evidence is re-submitted.` }
     } else if (evidenced) {
       const byline = latest
         ? `Evidenced ${formatDate(latest.submitted_at)} by ${nameOf(latest.answers?.reviewer) || nameOf(latest.submitted_by)}`
         : 'Evidence on record'
       banner = { tone: 'low', Icon: ShieldCheck,
-        title: latest?.answers?.__mode === 'interim' ? 'Compliant — interim evidence' : 'Compliant',
+        title: latest?.answers?.__mode === 'interim' ? tx('Compliant — interim evidence') : tx('Compliant'),
         text: [byline, statusRow.review_due_at ? `next review ${formatDate(statusRow.review_due_at)}` : null].filter(Boolean).join(' · ') }
     } else if (statusRow?.status === 'compliant') {
-      banner = { tone: 'medium', Icon: AlertTriangle, title: 'Marked compliant without evidence',
-        text: 'This status was set before evidence was recorded. Complete the checklist and comply to put the evidence on record.' }
+      banner = { tone: 'medium', Icon: AlertTriangle, title: tx('Marked compliant without evidence'),
+        text: tx(
+          'This status was set before evidence was recorded. Complete the checklist and comply to put the evidence on record.'
+        ) }
     }
   }
 
@@ -257,7 +268,7 @@ export function EvidenceCompliancePanel({
         return (
           <div style={{ maxWidth: 280 }}>
             <SelectField className="w-full" value={v || ''} disabled={!canEdit} onChange={e => setAnswer(f.key, e.target.value)}>
-              <option value="">Select…</option>
+              <option value="">{tx('Select…')}</option>
               {f.options.map(o => <option key={o} value={o}>{o}</option>)}
             </SelectField>
           </div>
@@ -266,7 +277,7 @@ export function EvidenceCompliancePanel({
         return (
           <div style={{ maxWidth: 320 }}>
             <SelectField className="w-full" value={v || ''} disabled={!canEdit} onChange={e => setAnswer(f.key, e.target.value)}>
-              <option value="">Select a member…</option>
+              <option value="">{tx('Select a member…')}</option>
               {members.map(m => (
                 <option key={m.user_id} value={m.user_id}>{m.full_name || m.email || m.user_id?.slice(0, 8)}</option>
               ))}
@@ -288,7 +299,7 @@ export function EvidenceCompliancePanel({
                     background: on ? 'var(--crimson)' : 'var(--bg-2)',
                     border: `1px solid ${on ? 'var(--crimson)' : 'var(--border-2)'}`,
                   }}>
-                  {opt === 'yes' ? 'Yes' : 'No'}
+                  {opt === 'yes' ? tx('Yes') : tx('No')}
                 </button>
               )
             })}
@@ -299,7 +310,7 @@ export function EvidenceCompliancePanel({
           <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', cursor: canEdit ? 'pointer' : 'default' }}>
             <input type="checkbox" checked={v === true} disabled={!canEdit}
               onChange={e => setAnswer(f.key, e.target.checked)} style={{ accentColor: 'var(--crimson)', marginTop: 3 }} />
-            <span style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)' }}>Confirmed</span>
+            <span style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)' }}>{tx('Confirmed')}</span>
           </label>
         )
       case 'checklist':
@@ -347,8 +358,8 @@ export function EvidenceCompliancePanel({
                 borderRadius: 'var(--r)', border: '1px solid var(--border)', background: 'var(--surface)',
               }}>
                 <FileText size={13} style={{ color: 'var(--taupe)', flexShrink: 0 }} />
-                <button type="button" onClick={() => openFile(m.path)} className="truncate" title="Open (signed link)"
-                  style={{ flex: 1, textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                <button type="button" onClick={() => openFile(m.path)} className="truncate" title={tx('Open (signed link)')}
+                  style={{ flex: 1, textAlign: 'start', background: 'none', border: 'none', padding: 0, cursor: 'pointer',
                     fontSize: 'var(--t-sm)', color: 'var(--crimson)' }}>
                   {m.name}
                 </button>
@@ -367,13 +378,13 @@ export function EvidenceCompliancePanel({
                 fontSize: 12, cursor: uploading ? 'wait' : 'pointer', opacity: uploading && uploading !== f.key ? 0.6 : 1,
               }}>
                 {uploading === f.key ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
-                {uploading === f.key ? 'Uploading…' : list.length ? 'Add another file' : 'Upload file'}
+                {uploading === f.key ? tx('Uploading…') : list.length ? tx('Add another file') : tx('Upload file')}
                 <input type="file" multiple disabled={!!uploading} style={{ display: 'none' }}
                   onChange={e => { addFiles(f.key, e.target.files); e.target.value = '' }} />
               </label>
             )}
             {!canEdit && list.length === 0 && (
-              <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>No file on record</span>
+              <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{tx('No file on record')}</span>
             )}
           </div>
         )
@@ -390,9 +401,8 @@ export function EvidenceCompliancePanel({
         <h2 style={{ fontSize: 'var(--t-section)', fontWeight: 600, color: 'var(--text)', margin: 0 }}>
           {copy.heading}
         </h2>
-        <span className="tnum" style={{ marginLeft: 'auto', fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>
-          {result.done} of {result.total} complete
-        </span>
+        <span className="tnum" style={{ marginInlineStart: 'auto', fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>
+          {result.done} {tx('of')} {result.total} {tx('complete')}</span>
       </div>
 
       <div style={{
@@ -422,17 +432,13 @@ export function EvidenceCompliancePanel({
             background: 'var(--medium-bg)', border: '1px solid var(--medium-bd)',
           }}>
             <Info size={14} style={{ color: 'var(--medium)', flexShrink: 0, marginTop: 1 }} />
-            <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-2)', margin: 0, lineHeight: 1.55 }}>
-              Evidence storage is not set up yet. Apply{' '}
-              <span className="mono">supabase/migrations/004_compliance_evidence.sql</span> in the Supabase SQL editor.
-            </p>
+            <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-2)', margin: 0, lineHeight: 1.55 }}>{tx('Evidence storage is not set up yet. Apply')}{' '}
+              <span className="mono">{tx('supabase/migrations/004_compliance_evidence.sql')}</span> {tx('in the Supabase SQL editor.')}</p>
           </div>
         )}
 
         {!canManage && migrated && (
-          <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', margin: '0 0 12px' }}>
-            Only risk managers and admins can submit evidence for a control.
-          </p>
+          <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', margin: '0 0 12px' }}>{tx('Only risk managers and admins can submit evidence for a control.')}</p>
         )}
 
         <div aria-hidden style={{ height: 5, borderRadius: 99, background: 'var(--surface-2)', overflow: 'hidden' }}>
@@ -458,7 +464,7 @@ export function EvidenceCompliancePanel({
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: 'var(--t-sm)', fontWeight: 500, color: 'var(--text)', margin: '0 0 6px' }}>
                     {f.label}
-                    {f.optional && <span style={{ fontWeight: 400, color: 'var(--text-3)' }}> (optional)</span>}
+                    {f.optional && <span style={{ fontWeight: 400, color: 'var(--text-3)' }}> {tx('(optional)')}</span>}
                   </p>
                   {f.help && (
                     <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', margin: '-2px 0 8px', lineHeight: 1.5 }}>{f.help}</p>
@@ -477,9 +483,9 @@ export function EvidenceCompliancePanel({
           }}>
             <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--t-sm)', fontWeight: 600, color: 'var(--critical)', margin: '0 0 4px' }}>
               <AlertTriangle size={13} />
-              {mode === 'attestation' ? 'This attestation cannot be recorded yet' : 'This control cannot be complied yet'}
+              {mode === 'attestation' ? tx('This attestation cannot be recorded yet') : tx('This control cannot be complied yet')}
             </p>
-            <ul style={{ margin: 0, paddingLeft: 18 }}>
+            <ul style={{ margin: 0, paddingInlineStart: 18 }}>
               {result.blockers.map(b => (
                 <li key={b} style={{ fontSize: 'var(--t-meta)', color: 'var(--text-2)', lineHeight: 1.6 }}>{b}</li>
               ))}
@@ -497,16 +503,16 @@ export function EvidenceCompliancePanel({
         }}>
           <p style={{ fontSize: 'var(--t-meta)', color: recorded ? 'var(--low)' : 'var(--text-3)', margin: 0 }}>
             {recorded
-              ? (mode === 'attestation' ? 'Attestation recorded.' : 'Evidence recorded and the control marked compliant.')
+              ? (mode === 'attestation' ? tx('Attestation recorded.') : tx('Evidence recorded and the control marked compliant.'))
               : result.ready
-                ? 'Everything an assessor expects is on record.'
+                ? tx('Everything an assessor expects is on record.')
                 : `${result.total - result.done} item${result.total - result.done === 1 ? '' : 's'} left${result.blockers.length ? ` · ${result.blockers.length} problem${result.blockers.length === 1 ? '' : 's'} to resolve` : ''}`}
-            {dirty && ' · draft saved on this device'}
+            {dirty && tx(' · draft saved on this device')}
           </p>
           {canManage && (
             <button type="button" className="btn-primary" onClick={submit}
               disabled={!result.ready || !canEdit}
-              title={result.ready ? copy.action : 'Complete every item first'}
+              title={result.ready ? copy.action : tx('Complete every item first')}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, opacity: result.ready && canEdit ? 1 : 0.55 }}>
               {saving ? <Loader2 size={13} className="animate-spin" /> : <copy.Icon size={13} />}
               {actionLabel}

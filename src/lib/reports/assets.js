@@ -7,14 +7,49 @@
  * because an external host was blocked by a client's firewall.
  */
 import { Font } from '@react-pdf/renderer'
+import { isRtl } from '@/lib/i18n'
 
 export const FONT_SANS = 'IBM Plex Sans'
 export const FONT_DISPLAY = 'DM Serif Display'
+// Registered in both languages and used as a per-glyph fallback, so Arabic
+// data inside an English report still renders.
+export const FONT_ARABIC = 'IBM Plex Sans Arabic'
 
 const state = { registered: false, markLight: null, markDark: null }
 
 export function registerReportAssets({ fonts, markLight, markDark }) {
   if (!state.registered) {
+    // Arabic: IBM Plex Sans Arabic under the same family names, so templates
+    // need no change. It has no italic and DM Serif has no Arabic glyphs, so
+    // italic falls back to regular and display headings use the Arabic semibold.
+    // (Language is fixed for the page's lifetime — switching reloads.)
+    if (fonts.arRegular) {
+      Font.register({
+        family: FONT_ARABIC,
+        fonts: [
+          { src: fonts.arRegular,  fontWeight: 400 },
+          { src: fonts.arRegular,  fontWeight: 400, fontStyle: 'italic' },
+          { src: fonts.arMedium,   fontWeight: 500 },
+          { src: fonts.arSemiBold, fontWeight: 600 },
+          { src: fonts.arBold,     fontWeight: 700 },
+        ],
+      })
+    }
+    if (isRtl() && fonts.arRegular) {
+      Font.register({
+        family: FONT_SANS,
+        fonts: [
+          { src: fonts.arRegular,  fontWeight: 400 },
+          { src: fonts.arRegular,  fontWeight: 400, fontStyle: 'italic' },
+          { src: fonts.arMedium,   fontWeight: 500 },
+          { src: fonts.arSemiBold, fontWeight: 600 },
+          { src: fonts.arBold,     fontWeight: 700 },
+        ],
+      })
+      // Semibold, not bold: registering the bold file under a second family
+      // made some letters (ه) lose their joined forms in long documents.
+      Font.register({ family: FONT_DISPLAY, src: fonts.arSemiBold })
+    } else {
     Font.register({
       family: FONT_SANS,
       fonts: [
@@ -26,6 +61,7 @@ export function registerReportAssets({ fonts, markLight, markDark }) {
       ],
     })
     Font.register({ family: FONT_DISPLAY, src: fonts.display })
+    }
     // Report text is English prose and IDs; hyphenating "NCA-ECC-2-2-3-2" or
     // a person's name mid-word reads as an error in a board document.
     Font.registerHyphenationCallback((word) => [word])

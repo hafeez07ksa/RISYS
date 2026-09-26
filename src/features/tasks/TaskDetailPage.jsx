@@ -10,9 +10,11 @@ import { usePeople } from '@/hooks/usePeople'
 import { useTasks } from '@/hooks/useTasks'
 import { supabase } from '@/lib/supabase'
 import { Spinner } from '@/components/ui/Spinner'
+import { InlineConfirm } from '@/components/ui/InlineConfirm'
 import { SelectField } from '@/components/ui/Combobox'
 import { TASK_STATUSES, TASK_PRIORITIES, getTaskStatus, getTaskPriority } from '@/lib/sla'
 import { logAudit, AUDIT } from '@/lib/audit'
+import { tx, appLocale } from '@/lib/i18n'
 
 function Field({ label, children }) {
   return (
@@ -30,8 +32,7 @@ function DueChip({ dueAt, status }) {
   const overdue = diff < 0
   const urgent = hrs < 24 && hrs >= 0
   if (!overdue && !urgent) return (
-    <span style={{ fontSize: 12, color: '#8a7070' }}>
-      Due {new Date(dueAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+    <span style={{ fontSize: 12, color: '#8a7070' }}>{tx('Due')} {new Date(dueAt).toLocaleDateString(appLocale(), { day: 'numeric', month: 'short', year: 'numeric' })}
     </span>
   )
   return (
@@ -42,59 +43,17 @@ function DueChip({ dueAt, status }) {
   )
 }
 
-// ── Delete modal ──────────────────────────────────────────────────────────────
-function DeleteModal({ task, onClose, onDeleted }) {
-  const { organization } = useAuth()
-  const { deleteTask } = useTasks()
-  const navigate = useNavigate()
-  const [deleting, setDeleting] = useState(false)
-
-  const handleDelete = async () => {
-    setDeleting(true)
-    try {
-      await deleteTask(task.id)
-      await logAudit(organization.id, 'task.deleted', 'task', task.id, task.title)
-      onDeleted?.()
-      navigate('/app/tasks')
-    } catch (_) { setDeleting(false) }
-  }
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)' }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ width: '100%', maxWidth: 400, borderRadius: 14, overflow: 'hidden', background: '#fff', border: '1px solid #e5e0e0' }}>
-        <div style={{ padding: '16px 20px', background: '#fef2f2', borderBottom: '1px solid #fecaca', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <AlertTriangle size={16} style={{ color: '#b91c1c' }} />
-          <p style={{ fontSize: 14, fontWeight: 600, color: '#b91c1c' }}>Delete Task?</p>
-        </div>
-        <div style={{ padding: 20 }}>
-          <p style={{ fontSize: 13, color: '#4a3a3a', lineHeight: 1.6 }}>
-            This will permanently delete <strong style={{ color: '#1a1314' }}>{task.title}</strong>. This cannot be undone.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 8, padding: '0 20px 20px' }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '9px', borderRadius: 8, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', background: '#fff', color: '#4a3a3a', border: '1px solid #e5e0e0' }}>Cancel</button>
-          <button onClick={handleDelete} disabled={deleting} style={{ flex: 1, padding: '9px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', background: '#b91c1c', color: '#fff', border: 'none', opacity: deleting ? 0.6 : 1 }}>
-            {deleting ? 'Deleting…' : 'Delete'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── Main page ─────────────────────────────────────────────────────────────────
 export function TaskDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { organization } = useAuth()
   const { members } = usePeople()
-  const { updateTask } = useTasks()
+  const { updateTask, deleteTask } = useTasks()
 
   const [task, setTask]           = useState(null)
   const [loading, setLoading]     = useState(true)
   const [saving, setSaving]       = useState(false)
-  const [showDelete, setShowDelete] = useState(false)
 
   // Linked entities
   const [linkedIncident, setLinkedIncident] = useState(null)
@@ -141,18 +100,18 @@ export function TaskDetailPage() {
 
   if (loading) return (
     <div className="h-full flex flex-col">
-      <Topbar title="Loading…" subtitle="" />
+      <Topbar title={tx('Loading…')} subtitle="" />
       <div className="flex-1 flex items-center justify-center"><Spinner /></div>
     </div>
   )
 
   if (!task) return (
     <div className="h-full flex flex-col">
-      <Topbar title="Task not found" subtitle="" />
+      <Topbar title={tx('Task not found')} subtitle="" />
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-sm mb-3" style={{ color: '#8a7070' }}>This task no longer exists.</p>
-          <button onClick={() => navigate('/app/tasks')} className="btn-secondary text-xs">← Back to Tasks</button>
+          <p className="text-sm mb-3" style={{ color: '#8a7070' }}>{tx('This task no longer exists.')}</p>
+          <button onClick={() => navigate('/app/tasks')} className="btn-secondary text-xs">{tx('← Back to Tasks')}</button>
         </div>
       </div>
     </div>
@@ -167,9 +126,6 @@ export function TaskDetailPage() {
 
   return (
     <div className="h-full flex flex-col">
-      {showDelete && (
-        <DeleteModal task={task} onClose={() => setShowDelete(false)} onDeleted={() => {}} />
-      )}
 
       <Topbar
         title={task.title}
@@ -181,16 +137,19 @@ export function TaskDetailPage() {
               style={{ borderColor: '#e5e0e0', color: '#8a7070' }}>
               <RefreshCw size={13} />
             </button>
-            <button onClick={() => setShowDelete(true)}
-              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border hover:bg-[#fef2f2]"
-              style={{ borderColor: '#fecaca', color: '#b91c1c' }}>
-              <Trash2 size={13} /> Delete
-            </button>
+            <InlineConfirm triggerClassName="btn-secondary" triggerStyle={{ color: 'var(--critical)', borderColor: 'var(--critical-bd)' }}
+              message={tx('Delete this task permanently?')} confirmLabel={tx('Delete')}
+              onConfirm={async () => {
+                await deleteTask(task.id)
+                await logAudit(organization.id, 'task.deleted', 'task', task.id, task.title)
+                navigate('/app/tasks')
+              }}>
+              <Trash2 size={13} /> {tx('Delete')}
+            </InlineConfirm>
             <button onClick={() => navigate('/app/tasks')}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border hover:bg-[#f5f3f3]"
               style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
-              <ArrowLeft size={13} /> Back
-            </button>
+              <ArrowLeft size={13} className='rtl-flip' /> {tx('Back')}</button>
           </div>
         }
       />
@@ -210,7 +169,7 @@ export function TaskDetailPage() {
                 <StatusIcon size={16} style={{ color: s.color }} />
                 <SelectField value={task.status} onChange={e => handleUpdate({ status: e.target.value })}
                   disabled={saving}
-                  className="text-xs pl-2 pr-6 py-1.5 rounded-full border appearance-none outline-none cursor-pointer font-medium"
+                  className='text-xs ps-2 pe-6 py-1.5 rounded-full border appearance-none outline-none cursor-pointer font-medium'
                   style={{ color: s.color, background: s.bg, borderColor: s.border }}>
                   {TASK_STATUSES.map(ts => <option key={ts.value} value={ts.value}>{ts.label}</option>)}
                 </SelectField>
@@ -227,17 +186,16 @@ export function TaskDetailPage() {
               {/* Quick complete */}
               {task.status !== 'done' && (
                 <button onClick={() => handleUpdate({ status: 'done' })} disabled={saving}
-                  className="ml-auto flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg"
+                  className='ms-auto flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg'
                   style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
-                  <CheckCircle2 size={12} /> Mark Complete
-                </button>
+                  <CheckCircle2 size={12} /> {tx('Mark Complete')}</button>
               )}
             </div>
 
             {/* Description */}
             {task.description && (
               <div className="rounded-xl p-5" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
-                <p style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070', marginBottom: 10 }}>Description</p>
+                <p style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070', marginBottom: 10 }}>{tx('Description')}</p>
                 <p style={{ fontSize: 13, color: '#4a3a3a', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>{task.description}</p>
               </div>
             )}
@@ -245,17 +203,17 @@ export function TaskDetailPage() {
             {/* Linked entities */}
             {(linkedIncident || linkedRisk) && (
               <div className="rounded-xl p-5" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
-                <p style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070', marginBottom: 12 }}>Linked To</p>
+                <p style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070', marginBottom: 12 }}>{tx('Linked To')}</p>
                 <div className="flex flex-col gap-3">
                   {linkedIncident && (
                     <button onClick={() => navigate(`/app/incidents/${linkedIncident.id}`)}
-                      className="flex items-center gap-3 p-3 rounded-lg text-left hover:bg-[#fafafa] transition-colors"
+                      className='flex items-center gap-3 p-3 rounded-lg text-start hover:bg-[#fafafa] transition-colors'
                       style={{ border: '1px solid #e5e0e0' }}>
                       <div style={{ width: 32, height: 32, borderRadius: 8, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <AlertTriangle size={14} style={{ color: '#b91c1c' }} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p style={{ fontSize: 11, color: '#8a7070', marginBottom: 1 }}>Incident</p>
+                        <p style={{ fontSize: 11, color: '#8a7070', marginBottom: 1 }}>{tx('Incident')}</p>
                         <p style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1314', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{linkedIncident.title}</p>
                       </div>
                       <Link2 size={13} style={{ color: '#d4cccc', flexShrink: 0 }} />
@@ -263,13 +221,13 @@ export function TaskDetailPage() {
                   )}
                   {linkedRisk && (
                     <button onClick={() => navigate(`/app/risks/${linkedRisk.id}`)}
-                      className="flex items-center gap-3 p-3 rounded-lg text-left hover:bg-[#fafafa] transition-colors"
+                      className='flex items-center gap-3 p-3 rounded-lg text-start hover:bg-[#fafafa] transition-colors'
                       style={{ border: '1px solid #e5e0e0' }}>
                       <div style={{ width: 32, height: 32, borderRadius: 8, background: '#fdf5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <AlertCircle size={14} style={{ color: '#5D0F0F' }} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p style={{ fontSize: 11, color: '#8a7070', marginBottom: 1 }}>Risk</p>
+                        <p style={{ fontSize: 11, color: '#8a7070', marginBottom: 1 }}>{tx('Risk')}</p>
                         <p style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1314', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{linkedRisk.title}</p>
                       </div>
                       <Link2 size={13} style={{ color: '#d4cccc', flexShrink: 0 }} />
@@ -284,58 +242,58 @@ export function TaskDetailPage() {
           <div className="flex flex-col gap-4">
             <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
               <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0eded', background: '#f8f7f7' }}>
-                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>Details</p>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>{tx('Details')}</p>
               </div>
               <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
                 {/* Assignee */}
                 <div>
-                  <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070', marginBottom: 6 }}>Assignee</p>
+                  <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070', marginBottom: 6 }}>{tx('Assignee')}</p>
                   <div className="relative">
                     <SelectField value={task.assigned_to || ''} onChange={e => handleUpdate({ assigned_to: e.target.value || null })}
                       disabled={saving}
                       className="w-full text-xs px-3 py-2 rounded-lg border outline-none appearance-none cursor-pointer"
                       style={{ borderColor: '#e5e0e0', color: task.assigned_to ? '#1a1314' : '#8a7070' }}>
-                      <option value="">Unassigned</option>
+                      <option value="">{tx('Unassigned')}</option>
                       {members.map(m => (
                         <option key={m.user_id} value={m.user_id}>
                           {m.full_name || m.email || m.user_id?.slice(0, 8)}
                         </option>
                       ))}
                     </SelectField>
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[9px]" style={{ color: '#8a7070' }}>▾</span>
+                    <span className='absolute end-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[9px]' style={{ color: '#8a7070' }}>▾</span>
                   </div>
                 </div>
 
-                <Field label="Priority">
+                <Field label={tx('Priority')}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: p.color }}>{p.label}</span>
                 </Field>
 
-                <Field label="Created by">
+                <Field label={tx('Created by')}>
                   <span style={{ fontSize: 12 }}>{memberName(task.created_by) || '—'}</span>
                 </Field>
 
-                <Field label="Created">
+                <Field label={tx('Created')}>
                   <span className="flex items-center gap-1.5 text-xs" style={{ color: '#4a3a3a' }}>
                     <Calendar size={11} />
-                    {new Date(task.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    {new Date(task.created_at).toLocaleString(appLocale(), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </Field>
 
                 {task.due_at && (
-                  <Field label="Due date">
+                  <Field label={tx('Due date')}>
                     <span className="flex items-center gap-1.5 text-xs" style={{ color: '#4a3a3a' }}>
                       <Clock size={11} />
-                      {new Date(task.due_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {new Date(task.due_at).toLocaleString(appLocale(), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </Field>
                 )}
 
                 {task.completed_at && (
-                  <Field label="Completed">
+                  <Field label={tx('Completed')}>
                     <span className="flex items-center gap-1.5 text-xs" style={{ color: '#166534' }}>
                       <CheckCircle2 size={11} />
-                      {new Date(task.completed_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {new Date(task.completed_at).toLocaleString(appLocale(), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </Field>
                 )}

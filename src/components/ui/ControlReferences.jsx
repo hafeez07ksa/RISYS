@@ -3,6 +3,7 @@ import { BookOpen, ChevronDown, ExternalLink } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { parseControlRefs, eccControlPath } from '@/lib/controlRefs'
 import { mainControlId } from '@/data/eccAutomation'
+import { tx, localizeRow } from '@/lib/i18n'
 
 // Control references on a finding. Each reference is a chip; opening one shows
 // the regulator's text and the implementation guidance, so a finding can be
@@ -28,11 +29,14 @@ export async function loadDetail(ref) {
     const main = mainControlId(ref.id)
     const ids = [...new Set([ref.id, main])]
     const [{ data }, guides] = await Promise.all([
-      supabase.from('nca_ecc').select('control_id, control_text, subdomain_id, subdomain_name').in('control_id', ids),
+      // select('*') so the Arabic columns come along when the migration is applied,
+      // without failing when it is not.
+      supabase.from('nca_ecc').select('*').in('control_id', ids),
       loadGuides(),
     ])
-    const row = (data || []).find(r => r.control_id === ref.id)
-    const parent = ref.id !== main ? (data || []).find(r => r.control_id === main) : null
+    const rowsL = (data || []).map(localizeRow)
+    const row = rowsL.find(r => r.control_id === ref.id)
+    const parent = ref.id !== main ? rowsL.find(r => r.control_id === main) : null
     const ncaNode = guides.nca?.controls?.[ref.id]?.nca_official || guides.nca?.controls?.[main]?.nca_official || null
     detail = {
       heading: row ? `${row.subdomain_id} ${row.subdomain_name}` : null,
@@ -74,7 +78,7 @@ export function ControlReferences({ control, compact = false }) {
           return (
             <button key={ref.key} type="button" disabled={!linkable}
               onClick={() => setOpen(isOpen ? null : ref.key)}
-              title={linkable ? 'Show the control text and implementation guidance' : undefined}
+              title={linkable ? tx('Show the control text and implementation guidance') : undefined}
               className="inline-flex items-center gap-1"
               style={{
                 fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 6,
@@ -106,20 +110,19 @@ function ReferencePanel({ ref_: ref }) {
   const box = { marginTop: 8, padding: '10px 12px', borderRadius: 8, background: '#fff', border: '1px solid #eadcd8', fontSize: 12, lineHeight: 1.55, color: '#2a1f1f' }
   const h = { fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8a7070', margin: '10px 0 4px' }
 
-  if (error) return <div style={box}>Could not load the control text.</div>
-  if (!detail) return <div style={box}>Loading…</div>
+  if (error) return <div style={box}>{tx('Could not load the control text.')}</div>
+  if (!detail) return <div style={box}>{tx('Loading…')}</div>
 
   if (ref.type === 'pdpl') {
     return (
       <div style={box}>
-        <p style={{ fontWeight: 600 }}>SDAIA PDPL · {detail.heading}</p>
-        {detail.clauses.length === 0 && <p style={{ color: '#8a7070' }}>Article text not loaded.</p>}
+        <p style={{ fontWeight: 600 }}>{tx('SDAIA PDPL ·')} {detail.heading}</p>
+        {detail.clauses.length === 0 && <p style={{ color: '#8a7070' }}>{tx('Article text not loaded.')}</p>}
         <ol style={{ margin: '6px 0 0', paddingInlineStart: 18 }}>
           {detail.clauses.map((c, i) => <li key={`${c.id}-${i}`} style={{ marginBottom: 4 }}>{c.text}</li>)}
         </ol>
         <a href={`/app/compliance/${encodeURIComponent('SDAIA PDPL')}`} target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 mt-2" style={{ color: '#5D0F0F', fontWeight: 600 }}>
-          Open SDAIA PDPL in RISYS <ExternalLink size={11} />
+          className="inline-flex items-center gap-1 mt-2" style={{ color: '#5D0F0F', fontWeight: 600 }}>{tx('Open SDAIA PDPL in RISYS')} <ExternalLink size={11} />
         </a>
       </div>
     )
@@ -127,27 +130,27 @@ function ReferencePanel({ ref_: ref }) {
 
   return (
     <div style={box}>
-      <p style={{ fontWeight: 600 }}>NCA ECC-2:2024 · {ref.id}{detail.heading ? ` · ${detail.heading.replace(/^\S+\s/, '')}` : ''}</p>
-      <p style={h}>Control text</p>
+      <p style={{ fontWeight: 600 }}>{tx('NCA ECC-2:2024 ·')} {ref.id}{detail.heading ? ` · ${detail.heading.replace(/^\S+\s/, '')}` : ''}</p>
+      <p style={h}>{tx('Control text')}</p>
       {detail.parentText && (
         <p style={{ color: '#6b5555' }}>{detail.parentId}: {detail.parentText}</p>
       )}
       <p style={{ fontWeight: 500, paddingInlineStart: detail.parentText ? 12 : 0 }}>
-        {detail.parentText ? `${ref.id}: ` : ''}{detail.text || 'Control text not loaded.'}
+        {detail.parentText ? `${ref.id}: ` : ''}{detail.text || tx('Control text not loaded.')}
       </p>
 
       {detail.guide && (
         <>
-          <p style={h}>What it requires{detail.parentId ? ` (main control ${detail.parentId})` : ''}</p>
+          <p style={h}>{tx('What it requires')}{detail.parentId ? ` (main control ${detail.parentId})` : ''}</p>
           <p>{detail.guide.plain}</p>
-          {detail.guide.how && <p style={{ marginTop: 4 }}><strong>How to implement:</strong> {detail.guide.how}</p>}
-          {detail.guide.evidence && <p style={{ marginTop: 4 }}><strong>Evidence an auditor expects:</strong> {detail.guide.evidence}</p>}
+          {detail.guide.how && <p style={{ marginTop: 4 }}><strong>{tx('How to implement:')}</strong> {detail.guide.how}</p>}
+          {detail.guide.evidence && <p style={{ marginTop: 4 }}><strong>{tx('Evidence an auditor expects:')}</strong> {detail.guide.evidence}</p>}
         </>
       )}
 
       {detail.nca.map(section => (
         <div key={section.key}>
-          <p style={h}>NCA guide · {section.label}{detail.ncaFromParent ? ` (from ${detail.parentId})` : ''}</p>
+          <p style={h}>{tx('NCA guide ·')} {section.label}{detail.ncaFromParent ? ` (from ${detail.parentId})` : ''}</p>
           <ul style={{ margin: 0, paddingInlineStart: 18 }}>
             {section.items.slice(0, 8).map((it, i) => (
               <li key={i} style={{ marginInlineStart: (it.level || 0) * 16, listStyle: it.level ? 'circle' : 'disc' }}>{it.text}</li>
@@ -160,8 +163,7 @@ function ReferencePanel({ ref_: ref }) {
       )}
 
       <a href={eccControlPath(ref.id)} target="_blank" rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 mt-2" style={{ color: '#5D0F0F', fontWeight: 600 }}>
-        Open control {ref.id} in RISYS (full guidance, status and evidence) <ExternalLink size={11} />
+        className="inline-flex items-center gap-1 mt-2" style={{ color: '#5D0F0F', fontWeight: 600 }}>{tx('Open control')} {ref.id} {tx('in RISYS (full guidance, status and evidence)')} <ExternalLink size={11} />
       </a>
     </div>
   )

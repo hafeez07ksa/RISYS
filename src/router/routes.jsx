@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, Navigate, useParams } from 'react-router-dom'
 import { AppLayout } from '@/layouts/AppLayout'
 import { RequireRole } from '@/layouts/RequireRole'
 import { ROLE_SETS } from '@/lib/roles'
@@ -38,6 +38,29 @@ import { FrameworksPage } from '@/features/frameworks/FrameworksPage'
 import { AuditsPage } from '@/features/audits/AuditsPage'
 import { AuditDetailPage } from '@/features/audits/AuditDetailPage'
 import { ReportsPage } from '@/features/reports/ReportsPage'
+import { CreateTaskPage } from '@/features/tasks/CreateTaskPage'
+import { RaiseIncidentPage } from '@/features/incidents/RaiseIncidentPage'
+import { EscalateIncidentPage } from '@/features/incidents/EscalateIncidentPage'
+import { ControlFormPage } from '@/features/controls/ControlFormPage'
+import { InvitePage } from '@/features/people/InvitePage'
+import { CreateCompanyPage, CompanyLimitsPage, CompanyActivationPage } from '@/features/platform/PlatformFormPages'
+import { GenerateReportPage } from '@/features/reports/GenerateReportPage'
+import { RecordPresentationPage } from '@/features/reports/RecordPresentationPage'
+import { EngagementFormPage } from '@/features/audits/EngagementFormPage'
+import { OpinionPage } from '@/features/audits/OpinionPage'
+import { ScopeItemFormPage } from '@/features/audits/ScopeItemFormPage'
+import { ScopeTestPage } from '@/features/audits/ScopeTestPage'
+import { RequestFormPage } from '@/features/audits/RequestFormPage'
+import { RequestPage } from '@/features/audits/RequestPage'
+import { FindingFormPage } from '@/features/audits/FindingFormPage'
+import { FindingPage } from '@/features/audits/FindingPage'
+
+/* The breadcrumb links every segment of the URL, so /app/audits/:id/findings
+ * has to go somewhere: to the engagement, on that tab. */
+function EngagementTab({ tab }) {
+  const { id } = useParams()
+  return <Navigate to={`/app/audits/${id}?tab=${tab}`} replace />
+}
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/app/dashboard" replace /> },
@@ -48,7 +71,10 @@ export const router = createBrowserRouter([
   { path: '/invite/:token', element: <AcceptInvitePage /> },
   { path: '/platform/login', element: <PlatformLoginPage /> },
   { path: '/platform', element: <PlatformConsolePage /> },
+  { path: '/platform/companies/new', element: <CreateCompanyPage /> },
   { path: '/platform/companies/:id', element: <PlatformCompanyPage /> },
+  { path: '/platform/companies/:id/limits', element: <CompanyLimitsPage /> },
+  { path: '/platform/companies/:id/activation', element: <CompanyActivationPage /> },
   {
     path: '/app',
     element: <AppLayout />,
@@ -58,7 +84,9 @@ export const router = createBrowserRouter([
       // ── Available to all authenticated members ──────────────────
       { path: 'dashboard',    element: <DashboardPage /> },
       { path: 'incidents',      element: <IncidentsPage /> },
+      { path: 'incidents/new',  element: <RaiseIncidentPage /> },
       { path: 'incidents/:id',  element: <IncidentDetailPage /> },
+      { path: 'incidents/:id/escalate', element: <EscalateIncidentPage /> },
       { path: 'risks',        element: <RiskRegisterPage /> },
       // Declared before ':id' so the literal segment is not swallowed by the param.
       { path: 'risks/tolerances', element: (
@@ -73,21 +101,44 @@ export const router = createBrowserRouter([
       { path: 'risks/:id/edit',   element: <RiskFormPage /> },
       { path: 'risks/:id/assess', element: <AssessmentPage /> },
       { path: 'controls',     element: <ControlsPage /> },
+      { path: 'controls/new', element: <ControlFormPage /> },
       { path: 'controls/:id', element: <ControlDetailPage /> },
+      { path: 'controls/:id/edit', element: <ControlFormPage /> },
       { path: 'compliance',   element: <CompliancePage /> },
       // Framework and control are addressable so an assessment can be linked to
       { path: 'compliance/:frameworkId',                 element: <ComplianceFrameworkRoute /> },
       { path: 'compliance/:frameworkId/:requirementId',  element: <ComplianceControlRoute /> },
       { path: 'frameworks',   element: <FrameworksPage /> },
       { path: 'tasks',        element: <TasksPage /> },
+      { path: 'tasks/new',   element: <CreateTaskPage /> },
       { path: 'tasks/:id',   element: <TaskDetailPage /> },
       { path: 'audit',        element: <RequireRole roles={ROLE_SETS.auditReader}><AuditLogPage /></RequireRole> },
       // Audit engagements are visible to every member: the people audited are
       // the ones who answer evidence requests and respond to findings. Who may
       // change what is enforced per action (and in RLS), not by the route.
+      //
+      // Every create/edit/record step is its own page (no dialogs), so a
+      // reload, the back button or a link in a notification lands on it.
       { path: 'audits',       element: <AuditsPage /> },
+      { path: 'audits/new',   element: <EngagementFormPage /> },
       { path: 'audits/:id',   element: <AuditDetailPage /> },
+      { path: 'audits/:id/edit',     element: <EngagementFormPage /> },
+      { path: 'audits/:id/opinion',  element: <OpinionPage /> },
+      { path: 'audits/:id/report',   element: <GenerateReportPage /> },
+      { path: 'audits/:id/scope',                 element: <EngagementTab tab="scope" /> },
+      { path: 'audits/:id/scope/new',             element: <ScopeItemFormPage /> },
+      { path: 'audits/:id/scope/:itemId',         element: <ScopeTestPage /> },
+      { path: 'audits/:id/requests',              element: <EngagementTab tab="requests" /> },
+      { path: 'audits/:id/requests/new',          element: <RequestFormPage /> },
+      { path: 'audits/:id/requests/:requestId',   element: <RequestPage /> },
+      { path: 'audits/:id/findings',              element: <EngagementTab tab="findings" /> },
+      { path: 'audits/:id/findings/new',          element: <FindingFormPage /> },
+      { path: 'audits/:id/findings/:findingId',   element: <FindingPage /> },
+      { path: 'audits/:id/findings/:findingId/edit', element: <FindingFormPage /> },
       { path: 'reports',      element: <ReportsPage /> },
+      { path: 'reports/new',  element: <GenerateReportPage /> },
+      { path: 'reports/:runId', element: <Navigate to="/app/reports" replace /> },
+      { path: 'reports/:runId/record', element: <RecordPresentationPage /> },
 
       // ── Admin only ──────────────────────────────────────────────
 
@@ -112,6 +163,10 @@ export const router = createBrowserRouter([
       {
         path: 'people',
         element: <RequireRole roles={ROLE_SETS.admin}><PeoplePage /></RequireRole>,
+      },
+      {
+        path: 'people/invite',
+        element: <RequireRole roles={ROLE_SETS.admin}><InvitePage /></RequireRole>,
       },
 
       // Settings = connection management only, no findings

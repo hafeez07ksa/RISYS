@@ -1,16 +1,17 @@
+import { tx } from '@/lib/i18n'
 export const SEVERITIES = [
-  { value: 'critical',      label: 'Critical',      color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
-  { value: 'high',          label: 'High',           color: '#c2410c', bg: '#fff7ed', border: '#fed7aa' },
-  { value: 'medium',        label: 'Medium',         color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
-  { value: 'low',           label: 'Low',            color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  { value: 'informational', label: 'Informational',  color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
+  { value: 'critical',      label: tx('Critical'),      color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
+  { value: 'high',          label: tx('High'),           color: '#c2410c', bg: '#fff7ed', border: '#fed7aa' },
+  { value: 'medium',        label: tx('Medium'),         color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
+  { value: 'low',           label: tx('Low'),            color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  { value: 'informational', label: tx('Informational'),  color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
 ]
 
 export const STATUSES = [
-  { value: 'open',        label: 'Open',        color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
-  { value: 'in_progress', label: 'In Progress', color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
-  { value: 'resolved',    label: 'Resolved',    color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  { value: 'closed',      label: 'Closed',      color: '#374151', bg: '#f9fafb', border: '#e5e7eb' },
+  { value: 'open',        label: tx('Open'),        color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
+  { value: 'in_progress', label: tx('In Progress'), color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
+  { value: 'resolved',    label: tx('Resolved'),    color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  { value: 'closed',      label: tx('Closed'),      color: '#374151', bg: '#f9fafb', border: '#e5e7eb' },
 ]
 
 export function getSeverity(value) {

@@ -5,6 +5,7 @@ import { startOAuthRedirect } from '@/lib/oauth'
 import { CONNECTORS } from '@/lib/constants'
 import { supabase } from '@/lib/supabase'
 import { logAudit, AUDIT } from '@/lib/audit'
+import { tx } from '@/lib/i18n'
 
 // V4: OAuth tokens are never held in the browser or in org_connectors.meta.
 // Microsoft syncs use app-only tokens server-side; Jira tokens live in Vault
@@ -29,7 +30,7 @@ export function useConnectors() {
   // post-connect actions) is handled by OAuthCallbackPage.
   const connect = async (connectorId) => {
     const connector = CONNECTORS.find(c => c.id === connectorId)
-    if (!connector) throw new Error('Unknown connector')
+    if (!connector) throw new Error(tx('Unknown connector'))
 
     const hasClientId = connector.oauthParams?.client_id &&
       connector.oauthParams.client_id !== 'undefined'
@@ -40,7 +41,7 @@ export function useConnectors() {
       return { mock: true }
     }
 
-    if (!organization?.id) throw new Error('No active organisation')
+    if (!organization?.id) throw new Error(tx('No active organisation'))
 
     // startOAuthRedirect saves state to sessionStorage and navigates away.
     // Execution does not continue past this point.

@@ -8,11 +8,11 @@ import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
 import { usePeople } from '@/hooks/usePeople'
 import { useTasks } from '@/hooks/useTasks'
-import { CreateTaskModal } from './CreateTaskModal'
 import { TASK_STATUSES, TASK_PRIORITIES, getTaskStatus, getTaskPriority } from '@/lib/sla'
 import { logAudit, AUDIT } from '@/lib/audit'
 import { Spinner } from '@/components/ui/Spinner'
 import { SelectField } from '@/components/ui/Combobox'
+import { tx, appLocale } from '@/lib/i18n'
 
 function DueLabel({ dueAt, status }) {
   if (!dueAt || status === 'done' || status === 'cancelled') return null
@@ -21,8 +21,7 @@ function DueLabel({ dueAt, status }) {
   const overdue = diff < 0
   const urgent = hrs < 24 && hrs >= 0
   if (!overdue && !urgent) return (
-    <span className="text-[11px]" style={{ color: '#8a7070' }}>
-      Due {new Date(dueAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+    <span className="text-[11px]" style={{ color: '#8a7070' }}>{tx('Due')} {new Date(dueAt).toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' })}
     </span>
   )
   return (
@@ -110,7 +109,7 @@ function KanbanView({ tasks, memberName, onUpdate, onNavigate }) {
             </div>
             <div className="min-h-[200px] rounded-xl p-2" style={{ background: '#f8f7f7', border: '1px solid #e5e0e0' }}>
               {colTasks.length === 0
-                ? <p className="text-[11px] text-center py-8" style={{ color: '#d4cccc' }}>No tasks</p>
+                ? <p className="text-[11px] text-center py-8" style={{ color: '#d4cccc' }}>{tx('No tasks')}</p>
                 : colTasks.map(t => (
                   <TaskCard key={t.id} task={t} memberName={memberName}
                     onUpdate={onUpdate} onClick={() => onNavigate(t.id)} />
@@ -130,7 +129,7 @@ function ListView({ tasks, memberName, onUpdate, onNavigate }) {
     <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #e5e0e0' }}>
       <div className="grid text-[11px] uppercase tracking-wider px-4 py-2.5"
         style={{ gridTemplateColumns: GRID, background: '#f8f7f7', borderBottom: '1px solid #e5e0e0', color: '#8a7070' }}>
-        <span>Task</span><span>Priority</span><span>Status</span><span>Due</span><span>Assignee</span><span />
+        <span>{tx('Task')}</span><span>{tx('Priority')}</span><span>{tx('Status')}</span><span>{tx('Due')}</span><span>{tx('Assignee')}</span><span />
       </div>
       <div style={{ background: '#fff' }}>
         {tasks.map((task, i) => {
@@ -142,7 +141,7 @@ function ListView({ tasks, memberName, onUpdate, onNavigate }) {
               onClick={() => onNavigate(task.id)}
               className="grid items-center px-4 py-3 hover:bg-[#fafafa] transition-colors cursor-pointer"
               style={{ gridTemplateColumns: GRID, borderTop: i > 0 ? '1px solid #f5f3f3' : 'none' }}>
-              <div className="flex items-center gap-2 pr-4 min-w-0">
+              <div className='flex items-center gap-2 pe-4 min-w-0'>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: p.color, flexShrink: 0 }} />
                 <span className={`text-xs truncate ${task.status === 'done' ? 'line-through opacity-50' : ''}`}
                   style={{ color: '#1a1314' }}>{task.title}</span>
@@ -166,7 +165,7 @@ function ListView({ tasks, memberName, onUpdate, onNavigate }) {
                   <span className="text-xs" style={{ color: '#d4cccc' }}>—</span>
                 )}
               </div>
-              <ChevronRight size={14} style={{ color: '#d4cccc' }} />
+              <ChevronRight size={14} style={{ color: '#d4cccc' }} className='rtl-flip' />
             </div>
           )
         })}
@@ -181,7 +180,6 @@ export function TasksPage() {
   const { organization } = useAuth()
   const { members } = usePeople()
   const [view, setView] = useState('list')
-  const [showCreate, setShowCreate] = useState(false)
   const [search, setSearch] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -222,7 +220,7 @@ export function TasksPage() {
   return (
     <div className="h-full flex flex-col">
       <Topbar
-        title="Tasks"
+        title={tx('Tasks')}
         subtitle={organization?.name}
         actions={
           <div className="flex items-center gap-2">
@@ -239,35 +237,28 @@ export function TasksPage() {
               </button>
               <button onClick={() => setView('kanban')}
                 className="px-2.5 py-1.5 transition-colors"
-                style={{ background: view === 'kanban' ? '#f5f3f3' : '#fff', color: view === 'kanban' ? '#1a1314' : '#8a7070', borderLeft: '1px solid #e5e0e0' }}>
+                style={{ background: view === 'kanban' ? '#f5f3f3' : '#fff', color: view === 'kanban' ? '#1a1314' : '#8a7070', borderInlineStart: '1px solid #e5e0e0' }}>
                 <LayoutGrid size={13} />
               </button>
             </div>
-            <button onClick={() => setShowCreate(true)}
+            <button onClick={() => navigate('/app/tasks/new')}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md"
               style={{ background: '#5D0F0F', color: '#fff', border: 'none' }}>
-              <Plus size={13} /> New Task
-            </button>
+              <Plus size={13} /> {tx('New Task')}</button>
           </div>
         }
       />
 
-      {showCreate && (
-        <CreateTaskModal
-          onClose={() => setShowCreate(false)}
-          onCreated={refetch}
-        />
-      )}
 
       <div className="flex-1 overflow-y-auto page-content">
         {/* Stats */}
         <div className="grid grid-cols-5 gap-3 mb-5">
           {[
-            { label: 'Total',       val: counts.total,      active: !statusFilter },
-            { label: 'To Do',       val: counts.todo,       filter: 'todo' },
-            { label: 'In Progress', val: counts.inProgress, filter: 'in_progress' },
-            { label: 'Done',        val: counts.done,       filter: 'done' },
-            { label: 'Overdue',     val: counts.overdue,    warn: counts.overdue > 0 },
+            { label: tx('Total'),       val: counts.total,      active: !statusFilter },
+            { label: tx('To Do'),       val: counts.todo,       filter: 'todo' },
+            { label: tx('In Progress'), val: counts.inProgress, filter: 'in_progress' },
+            { label: tx('Done'),        val: counts.done,       filter: 'done' },
+            { label: tx('Overdue'),     val: counts.overdue,    warn: counts.overdue > 0 },
           ].map(s => (
             <div key={s.label}
               onClick={() => s.filter && setStatusFilter(f => f === s.filter ? '' : s.filter)}
@@ -286,25 +277,25 @@ export function TasksPage() {
         {/* Filters */}
         <div className="flex items-center gap-2 mb-5">
           <div className="relative flex-1 max-w-xs">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#8a7070' }} />
+            <Search size={13} className='absolute start-3 top-1/2 -translate-y-1/2' style={{ color: '#8a7070' }} />
             <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search tasks…"
-              className="w-full text-xs pl-8 pr-3 py-2 rounded-md border outline-none"
+              placeholder={tx('Search tasks…')}
+              className='w-full text-xs ps-8 pe-3 py-2 rounded-md border outline-none'
               style={{ borderColor: '#e5e0e0', color: '#1a1314' }} />
           </div>
           <div className="relative">
             <SelectField value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}
-              className="text-xs pl-3 pr-7 py-2 rounded-md border appearance-none outline-none cursor-pointer"
+              className='text-xs ps-3 pe-7 py-2 rounded-md border appearance-none outline-none cursor-pointer'
               style={{ borderColor: '#e5e0e0', color: priorityFilter ? '#1a1314' : '#8a7070' }}>
-              <option value="">All priorities</option>
+              <option value="">{tx('All priorities')}</option>
               {TASK_PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
             </SelectField>
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#8a7070' }}>▾</span>
+            <span className='absolute end-2 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]' style={{ color: '#8a7070' }}>▾</span>
           </div>
           {(search || priorityFilter || statusFilter) && (
             <button onClick={() => { setSearch(''); setPriorityFilter(''); setStatusFilter('') }}
               className="text-xs px-3 py-2 rounded-md border hover:bg-[#f5f3f3]"
-              style={{ borderColor: '#e5e0e0', color: '#8a7070' }}>Clear</button>
+              style={{ borderColor: '#e5e0e0', color: '#8a7070' }}>{tx('Clear')}</button>
           )}
         </div>
 
@@ -314,17 +305,15 @@ export function TasksPage() {
           <div className="rounded-xl py-16 text-center" style={{ background: '#fff', border: '1px dashed #e5e0e0' }}>
             <CheckCircle2 size={32} strokeWidth={1} className="mx-auto mb-4" style={{ color: '#d4cccc' }} />
             <p className="text-sm font-medium mb-1" style={{ color: '#4a3a3a' }}>
-              {tasks.length === 0 ? 'No tasks yet' : 'No tasks match this filter'}
+              {tasks.length === 0 ? tx('No tasks yet') : tx('No tasks match this filter')}
             </p>
             <p className="text-xs mb-4" style={{ color: '#8a7070' }}>
-              {tasks.length === 0 ? 'Create tasks to track remediation work linked to incidents and risks' : 'Try a different filter'}
+              {tasks.length === 0 ? tx('Create tasks to track remediation work linked to incidents and risks') : tx('Try a different filter')}
             </p>
             {tasks.length === 0 && (
-              <button onClick={() => setShowCreate(true)}
+              <button onClick={() => navigate('/app/tasks/new')}
                 className="text-xs px-4 py-2 rounded-md"
-                style={{ background: '#5D0F0F', color: '#fff', border: 'none' }}>
-                Create first task
-              </button>
+                style={{ background: '#5D0F0F', color: '#fff', border: 'none' }}>{tx('Create first task')}</button>
             )}
           </div>
         ) : view === 'kanban' ? (

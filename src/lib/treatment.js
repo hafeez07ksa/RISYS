@@ -1,3 +1,4 @@
+import { tx } from '@/lib/i18n'
 // ============================================================
 // TREATMENT DECISION — step 9 of the risk process
 //
@@ -13,41 +14,45 @@
 // ============================================================
 
 export const TREATMENT_OPTIONS = [
-  { value: 'avoid',    label: 'Avoid',    planned: true,
-    desc: 'Remove the cause entirely — retire the asset or stop the activity.' },
-  { value: 'reduce',   label: 'Reduce',   planned: true,
-    desc: 'Mitigate: lower likelihood, impact or both through controls and tasks.' },
-  { value: 'transfer', label: 'Transfer', planned: true,
-    desc: 'Shift financial impact to a third party, such as insurance. Does not move likelihood or fix non-compliance.' },
-  { value: 'accept',   label: 'Accept',   planned: false,
-    desc: 'Retain the residual risk under a formal, time-bound approval at the right authority.' },
+  { value: 'avoid',    label: tx('Avoid'),    planned: true,
+    desc: tx('Remove the cause entirely — retire the asset or stop the activity.') },
+  { value: 'reduce',   label: tx('Reduce'),   planned: true,
+    desc: tx('Mitigate: lower likelihood, impact or both through controls and tasks.') },
+  { value: 'transfer', label: tx('Transfer'), planned: true,
+    desc: tx(
+      'Shift financial impact to a third party, such as insurance. Does not move likelihood or fix non-compliance.'
+    ) },
+  { value: 'accept',   label: tx('Accept'),   planned: false,
+    desc: tx(
+      'Retain the residual risk under a formal, time-bound approval at the right authority.'
+    ) },
 ]
 
 export const OPTION_DECISIONS = [
-  { value: 'pending',       label: 'Not decided' },
-  { value: 'selected',      label: 'Selected' },
-  { value: 'rejected',      label: 'Rejected' },
-  { value: 'not_available', label: 'Not available' },
+  { value: 'pending',       label: tx('Not decided') },
+  { value: 'selected',      label: tx('Selected') },
+  { value: 'rejected',      label: tx('Rejected') },
+  { value: 'not_available', label: tx('Not available') },
 ]
 
 export const HORIZONS = [
-  { value: 'immediate', label: 'Immediate' },
-  { value: 'long_term', label: 'Long-term' },
+  { value: 'immediate', label: tx('Immediate') },
+  { value: 'long_term', label: tx('Long-term') },
 ]
 
 export const MOVES = [
-  { value: 'likelihood', label: 'Likelihood', short: 'L' },
-  { value: 'impact',     label: 'Impact',     short: 'I' },
-  { value: 'both',       label: 'Both',       short: 'L + I' },
-  { value: 'none',       label: 'Supporting — moves neither', short: '—' },
+  { value: 'likelihood', label: tx('Likelihood'), short: 'L' },
+  { value: 'impact',     label: tx('Impact'),     short: 'I' },
+  { value: 'both',       label: tx('Both'),       short: 'L + I' },
+  { value: 'none',       label: tx('Supporting — moves neither'), short: '—' },
 ]
 
 export const PLAN_STATUSES = [
-  { value: 'planned',     label: 'Planned',     color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
-  { value: 'approved',    label: 'Approved',    color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
-  { value: 'in_progress', label: 'In progress', color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
-  { value: 'complete',    label: 'Complete',    color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  { value: 'cancelled',   label: 'Cancelled',   color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
+  { value: 'planned',     label: tx('Planned'),     color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
+  { value: 'approved',    label: tx('Approved'),    color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
+  { value: 'in_progress', label: tx('In progress'), color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
+  { value: 'complete',    label: tx('Complete'),    color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  { value: 'cancelled',   label: tx('Cancelled'),   color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
 ]
 
 export function optionMeta(value) {

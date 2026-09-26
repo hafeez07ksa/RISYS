@@ -12,6 +12,7 @@ import { SeverityBadge, StatusBadge } from '@/components/ui/IncidentBadges'
 import { getSLAStatus, formatTimeRemaining, getTaskStatus } from '@/lib/sla'
 import { getRiskLevel } from '@/lib/risks'
 import { Spinner } from '@/components/ui/Spinner'
+import { tx, appLocale } from '@/lib/i18n'
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon: Icon, sub, warn, amber, to, accent }) {
@@ -52,13 +53,13 @@ function SLABar({ incidents }) {
     <div className="rounded-xl p-4 mb-5" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
       <div className="flex items-center gap-2 mb-3">
         <Clock size={14} style={{ color: '#b91c1c' }} />
-        <p className="text-xs font-medium" style={{ color: '#b91c1c' }}>SLA Alerts</p>
+        <p className="text-xs font-medium" style={{ color: '#b91c1c' }}>{tx('SLA Alerts')}</p>
       </div>
       <div className="flex flex-col gap-2">
         {[...breached, ...warning].map(i => (
           <Link to="/app/incidents" key={i.id} className="flex items-center justify-between hover:opacity-80">
             <span className="text-xs truncate" style={{ color: '#1a1314' }}>{i.title}</span>
-            <span className="text-[11px] ml-4 flex-shrink-0"
+            <span className='text-[11px] ms-4 flex-shrink-0'
               style={{ color: breached.includes(i) ? '#b91c1c' : '#92400e' }}>
               {formatTimeRemaining(getSLAStatus(i.severity, i.created_at).diff)}
             </span>
@@ -88,27 +89,26 @@ function RiskSummary({ risks }) {
   return (
     <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid #f0eded' }}>
-        <p className="text-xs font-medium" style={{ color: '#1a1314' }}>Risk Register</p>
-        <Link to="/app/risks" className="text-[11px] flex items-center gap-1 hover:underline" style={{ color: '#5D0F0F' }}>
-          View all <ArrowRight size={11} />
+        <p className="text-xs font-medium" style={{ color: '#1a1314' }}>{tx('Risk Register')}</p>
+        <Link to="/app/risks" className="text-[11px] flex items-center gap-1 hover:underline" style={{ color: '#5D0F0F' }}>{tx('View all')} <ArrowRight size={11} className='rtl-flip' />
         </Link>
       </div>
 
       {openRisks.length === 0 ? (
         <div className="py-8 text-center">
           <ShieldAlert size={22} strokeWidth={1} className="mx-auto mb-2" style={{ color: '#d4cccc' }} />
-          <p className="text-xs" style={{ color: '#8a7070' }}>No open risks</p>
+          <p className="text-xs" style={{ color: '#8a7070' }}>{tx('No open risks')}</p>
         </div>
       ) : (
         <>
           {/* Level breakdown */}
-          <div className="grid grid-cols-4 divide-x" style={{ borderBottom: '1px solid #f0eded', divideColor: '#f0eded' }}>
+          <div className='grid grid-cols-4 divide-x rtl:divide-x-reverse' style={{ borderBottom: '1px solid #f0eded', divideColor: '#f0eded' }}>
             {Object.entries(byLevel).map(([level, items]) => {
               const c = colors[level]
               return (
-                <div key={level} className="py-3 text-center" style={{ borderRight: '1px solid #f0eded' }}>
+                <div key={level} className="py-3 text-center" style={{ borderInlineEnd: '1px solid #f0eded' }}>
                   <p className="text-lg font-light" style={{ color: c.color }}>{items.length}</p>
-                  <p className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: c.color }}>{level}</p>
+                  <p className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: c.color }}>{tx(String(level).charAt(0).toUpperCase() + String(level).slice(1))}</p>
                 </div>
               )
             })}
@@ -166,19 +166,16 @@ function ComplianceWidget({ complianceStatuses }) {
   return (
     <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid #f0eded' }}>
-        <p className="text-xs font-medium" style={{ color: '#1a1314' }}>Compliance Posture</p>
-        <Link to="/app/compliance" className="text-[11px] flex items-center gap-1 hover:underline" style={{ color: '#5D0F0F' }}>
-          View all <ArrowRight size={11} />
+        <p className="text-xs font-medium" style={{ color: '#1a1314' }}>{tx('Compliance Posture')}</p>
+        <Link to="/app/compliance" className="text-[11px] flex items-center gap-1 hover:underline" style={{ color: '#5D0F0F' }}>{tx('View all')} <ArrowRight size={11} className='rtl-flip' />
         </Link>
       </div>
 
       {total === 0 ? (
         <div className="py-8 text-center">
           <BookCheck size={22} strokeWidth={1} className="mx-auto mb-2" style={{ color: '#d4cccc' }} />
-          <p className="text-xs mb-1" style={{ color: '#8a7070' }}>No compliance data yet</p>
-          <Link to="/app/compliance" className="text-[11px]" style={{ color: '#5D0F0F' }}>
-            Set up frameworks →
-          </Link>
+          <p className="text-xs mb-1" style={{ color: '#8a7070' }}>{tx('No compliance data yet')}</p>
+          <Link to="/app/compliance" className="text-[11px]" style={{ color: '#5D0F0F' }}>{tx('Set up frameworks →')}</Link>
         </div>
       ) : (
         <>
@@ -205,12 +202,12 @@ function ComplianceWidget({ complianceStatuses }) {
 
             <div className="flex-1">
               <p className="text-xs font-medium mb-2" style={{ color: '#1a1314' }}>
-                {score >= 70 ? 'Good posture' : score >= 40 ? 'Needs attention' : 'Critical gaps'}
+                {score >= 70 ? tx('Good posture') : score >= 40 ? tx('Needs attention') : tx('Critical gaps')}
               </p>
               <div className="flex gap-3 text-[11px]">
-                <span style={{ color: '#166534' }}><span className="font-medium">{compliant}</span> compliant</span>
-                <span style={{ color: '#92400e' }}><span className="font-medium">{partial}</span> partial</span>
-                <span style={{ color: '#b91c1c' }}><span className="font-medium">{nonCompliant}</span> non-compliant</span>
+                <span style={{ color: '#166534' }}><span className="font-medium">{compliant}</span> {tx('compliant')}</span>
+                <span style={{ color: '#92400e' }}><span className="font-medium">{partial}</span> {tx('partial')}</span>
+                <span style={{ color: '#b91c1c' }}><span className="font-medium">{nonCompliant}</span> {tx('non-compliant')}</span>
               </div>
             </div>
           </div>
@@ -224,7 +221,7 @@ function ComplianceWidget({ complianceStatuses }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-[11px] font-medium truncate" style={{ color: '#1a1314' }}>{fw}</p>
-                    <span className="text-[11px] ml-2 flex-shrink-0"
+                    <span className='text-[11px] ms-2 flex-shrink-0'
                       style={{ color: pct >= 70 ? '#166534' : pct >= 40 ? '#92400e' : '#b91c1c' }}>
                       {pct}%
                     </span>
@@ -253,15 +250,13 @@ function IdentityPosture({ entraUsers, entraConnected }) {
     return (
       <div className="rounded-xl p-4" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-medium" style={{ color: '#1a1314' }}>Identity Posture</p>
+          <p className="text-xs font-medium" style={{ color: '#1a1314' }}>{tx('Identity Posture')}</p>
           <Building2 size={14} strokeWidth={1.5} style={{ color: '#d4cccc' }} />
         </div>
         <div className="py-4 text-center">
           <Building2 size={22} strokeWidth={1} className="mx-auto mb-2" style={{ color: '#d4cccc' }} />
-          <p className="text-xs mb-2" style={{ color: '#8a7070' }}>Entra ID not connected</p>
-          <Link to="/app/settings" className="text-[11px] font-medium" style={{ color: '#5D0F0F' }}>
-            Connect Entra ID →
-          </Link>
+          <p className="text-xs mb-2" style={{ color: '#8a7070' }}>{tx('Entra ID not connected')}</p>
+          <Link to="/app/settings" className="text-[11px] font-medium" style={{ color: '#5D0F0F' }}>{tx('Connect Entra ID →')}</Link>
         </div>
       </div>
     )
@@ -277,16 +272,15 @@ function IdentityPosture({ entraUsers, entraConnected }) {
   return (
     <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid #f0eded' }}>
-        <p className="text-xs font-medium" style={{ color: '#1a1314' }}>Identity Posture</p>
-        <Link to="/app/findings/entra" className="text-[11px] flex items-center gap-1 hover:underline" style={{ color: '#5D0F0F' }}>
-          View detail <ArrowRight size={11} />
+        <p className="text-xs font-medium" style={{ color: '#1a1314' }}>{tx('Identity Posture')}</p>
+        <Link to="/app/findings/entra" className="text-[11px] flex items-center gap-1 hover:underline" style={{ color: '#5D0F0F' }}>{tx('View detail')} <ArrowRight size={11} className='rtl-flip' />
         </Link>
       </div>
 
       {/* MFA coverage bar */}
       <div className="px-4 py-3" style={{ borderBottom: '1px solid #f0eded' }}>
         <div className="flex items-center justify-between mb-1.5">
-          <p className="text-[11px]" style={{ color: '#4a3a3a' }}>MFA Coverage</p>
+          <p className="text-[11px]" style={{ color: '#4a3a3a' }}>{tx('MFA Coverage')}</p>
           <span className="text-[11px] font-medium"
             style={{ color: mfaCoverage >= 80 ? '#166534' : mfaCoverage >= 50 ? '#92400e' : '#b91c1c' }}>
             {mfaCoverage}%
@@ -301,29 +295,28 @@ function IdentityPosture({ entraUsers, entraConnected }) {
           }} />
         </div>
         <p className="text-[10px] mt-1" style={{ color: '#8a7070' }}>
-          {total - noMfa} of {total} users have MFA registered
-        </p>
+          {total - noMfa} {tx('of')} {total} {tx('users have MFA registered')}</p>
       </div>
 
       {/* Findings */}
       <div className="divide-y" style={{ borderColor: '#f5f3f3' }}>
         {[
           {
-            label: `${noMfa} user${noMfa !== 1 ? 's' : ''} without MFA`,
-            sub: 'Identity risk — NCA ECC 2-2-3-2 (MFA)',
+            label: tx('{{n}} user(s) without MFA', { n: noMfa }),
+            sub: tx('Identity risk — NCA ECC 2-2-3-2 (MFA)'),
             warn: noMfa > 0,
             icon: noMfa > 0 ? AlertCircle : CheckCircle,
           },
           {
-            label: `${privileged} privileged account${privileged !== 1 ? 's' : ''}`,
-            sub: 'Global Admin or directory role assigned',
+            label: tx('{{n}} privileged account(s)', { n: privileged }),
+            sub: tx('Global Admin or directory role assigned'),
             warn: privileged > 2,
             amber: privileged > 0 && privileged <= 2,
             icon: ShieldCheck,
           },
           {
-            label: `${guests} guest user${guests !== 1 ? 's' : ''}`,
-            sub: 'External / third-party access',
+            label: tx('{{n}} guest user(s)', { n: guests }),
+            sub: tx('External / third-party access'),
             warn: false,
             amber: guests > 0,
             icon: Users,
@@ -354,15 +347,14 @@ function RecentIncidents({ incidents }) {
   return (
     <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid #f0eded' }}>
-        <p className="text-xs font-medium" style={{ color: '#1a1314' }}>Recent Incidents</p>
-        <Link to="/app/incidents" className="text-[11px] flex items-center gap-1 hover:underline" style={{ color: '#5D0F0F' }}>
-          View all <ArrowRight size={11} />
+        <p className="text-xs font-medium" style={{ color: '#1a1314' }}>{tx('Recent Incidents')}</p>
+        <Link to="/app/incidents" className="text-[11px] flex items-center gap-1 hover:underline" style={{ color: '#5D0F0F' }}>{tx('View all')} <ArrowRight size={11} className='rtl-flip' />
         </Link>
       </div>
       {incidents.length === 0 ? (
         <div className="py-8 text-center">
           <AlertTriangle size={22} strokeWidth={1} className="mx-auto mb-2" style={{ color: '#d4cccc' }} />
-          <p className="text-xs" style={{ color: '#8a7070' }}>No incidents yet</p>
+          <p className="text-xs" style={{ color: '#8a7070' }}>{tx('No incidents yet')}</p>
         </div>
       ) : (
         incidents.slice(0, 5).map((inc, i) => (
@@ -388,15 +380,14 @@ function RecentTasks({ tasks }) {
   return (
     <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid #f0eded' }}>
-        <p className="text-xs font-medium" style={{ color: '#1a1314' }}>Tasks</p>
-        <Link to="/app/tasks" className="text-[11px] flex items-center gap-1 hover:underline" style={{ color: '#5D0F0F' }}>
-          View all <ArrowRight size={11} />
+        <p className="text-xs font-medium" style={{ color: '#1a1314' }}>{tx('Tasks')}</p>
+        <Link to="/app/tasks" className="text-[11px] flex items-center gap-1 hover:underline" style={{ color: '#5D0F0F' }}>{tx('View all')} <ArrowRight size={11} className='rtl-flip' />
         </Link>
       </div>
       {tasks.length === 0 ? (
         <div className="py-8 text-center">
           <CheckSquare2 size={22} strokeWidth={1} className="mx-auto mb-2" style={{ color: '#d4cccc' }} />
-          <p className="text-xs" style={{ color: '#8a7070' }}>No tasks yet</p>
+          <p className="text-xs" style={{ color: '#8a7070' }}>{tx('No tasks yet')}</p>
         </div>
       ) : (
         tasks.slice(0, 4).map((task, i) => {
@@ -411,7 +402,7 @@ function RecentTasks({ tasks }) {
                   style={{ color: '#1a1314' }}>{task.title}</p>
                 {task.due_at && (
                   <p className="text-[11px]" style={{ color: overdue ? '#b91c1c' : '#8a7070' }}>
-                    {overdue ? 'Overdue · ' : 'Due · '}{new Date(task.due_at).toLocaleDateString()}
+                    {overdue ? tx('Overdue · ') : tx('Due · ')}{new Date(task.due_at).toLocaleDateString(appLocale())}
                   </p>
                 )}
               </div>
@@ -435,7 +426,7 @@ function ActivityFeed({ auditLog }) {
     if (mins < 1)  return 'just now'
     if (mins < 60) return `${mins}m ago`
     const hrs = Math.floor(mins / 60)
-    if (hrs < 24) return `${hrs}h ago`
+    if (hrs < 24) return tx('{{n}}h ago', { n: hrs })
     return `${Math.floor(hrs / 24)}d ago`
   }
 
@@ -458,34 +449,32 @@ function ActivityFeed({ auditLog }) {
   }
 
   const ACTION_LABELS = {
-    'risk.created':           'Risk created',
-    'risk.submitted_for_review': 'Risk submitted for review',
-    'risk.approved':          'Risk approved',
-    'risk.rejected':          'Risk rejected',
-    'incident.created':       'Incident raised',
-    'incident.resolved':      'Incident resolved',
-    'incident.status_changed':'Incident updated',
-    'task.created':           'Task created',
-    'task.completed':         'Task completed',
-    'task.status_changed':    'Task status changed',
-    'finding.escalated_to_risk':     'Finding → Risk',
-    'finding.escalated_to_incident': 'Finding → Incident',
-    'connector.connected':    'Connector connected',
-    'connector.synced':       'Sync completed',
-    'member.invited':         'Member invited',
+    'risk.created':           tx('Risk created'),
+    'risk.submitted_for_review': tx('Risk submitted for review'),
+    'risk.approved':          tx('Risk approved'),
+    'risk.rejected':          tx('Risk rejected'),
+    'incident.created':       tx('Incident raised'),
+    'incident.resolved':      tx('Incident resolved'),
+    'incident.status_changed':tx('Incident updated'),
+    'task.created':           tx('Task created'),
+    'task.completed':         tx('Task completed'),
+    'task.status_changed':    tx('Task status changed'),
+    'finding.escalated_to_risk':     tx('Finding → Risk'),
+    'finding.escalated_to_incident': tx('Finding → Incident'),
+    'connector.connected':    tx('Connector connected'),
+    'connector.synced':       tx('Sync completed'),
+    'member.invited':         tx('Member invited'),
   }
 
   return (
     <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
       <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #f0eded' }}>
-        <p className="text-xs font-medium" style={{ color: '#1a1314' }}>Recent Activity</p>
-        <Link to="/app/audit" className="text-[11px] flex items-center gap-1 hover:underline" style={{ color: '#5D0F0F' }}>
-          View all →
-        </Link>
+        <p className="text-xs font-medium" style={{ color: '#1a1314' }}>{tx('Recent Activity')}</p>
+        <Link to="/app/audit" className="text-[11px] flex items-center gap-1 hover:underline" style={{ color: '#5D0F0F' }}>{tx('View all →')}</Link>
       </div>
       {auditLog.length === 0 ? (
         <div className="py-8 text-center">
-          <p className="text-xs" style={{ color: '#8a7070' }}>No activity yet</p>
+          <p className="text-xs" style={{ color: '#8a7070' }}>{tx('No activity yet')}</p>
         </div>
       ) : (
         auditLog.map((item, i) => (
@@ -496,7 +485,7 @@ function ActivityFeed({ auditLog }) {
             <div className="flex-1 min-w-0">
               <p className="text-xs truncate" style={{ color: '#1a1314' }}>{item.entity_title || '—'}</p>
               <p className="text-[11px]" style={{ color: '#8a7070' }}>
-                {ACTION_LABELS[item.action] || item.action} · {item.actor_name || 'System'}
+                {ACTION_LABELS[item.action] || item.action} · {item.actor_name || tx('System')}
               </p>
             </div>
             <span className="text-[11px] flex-shrink-0" style={{ color: '#8a7070' }}>{timeAgo(item.created_at)}</span>
@@ -558,7 +547,7 @@ export function DashboardPage() {
   return (
     <div className="h-full flex flex-col">
       <Topbar
-        title="Dashboard"
+        title={tx('Dashboard')}
         subtitle={organization?.name}
         actions={
           <button onClick={fetchData}
@@ -577,20 +566,20 @@ export function DashboardPage() {
             {/* ── Stat cards ─────────────────────────────────────────────── */}
             <div className="grid grid-cols-4 gap-3 mb-5">
               <StatCard
-                label="Open Incidents" value={openIncidents.length} icon={AlertTriangle}
-                sub={criticalIncidents.length > 0 ? `${criticalIncidents.length} critical` : 'No critical'}
+                label={tx('Open Incidents')} value={openIncidents.length} icon={AlertTriangle}
+                sub={criticalIncidents.length > 0 ? tx('{{n}} critical', { n: criticalIncidents.length }) : tx('No critical')}
                 warn={criticalIncidents.length > 0} to="/app/incidents" />
               <StatCard
-                label="Open Risks" value={openRisks.length} icon={ShieldAlert}
-                sub={criticalRisks.length > 0 ? `${criticalRisks.length} critical` : 'No critical risks'}
+                label={tx('Open Risks')} value={openRisks.length} icon={ShieldAlert}
+                sub={criticalRisks.length > 0 ? tx('{{n}} critical', { n: criticalRisks.length }) : tx('No critical risks')}
                 warn={criticalRisks.length > 0} to="/app/risks" />
               <StatCard
-                label="Active Tasks" value={openTasks.length} icon={CheckSquare2}
-                sub={overdueTasks.length > 0 ? `${overdueTasks.length} overdue` : 'On track'}
+                label={tx('Active Tasks')} value={openTasks.length} icon={CheckSquare2}
+                sub={overdueTasks.length > 0 ? tx('{{n}} overdue', { n: overdueTasks.length }) : tx('On track')}
                 warn={overdueTasks.length > 0} to="/app/tasks" />
               <StatCard
-                label="Users Without MFA" value={entraConnected ? noMfaCount : '—'} icon={ShieldCheck}
-                sub={entraConnected ? (noMfaCount > 0 ? 'Identity risk — NCA ECC 2-2-3-2 (MFA)' : 'All users protected') : 'Connect Entra ID'}
+                label={tx('Users Without MFA')} value={entraConnected ? noMfaCount : '—'} icon={ShieldCheck}
+                sub={entraConnected ? (noMfaCount > 0 ? tx('Identity risk — NCA ECC 2-2-3-2 (MFA)') : tx('All users protected')) : tx('Connect Entra ID')}
                 warn={entraConnected && noMfaCount > 0} to={entraConnected ? '/app/findings/entra' : '/app/settings'} />
             </div>
 

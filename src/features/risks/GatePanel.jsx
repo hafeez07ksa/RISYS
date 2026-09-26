@@ -2,6 +2,7 @@ import { ShieldCheck, ShieldAlert, ShieldQuestion, Check, X, Minus, Clock, Arrow
 import { daysInBreach, treatmentSLA, operatorLabel } from '@/lib/gate'
 import { bandMeta } from '@/lib/matrix'
 import { tierMeta } from '@/lib/authority'
+import { tx } from '@/lib/i18n'
 
 /**
  * The gate verdict, shown in full.
@@ -38,15 +39,14 @@ function RuleRow({ rule }) {
         {rule.label}
       </span>
 
-      <span className="tnum" style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
-        required {operatorLabel(rule.operator)} {rule.value}
+      <span className="tnum" style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>{tx('required')} {operatorLabel(rule.operator)} {rule.value}
       </span>
 
       <span className="tnum" style={{
-        fontSize: 'var(--t-sm)', fontWeight: 600, minWidth: 54, textAlign: 'right',
+        fontSize: 'var(--t-sm)', fontWeight: 600, minWidth: 54, textAlign: 'end',
         color: state === 'fail' ? 'var(--critical)' : state === 'pass' ? 'var(--low)' : 'var(--text-3)',
       }}>
-        {rule.skipped ? 'not measured' : rule.actual}
+        {rule.skipped ? tx('not measured') : rule.actual}
       </span>
     </div>
   )
@@ -68,19 +68,17 @@ export function GatePanel({ verdict, risk, onOpenTreatment, onOpenScoring }) {
       }}>
         <ShieldQuestion size={18} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
         <div style={{ flex: 1 }}>
-          <p style={{ fontSize: 'var(--t-sm)', fontWeight: 600, color: 'var(--text)' }}>
-            Tolerance gate has not run
-          </p>
+          <p style={{ fontSize: 'var(--t-sm)', fontWeight: 600, color: 'var(--text)' }}>{tx('Tolerance gate has not run')}</p>
           <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', marginTop: 2 }}>
             {verdict.reason}
             {verdict.reason?.includes('No tolerance rules') &&
-              ' Set one under Risk Register → Tolerances and this risk is judged automatically from then on.'}
+              tx(
+                ' Set one under Risk Register → Tolerances and this risk is judged automatically from then on.'
+              )}
           </p>
         </div>
         {verdict.reason?.includes('Residual') && onOpenScoring && (
-          <button className="btn-secondary" style={{ fontSize: 'var(--t-sm)' }} onClick={onOpenScoring}>
-            Score residual
-          </button>
+          <button className="btn-secondary" style={{ fontSize: 'var(--t-sm)' }} onClick={onOpenScoring}>{tx('Score residual')}</button>
         )}
       </div>
     )
@@ -108,24 +106,28 @@ export function GatePanel({ verdict, risk, onOpenTreatment, onOpenScoring }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 'var(--t-section)', fontWeight: 600, color: accent }}>
-              {passed ? 'Within tolerance' : 'Outside tolerance'}
+              {passed ? tx('Within tolerance') : tx('Outside tolerance')}
             </span>
             <span className="badge" style={{ color: band.color, background: band.bg, border: `1px solid ${band.border}` }}>
               {band.label}
             </span>
             {!passed && breachDays !== null && (
-              <span className="tnum" style={{ fontSize: 'var(--t-meta)', color: accent, fontWeight: 500 }}>
-                · {breachDays} day{breachDays === 1 ? '' : 's'} in breach
-              </span>
+              <span className="tnum" style={{ fontSize: 'var(--t-meta)', color: accent, fontWeight: 500 }}>· {breachDays} {tx('day')}{breachDays === 1 ? '' : 's'} {tx('in breach')}</span>
             )}
           </div>
 
           <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)', marginTop: 4 }}>
             {passed
-              ? 'Residual risk sits inside the line set for this category. The risk stays monitored — KRIs, control tests and the review cadence keep running.'
+              ? tx(
+              'Residual risk sits inside the line set for this category. The risk stays monitored — KRIs, control tests and the review cadence keep running.'
+            )
               : (risk?.workflow_state === 'accepted'
-                  ? 'Held outside tolerance under an approved, time-bound exception. It reopens when the exception expires or is revoked.'
-                  : 'Treatment is mandatory unless an exception is approved at the authority named below, with compensating controls and an expiry.')}
+                  ? tx(
+              'Held outside tolerance under an approved, time-bound exception. It reopens when the exception expires or is revoked.'
+            )
+                  : tx(
+              'Treatment is mandatory unless an exception is approved at the authority named below, with compensating controls and an expiry.'
+            ))}
           </p>
 
           {verdict.appetiteStatement && (
@@ -137,12 +139,11 @@ export function GatePanel({ verdict, risk, onOpenTreatment, onOpenScoring }) {
 
         {/* The delta a committee reads */}
         {!passed && verdict.breachDelta && (
-          <div style={{ textAlign: 'right', flexShrink: 0, paddingLeft: 12 }}>
+          <div style={{ textAlign: 'end', flexShrink: 0, paddingInlineStart: 12 }}>
             <p className="tnum" style={{ fontSize: 'var(--t-metric)', fontWeight: 300, color: accent, lineHeight: 1 }}>
               {verdict.breachDelta.actual}
             </p>
-            <p className="tnum" style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)', marginTop: 3 }}>
-              against {verdict.breachDelta.limit}
+            <p className="tnum" style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)', marginTop: 3 }}>{tx('against')} {verdict.breachDelta.limit}
             </p>
           </div>
         )}
@@ -154,10 +155,9 @@ export function GatePanel({ verdict, risk, onOpenTreatment, onOpenScoring }) {
           padding: '7px 14px', background: 'var(--surface)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <span className="eyebrow">Tolerance rules · {risk?.category || 'uncategorised'}</span>
+          <span className="eyebrow">{tx('Tolerance rules ·')} {risk?.category || 'uncategorised'}</span>
           <span style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)' }}>
-            {verdict.rules.filter(r => r.passed === true).length} of {verdict.rules.length} passing
-          </span>
+            {verdict.rules.filter(r => r.passed === true).length} {tx('of')} {verdict.rules.length} {tx('passing')}</span>
         </div>
         {verdict.rules.map((rule, idx) => <RuleRow key={`${rule.metric}-${idx}`} rule={rule} />)}
       </div>
@@ -182,22 +182,17 @@ export function GatePanel({ verdict, risk, onOpenTreatment, onOpenScoring }) {
 
           {verdict.escalateTo && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--t-meta)', color: 'var(--text-2)' }}>
-              <ArrowUpRight size={12} />
-              Escalated to the {verdict.escalateTo}
+              <ArrowUpRight size={12} />{tx('Escalated to the')} {verdict.escalateTo}
             </span>
           )}
 
           {verdict.acceptBlocked && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--t-meta)', color: 'var(--critical)' }}>
-              <Ban size={12} />
-              Acceptance needs {tierMeta(verdict.requiredAuthority).label} approval
-            </span>
+              <Ban size={12} />{tx('Acceptance needs')} {tierMeta(verdict.requiredAuthority).label} {tx('approval')}</span>
           )}
 
           {onOpenTreatment && (
-            <button className="btn-primary" style={{ fontSize: 'var(--t-sm)', marginLeft: 'auto' }} onClick={onOpenTreatment}>
-              Decide treatment
-            </button>
+            <button className="btn-primary" style={{ fontSize: 'var(--t-sm)', marginInlineStart: 'auto' }} onClick={onOpenTreatment}>{tx('Decide treatment')}</button>
           )}
         </div>
       )}
@@ -222,7 +217,7 @@ export function ToleranceChip({ risk }) {
     <span
       title={breached && failed
         ? risk.gate_failed_rules.map(f => `${f.label}: ${f.actual} (needs ${f.operator} ${f.expected})`).join('\n')
-        : 'Residual risk is within the tolerance set for this category'}
+        : tx('Residual risk is within the tolerance set for this category')}
       className="badge"
       style={{
         color: breached ? 'var(--critical)' : 'var(--low)',
@@ -239,7 +234,7 @@ export function ToleranceChip({ risk }) {
       <span className="truncate">
         {breached
           ? `Breached${days !== null ? ` · ${days}d` : ''}`
-          : 'Within'}
+          : tx('Within')}
       </span>
     </span>
   )
@@ -265,16 +260,14 @@ export function CoverageGapNotice({ gaps = [] }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
         <ShieldAlert size={13} style={{ color: 'var(--medium)' }} />
         <span style={{ fontSize: 'var(--t-sm)', fontWeight: 600, color: 'var(--medium)' }}>
-          {gaps.length} linked control{gaps.length === 1 ? ' does' : 's do'} not fully cover this risk
-        </span>
+          {gaps.length} {tx('linked control')}{gaps.length === 1 ? tx(' does') : tx('s do')} {tx('not fully cover this risk')}</span>
       </div>
 
       {misleading.length > 0 && (
         <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-2)', marginBottom: 7 }}>
-          {misleading.length === 1 ? 'One of them is' : `${misleading.length} of them are`} passing their tests
-          while covering none of this risk&rsquo;s scope — effective in the control library, irrelevant here.
-          That gap is the risk.
-        </p>
+          {misleading.length === 1 ? tx('One of them is') : `${misleading.length} of them are`} {tx(
+            'passing their tests while covering none of this risk’s scope — effective in the control library, irrelevant here. That gap is the risk.'
+          )}</p>
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -286,7 +279,7 @@ export function CoverageGapNotice({ gaps = [] }) {
               color: g.coverage === 'none' ? 'var(--critical)' : 'var(--medium)',
               fontWeight: 600, flexShrink: 0,
             }}>
-              {g.coverage === 'none' ? 'no coverage' : 'partial'}
+              {g.coverage === 'none' ? tx('no coverage') : 'partial'}
             </span>
             {g.note && <span style={{ color: 'var(--text-3)' }}>— {g.note}</span>}
           </div>

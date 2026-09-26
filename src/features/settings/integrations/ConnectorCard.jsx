@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useConnectors } from '@/hooks/useConnectors'
 import { ConnectorLogo } from './ConnectorLogo'
-import { OAuthModal } from './OAuthModal'
+import { ConnectConsent } from './ConnectConsent'
 import { Clock } from 'lucide-react'
 import clsx from 'clsx'
+import { tx } from '@/lib/i18n'
 
 /*
  * Settings only — connect / disconnect.
@@ -42,8 +43,6 @@ export function ConnectorCard({ connector }) {
 
   return (
     <>
-      {showConnect && <OAuthModal connector={connector} onClose={() => setShowConnect(false)} />}
-
       <div
         className={clsx('rounded-xl p-5 flex flex-col transition-all', connected ? 'ring-1 ring-[#5D0F0F]/20' : '')}
         style={{
@@ -56,14 +55,13 @@ export function ConnectorCard({ connector }) {
         <div className="flex items-start justify-between mb-3.5">
           <ConnectorLogo connector={connector} size={40} muted={!!comingSoon} />
           {connected ? (
-            <span className="badge badge-connected">Connected</span>
+            <span className="badge badge-connected">{tx('Connected')}</span>
           ) : comingSoon ? (
             <span className="flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full"
               style={{ background: '#f5f3f3', color: '#8a7070', border: '1px solid #e5e0e0' }}>
-              <Clock size={10} /> Coming Soon
-            </span>
+              <Clock size={10} /> {tx('Coming Soon')}</span>
           ) : (
-            <span className="badge badge-disconnected">Not connected</span>
+            <span className="badge badge-disconnected">{tx('Not connected')}</span>
           )}
         </div>
 
@@ -77,28 +75,24 @@ export function ConnectorCard({ connector }) {
 
         {/* Footer */}
         <div className="flex items-center justify-between mt-4 pt-4" style={{ borderTop: '1px solid #e5e0e0' }}>
-          <span className="text-[11px]" style={{ color: '#8a7070' }}>{connector.category}</span>
+          <span className="text-[11px]" style={{ color: '#8a7070' }}>{tx(connector.category)}</span>
 
           <div className="flex items-center gap-2">
             {comingSoon ? (
-              <span className="text-[11px]" style={{ color: '#b0a8a8' }}>
-                Available {comingSoon.eta}
+              <span className="text-[11px]" style={{ color: '#b0a8a8' }}>{tx('Available')} {comingSoon.eta}
               </span>
             ) : connected ? (
               /* Manage = connection settings + disconnect. Findings live in /app/findings */
               settingsRoute && (
                 <button onClick={() => navigate(settingsRoute)}
-                  className="btn-primary text-xs px-3 py-1.5">
-                  Manage →
-                </button>
+                  className="btn-primary text-xs px-3 py-1.5">{tx('Manage →')}</button>
               )
             ) : (
-              <button onClick={() => setShowConnect(true)} className="btn-primary text-xs px-3 py-1.5">
-                Connect →
-              </button>
+              !showConnect && <button onClick={() => setShowConnect(true)} className="btn-primary text-xs px-3 py-1.5">{tx('Connect →')}</button>
             )}
           </div>
         </div>
+        {showConnect && !connected && !comingSoon && <ConnectConsent connector={connector} onCancel={() => setShowConnect(false)} />}
       </div>
     </>
   )

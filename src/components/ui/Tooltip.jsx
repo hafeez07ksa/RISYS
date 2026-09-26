@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { isRtl } from '@/lib/i18n'
 
 /* Needed chiefly by the collapsed sidebar (§5), where the label is the only
  * thing telling you what an icon means. Delay is deliberate: instant tooltips
@@ -43,7 +44,7 @@ export function Tooltip({ label, side = 'right', children, delay = 350 }) {
       let top, left
       if (side === 'right') {
         top = r.top + r.height / 2
-        left = r.right + GAP
+        left = isRtl() ? r.left - GAP : r.right + GAP
       } else {
         top = r.bottom + 6
         left = r.left + r.width / 2
@@ -53,7 +54,7 @@ export function Tooltip({ label, side = 'right', children, delay = 350 }) {
          sidebar would otherwise push its tooltip under the fold. */
       const MARGIN = 6
       top = Math.min(Math.max(top, MARGIN + 10), window.innerHeight - MARGIN - 10)
-      left = Math.min(left, window.innerWidth - MARGIN)
+      left = Math.max(Math.min(left, window.innerWidth - MARGIN), MARGIN)
 
       setPos({ top, left })
     }, delay)
@@ -80,7 +81,7 @@ export function Tooltip({ label, side = 'right', children, delay = 350 }) {
       {pos && createPortal(
         <span role="tooltip" className="anim-fade" style={{
           position: 'fixed', top: pos.top, left: pos.left,
-          transform: side === 'right' ? 'translateY(-50%)' : 'translateX(-50%)',
+          transform: side === 'right' ? (isRtl() ? 'translate(-100%, -50%)' : 'translateY(-50%)') : 'translateX(-50%)',
           background: 'var(--ink)', color: 'var(--on-dark)',
           fontSize: 'var(--t-meta)', padding: '4px 8px', borderRadius: 'var(--r)',
           boxShadow: 'var(--e-2)', zIndex: 'var(--z-toast)', whiteSpace: 'nowrap', pointerEvents: 'none',

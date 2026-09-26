@@ -11,6 +11,7 @@ import {
   useRequirementAutomation,
   computeFrameworkScore,
 } from '@/hooks/useCompliance'
+import { tx } from '@/lib/i18n'
 
 // ── Score ring ────────────────────────────────────────────────────────────────
 function ScoreRing({ score, size = 56 }) {
@@ -54,7 +55,7 @@ function FrameworkCard({ fw, onSelect }) {
       onClick={() => onSelect(fw.id)}
       className="card"
       style={{
-        padding: 0, textAlign: 'left', cursor: 'pointer', width: '100%',
+        padding: 0, textAlign: 'start', cursor: 'pointer', width: '100%',
         transition: 'box-shadow 0.15s, transform 0.15s',
         display: 'flex', flexDirection: 'column',
       }}
@@ -100,9 +101,9 @@ function FrameworkCard({ fw, onSelect }) {
         {/* Stats row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
           {score ? [
-            { label: 'Compliant',   value: score.compliant,   color: STATUS_CONFIG.compliant.color },
-            { label: 'Partial',     value: score.partial,     color: STATUS_CONFIG.partial.color },
-            { label: 'Gap',         value: score.notCompliant + score.notStarted, color: STATUS_CONFIG.not_compliant.color },
+            { label: tx('Compliant'),   value: score.compliant,   color: STATUS_CONFIG.compliant.color },
+            { label: tx('Partial'),     value: score.partial,     color: STATUS_CONFIG.partial.color },
+            { label: tx('Gap'),         value: score.notCompliant + score.notStarted, color: STATUS_CONFIG.not_compliant.color },
             { label: 'N/A',         value: score.na,          color: 'var(--text-3)' },
           ].map(s => (
             <div key={s.label} style={{ textAlign: 'center' }}>
@@ -120,16 +121,13 @@ function FrameworkCard({ fw, onSelect }) {
       {/* Footer */}
       <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
-          {mainReqs.length} requirements
-          {score && score.automated > 0 && (
+          {mainReqs.length} {tx('requirements')}{score && score.automated > 0 && (
             <span style={{ color: 'var(--text-3)' }}>
-              {' · '}<Zap size={10} style={{ display: 'inline', marginRight: 2, verticalAlign: -1 }} />
-              {score.automated} automated
-            </span>
+              {' · '}<Zap size={10} style={{ display: 'inline', marginInlineEnd: 2, verticalAlign: -1 }} />
+              {score.automated} {tx('automated')}</span>
           )}
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: fw.color, fontWeight: 500 }}>
-          View details <ChevronRight size={13} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: fw.color, fontWeight: 500 }}>{tx('View details')} <ChevronRight size={13} className='rtl-flip' />
         </div>
       </div>
     </button>
@@ -148,20 +146,16 @@ export function CompliancePage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title="Compliance" subtitle={organization?.name} />
+      <Topbar title={tx('Compliance')} subtitle={organization?.name} />
 
       <div className="page-content" style={{ flex: 1, overflowY: 'auto' }}>
 
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>
-            Framework Compliance
-          </h2>
-          <p style={{ fontSize: 13, color: 'var(--text-3)', maxWidth: 640 }}>
-            Your active framework. Requirements covered by a connector signal score themselves
-            from measured data; the rest are assessed manually. Select the framework to map
-            controls, set statuses, and view gap analysis.
-          </p>
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{tx('Framework Compliance')}</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-3)', maxWidth: 640 }}>{tx(
+            'Your active framework. Requirements covered by a connector signal score themselves from measured data; the rest are assessed manually. Select the framework to map controls, set statuses, and view gap analysis.'
+          )}</p>
         </div>
 
         {/* Framework grid */}

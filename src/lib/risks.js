@@ -5,6 +5,7 @@
 
 import { levelForScore } from './matrix'
 import { daysInBreach } from './gate'
+import { tx } from '@/lib/i18n'
 
 export const RISK_CATEGORIES = [
   'Cybersecurity',
@@ -43,18 +44,18 @@ export const RISK_TYPES = [
 ]
 
 export const RISK_TREATMENTS = [
-  { value: 'mitigate', label: 'Mitigate', desc: 'Reduce likelihood or impact', color: '#1e40af', bg: '#eff6ff' },
-  { value: 'accept',   label: 'Accept',   desc: 'Accept risk within appetite', color: '#166534', bg: '#f0fdf4' },
-  { value: 'transfer', label: 'Transfer', desc: 'Transfer via insurance/3rd party', color: '#6b21a8', bg: '#faf5ff' },
-  { value: 'avoid',    label: 'Avoid',    desc: 'Eliminate the risk source',   color: '#92400e', bg: '#fffbeb' },
+  { value: 'mitigate', label: tx('Mitigate'), desc: tx('Reduce likelihood or impact'), color: '#1e40af', bg: '#eff6ff' },
+  { value: 'accept',   label: tx('Accept'),   desc: tx('Accept risk within appetite'), color: '#166534', bg: '#f0fdf4' },
+  { value: 'transfer', label: tx('Transfer'), desc: tx('Transfer via insurance/3rd party'), color: '#6b21a8', bg: '#faf5ff' },
+  { value: 'avoid',    label: tx('Avoid'),    desc: tx('Eliminate the risk source'),   color: '#92400e', bg: '#fffbeb' },
 ]
 
 export const RISK_STATUSES = [
-  { value: 'open',        label: 'Open',        color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
-  { value: 'mitigating',  label: 'Mitigating',  color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
-  { value: 'accepted',    label: 'Accepted',    color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  { value: 'transferred', label: 'Transferred', color: '#6b21a8', bg: '#faf5ff', border: '#e9d5ff' },
-  { value: 'closed',      label: 'Closed',      color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
+  { value: 'open',        label: tx('Open'),        color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
+  { value: 'mitigating',  label: tx('Mitigating'),  color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
+  { value: 'accepted',    label: tx('Accepted'),    color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  { value: 'transferred', label: tx('Transferred'), color: '#6b21a8', bg: '#faf5ff', border: '#e9d5ff' },
+  { value: 'closed',      label: tx('Closed'),      color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
 ]
 
 // ============================================================
@@ -79,31 +80,31 @@ export const RISK_STATUSES = [
 // ============================================================
 
 export const WORKFLOW_STATES = [
-  { value: 'draft',              label: 'Draft',              color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb',
-    desc: 'Being written. Not yet admitted to the register.' },
-  { value: 'registered',         label: 'Registered',         color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe',
-    desc: 'Admitted by a reviewer. The ID is now permanent.' },
-  { value: 'assessed',           label: 'Assessed',           color: '#6b21a8', bg: '#faf5ff', border: '#e9d5ff',
-    desc: 'Inherent and residual scored. Awaiting the gate.' },
-  { value: 'treatment_required', label: 'Treatment Required', color: '#b91c1c', bg: '#fef2f2', border: '#fecaca',
-    desc: 'Outside tolerance. Treatment is mandatory, not optional.' },
-  { value: 'under_treatment',    label: 'Under Treatment',    color: '#c2410c', bg: '#fff7ed', border: '#fed7aa',
-    desc: 'A treatment plan is approved and running.' },
-  { value: 'accepted',           label: 'Accepted',           color: '#92400e', bg: '#fffbeb', border: '#fde68a',
-    desc: 'Time-bound acceptance on record. Reopens on expiry.' },
-  { value: 'monitored',          label: 'Monitored',          color: '#166534', bg: '#f0fdf4', border: '#bbf7d0',
-    desc: 'Within tolerance. KRIs, control tests and reviews running.' },
-  { value: 'closed',             label: 'Closed',             color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb',
-    desc: 'The cause can no longer occur. History retained forever.' },
+  { value: 'draft',              label: tx('Draft'),              color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb',
+    desc: tx('Being written. Not yet admitted to the register.') },
+  { value: 'registered',         label: tx('Registered'),         color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe',
+    desc: tx('Admitted by a reviewer. The ID is now permanent.') },
+  { value: 'assessed',           label: tx('Assessed'),           color: '#6b21a8', bg: '#faf5ff', border: '#e9d5ff',
+    desc: tx('Inherent and residual scored. Awaiting the gate.') },
+  { value: 'treatment_required', label: tx('Treatment Required'), color: '#b91c1c', bg: '#fef2f2', border: '#fecaca',
+    desc: tx('Outside tolerance. Treatment is mandatory, not optional.') },
+  { value: 'under_treatment',    label: tx('Under Treatment'),    color: '#c2410c', bg: '#fff7ed', border: '#fed7aa',
+    desc: tx('A treatment plan is approved and running.') },
+  { value: 'accepted',           label: tx('Accepted'),           color: '#92400e', bg: '#fffbeb', border: '#fde68a',
+    desc: tx('Time-bound acceptance on record. Reopens on expiry.') },
+  { value: 'monitored',          label: tx('Monitored'),          color: '#166534', bg: '#f0fdf4', border: '#bbf7d0',
+    desc: tx('Within tolerance. KRIs, control tests and reviews running.') },
+  { value: 'closed',             label: tx('Closed'),             color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb',
+    desc: tx('The cause can no longer occur. History retained forever.') },
 ]
 
 /** Whether the gate governs this state. Draft and registered are pre-measurement. */
 export const GATED_STATES = ['assessed', 'treatment_required', 'under_treatment', 'accepted', 'monitored']
 
 export const TOLERANCE_STATUSES = [
-  { value: 'within',        label: 'Within tolerance',  color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  { value: 'breached',      label: 'Outside tolerance', color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
-  { value: 'not_evaluated', label: 'Not evaluated',     color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
+  { value: 'within',        label: tx('Within tolerance'),  color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  { value: 'breached',      label: tx('Outside tolerance'), color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
+  { value: 'not_evaluated', label: tx('Not evaluated'),     color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
 ]
 
 export function getToleranceStatus(v) {
@@ -121,18 +122,18 @@ export function getToleranceStatus(v) {
 // ============================================================
 
 export const COVERAGE_OPTIONS = [
-  { value: 'full',    label: 'Full coverage',    desc: 'Applies to every asset and process in this risk’s scope',
+  { value: 'full',    label: tx('Full coverage'),    desc: tx('Applies to every asset and process in this risk’s scope'),
     color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  { value: 'partial', label: 'Partial coverage', desc: 'Covers part of the scope — record what it excludes',
+  { value: 'partial', label: tx('Partial coverage'), desc: tx('Covers part of the scope — record what it excludes'),
     color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
-  { value: 'none',    label: 'No coverage',      desc: 'Scope excludes this risk entirely — the gap IS the risk',
+  { value: 'none',    label: tx('No coverage'),      desc: tx('Scope excludes this risk entirely — the gap IS the risk'),
     color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
 ]
 
 export const REDUCES_OPTIONS = [
-  { value: 'likelihood', label: 'Likelihood', desc: 'Makes the event less likely to happen' },
-  { value: 'impact',     label: 'Impact',     desc: 'Makes the event less damaging when it does' },
-  { value: 'both',       label: 'Both',       desc: 'Reduces likelihood and impact' },
+  { value: 'likelihood', label: tx('Likelihood'), desc: tx('Makes the event less likely to happen') },
+  { value: 'impact',     label: tx('Impact'),     desc: tx('Makes the event less damaging when it does') },
+  { value: 'both',       label: tx('Both'),       desc: tx('Reduces likelihood and impact') },
 ]
 
 export function getCoverage(v) {
@@ -140,17 +141,17 @@ export function getCoverage(v) {
 }
 
 export const RISK_APPETITES = [
-  { value: 'Averse',   label: 'Averse',   desc: 'Zero tolerance',       color: '#b91c1c' },
-  { value: 'Minimal',  label: 'Minimal',  desc: 'Very limited exposure', color: '#c2410c' },
-  { value: 'Cautious', label: 'Cautious', desc: 'Some exposure OK',      color: '#92400e' },
-  { value: 'Open',     label: 'Open',     desc: 'Balance risk/reward',   color: '#1e40af' },
-  { value: 'Hungry',   label: 'Hungry',   desc: 'Significant exposure',  color: '#166534' },
+  { value: 'Averse',   label: tx('Averse'),   desc: tx('Zero tolerance'),       color: '#b91c1c' },
+  { value: 'Minimal',  label: tx('Minimal'),  desc: tx('Very limited exposure'), color: '#c2410c' },
+  { value: 'Cautious', label: tx('Cautious'), desc: tx('Some exposure OK'),      color: '#92400e' },
+  { value: 'Open',     label: tx('Open'),     desc: tx('Balance risk/reward'),   color: '#1e40af' },
+  { value: 'Hungry',   label: tx('Hungry'),   desc: tx('Significant exposure'),  color: '#166534' },
 ]
 
 export const RISK_DIRECTIONS = [
-  { value: 'Increasing',  label: '↑ Increasing',  color: '#b91c1c' },
-  { value: 'Stable',      label: '→ Stable',       color: '#92400e' },
-  { value: 'Decreasing',  label: '↓ Decreasing',  color: '#166534' },
+  { value: 'Increasing',  label: tx('↑ Increasing'),  color: '#b91c1c' },
+  { value: 'Stable',      label: tx('→ Stable'),       color: '#92400e' },
+  { value: 'Decreasing',  label: tx('↓ Decreasing'),  color: '#166534' },
 ]
 
 export const REVIEW_FREQUENCIES = ['Monthly', 'Quarterly', 'Semi-Annual', 'Annual']
@@ -158,10 +159,10 @@ export const REVIEW_FREQUENCIES = ['Monthly', 'Quarterly', 'Semi-Annual', 'Annua
 export const CONTROL_TYPES = ['Preventive', 'Detective', 'Corrective', 'Compensating']
 export const CONTROL_FREQUENCIES = ['Continuous', 'Daily', 'Weekly', 'Monthly', 'Quarterly', 'Annual', 'Ad-hoc']
 export const CONTROL_TESTING_STATUSES = [
-  { value: 'Not Tested', label: 'Not Tested', color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
-  { value: 'Pass',       label: 'Pass',       color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  { value: 'Fail',       label: 'Fail',       color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
-  { value: 'Partial',    label: 'Partial',    color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
+  { value: 'Not Tested', label: tx('Not Tested'), color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
+  { value: 'Pass',       label: tx('Pass'),       color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  { value: 'Fail',       label: tx('Fail'),       color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
+  { value: 'Partial',    label: tx('Partial'),    color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
 ]
 
 export const EVIDENCE_TYPES = [
@@ -171,9 +172,9 @@ export const EVIDENCE_TYPES = [
 export const LOSS_ROOT_CAUSE_CATEGORIES = ['People', 'Process', 'System', 'External']
 
 export const RAG_STATUSES = [
-  { value: 'Green', label: 'Green', color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  { value: 'Amber', label: 'Amber', color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
-  { value: 'Red',   label: 'Red',   color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
+  { value: 'Green', label: tx('Green'), color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  { value: 'Amber', label: tx('Amber'), color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
+  { value: 'Red',   label: tx('Red'),   color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
 ]
 
 export const LIKELIHOOD_LABELS = {
@@ -271,38 +272,44 @@ export const RISK_SOURCES = [
 // documented here but not yet automated.
 export const WORKFLOW_ACTIONS = {
   draft: [
-    { action: 'admitted', to: 'registered', label: 'Admit to Register', style: 'primary',
-      hint: 'The reviewer validates the record and admits it. The risk ID becomes permanent.' },
+    { action: 'admitted', to: 'registered', label: tx('Admit to Register'), style: 'primary',
+      hint: tx(
+        'The reviewer validates the record and admits it. The risk ID becomes permanent.'
+      ) },
   ],
   registered: [
-    { action: 'returned', to: 'draft', label: 'Return to Draft', style: 'danger', requireComment: true,
-      hint: 'Send back for rework before scoring' },
+    { action: 'returned', to: 'draft', label: tx('Return to Draft'), style: 'danger', requireComment: true,
+      hint: tx('Send back for rework before scoring') },
   ],
   assessed: [
-    { action: 'returned', to: 'draft', label: 'Return to Draft', style: 'neutral', requireComment: true,
-      hint: 'Withdraw the assessment and rework the record' },
+    { action: 'returned', to: 'draft', label: tx('Return to Draft'), style: 'neutral', requireComment: true,
+      hint: tx('Withdraw the assessment and rework the record') },
   ],
   treatment_required: [
-    { action: 'treatment_approved', to: 'under_treatment', label: 'Approve Treatment Plan', style: 'primary',
-      hint: 'A plan is agreed and owned. Starts execution against the target residual score.' },
+    { action: 'treatment_approved', to: 'under_treatment', label: tx('Approve Treatment Plan'), style: 'primary',
+      hint: tx(
+        'A plan is agreed and owned. Starts execution against the target residual score.'
+      ) },
   ],
   under_treatment: [
-    { action: 'treatment_complete', to: 'assessed', label: 'Plan Complete — Re-score', style: 'success',
-      hint: 'Re-scores and re-runs the gate. Passing moves to Monitored; failing returns here.' },
+    { action: 'treatment_complete', to: 'assessed', label: tx('Plan Complete — Re-score'), style: 'success',
+      hint: tx(
+        'Re-scores and re-runs the gate. Passing moves to Monitored; failing returns here.'
+      ) },
   ],
   accepted: [
-    { action: 'acceptance_revoked', to: 'assessed', label: 'Revoke Acceptance', style: 'danger', requireComment: true,
-      hint: 'Withdraws the acceptance and puts the risk back in front of the gate' },
+    { action: 'acceptance_revoked', to: 'assessed', label: tx('Revoke Acceptance'), style: 'danger', requireComment: true,
+      hint: tx('Withdraws the acceptance and puts the risk back in front of the gate') },
   ],
   monitored: [
-    { action: 'closed', to: 'closed', label: 'Close Risk', style: 'neutral', requireComment: true,
-      hint: 'Only when the cause can no longer occur — not because the score dropped' },
-    { action: 'reopened', to: 'assessed', label: 'Reopen for Re-assessment', style: 'neutral',
-      hint: 'Re-open scoring and put the risk back through the gate' },
+    { action: 'closed', to: 'closed', label: tx('Close Risk'), style: 'neutral', requireComment: true,
+      hint: tx('Only when the cause can no longer occur — not because the score dropped') },
+    { action: 'reopened', to: 'assessed', label: tx('Reopen for Re-assessment'), style: 'neutral',
+      hint: tx('Re-open scoring and put the risk back through the gate') },
   ],
   closed: [
-    { action: 'reopened', to: 'assessed', label: 'Reopen Risk', style: 'neutral',
-      hint: 'Re-activate this risk in the register' },
+    { action: 'reopened', to: 'assessed', label: tx('Reopen Risk'), style: 'neutral',
+      hint: tx('Re-activate this risk in the register') },
   ],
 }
 
@@ -328,33 +335,33 @@ export const GATE_MOVABLE_STATES = ['assessed', 'treatment_required', 'under_tre
 export const TREATMENT_ACTION_TYPES = ['Remediation', 'Mitigation', 'Corrective', 'Improvement']
 
 export const TREATMENT_ACTION_STATUSES = [
-  { value: 'planned',      label: 'Planned',      color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
-  { value: 'in_progress',  label: 'In Progress',  color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
-  { value: 'under_review', label: 'Under Review', color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
-  { value: 'completed',    label: 'Completed',    color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  { value: 'cancelled',    label: 'Cancelled',    color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
+  { value: 'planned',      label: tx('Planned'),      color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
+  { value: 'in_progress',  label: tx('In Progress'),  color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
+  { value: 'under_review', label: tx('Under Review'), color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
+  { value: 'completed',    label: tx('Completed'),    color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  { value: 'cancelled',    label: tx('Cancelled'),    color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
 ]
 
 export const ACTION_PRIORITIES = [
-  { value: 'low',      label: 'Low',      color: '#6b7280' },
-  { value: 'medium',   label: 'Medium',   color: '#92400e' },
-  { value: 'high',     label: 'High',     color: '#c2410c' },
-  { value: 'critical', label: 'Critical', color: '#b91c1c' },
+  { value: 'low',      label: tx('Low'),      color: '#6b7280' },
+  { value: 'medium',   label: tx('Medium'),   color: '#92400e' },
+  { value: 'high',     label: tx('High'),     color: '#c2410c' },
+  { value: 'critical', label: tx('Critical'), color: '#b91c1c' },
 ]
 
 export const EXCEPTION_STATUSES = [
-  { value: 'pending',  label: 'Pending Approval', color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
-  { value: 'approved', label: 'Approved',         color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  { value: 'rejected', label: 'Rejected',         color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
-  { value: 'expired',  label: 'Expired',          color: '#c2410c', bg: '#fff7ed', border: '#fed7aa' },
-  { value: 'revoked',  label: 'Revoked',          color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
+  { value: 'pending',  label: tx('Pending Approval'), color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
+  { value: 'approved', label: tx('Approved'),         color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  { value: 'rejected', label: tx('Rejected'),         color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
+  { value: 'expired',  label: tx('Expired'),          color: '#c2410c', bg: '#fff7ed', border: '#fed7aa' },
+  { value: 'revoked',  label: tx('Revoked'),          color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
 ]
 
 export const REVIEW_OUTCOMES = [
-  { value: 'no_change',             label: 'No Change — Risk Re-affirmed', color: '#166534' },
-  { value: 'updated',               label: 'Assessment Updated',           color: '#1e40af' },
-  { value: 'escalated',             label: 'Escalated',                    color: '#b91c1c' },
-  { value: 'closure_recommended',   label: 'Closure Recommended',          color: '#6b7280' },
+  { value: 'no_change',             label: tx('No Change — Risk Re-affirmed'), color: '#166534' },
+  { value: 'updated',               label: tx('Assessment Updated'),           color: '#1e40af' },
+  { value: 'escalated',             label: tx('Escalated'),                    color: '#b91c1c' },
+  { value: 'closure_recommended',   label: tx('Closure Recommended'),          color: '#6b7280' },
 ]
 
 export function getTreatmentActionStatus(v) {

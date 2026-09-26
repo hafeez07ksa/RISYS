@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { Fragment, useState, useMemo, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import {
   ChevronUp, ChevronDown, ChevronsUpDown, MoreHorizontal,
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import { Skeleton } from './Skeleton'
+import { tx } from '@/lib/i18n'
 
 /* ── Table system (§31) ───────────────────────────────────────────────────────
  *
@@ -40,6 +41,8 @@ export function DataTable({
   loading = false,
   empty,
   onRowClick,
+  expandedKey,      // key of the row whose detail is open under it (optional)
+  renderExpanded,   // (row) => detail shown in a full-width row beneath it
   selectable = false,
   selected = [],
   onSelectedChange,
@@ -120,13 +123,10 @@ export function DataTable({
           background: 'var(--crimson-wash)',
         }}>
           <span style={{ fontSize: 'var(--t-sm)', color: 'var(--crimson)', fontWeight: 500 }}>
-            {selected.length} selected
-          </span>
+            {selected.length} {tx('selected')}</span>
           <div className="flex items-center gap-1.5">
             {bulkActions}
-            <button className="btn-ghost" onClick={() => onSelectedChange?.([])} style={{ fontSize: 'var(--t-meta)' }}>
-              Clear
-            </button>
+            <button className="btn-ghost" onClick={() => onSelectedChange?.([])} style={{ fontSize: 'var(--t-meta)' }}>{tx('Clear')}</button>
           </div>
         </div>
       )}
@@ -139,11 +139,11 @@ export function DataTable({
           padding: '6px 12px', borderBottom: '1px solid var(--border)',
         }}>
           <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }} className="tnum">
-            {loading ? 'Loading…' : `${total ?? rows.length} ${(total ?? rows.length) === 1 ? 'row' : 'rows'}`}
+            {loading ? tx('Loading…') : `${total ?? rows.length} ${tx((total ?? rows.length) === 1 ? 'row' : 'rows')}`}
           </span>
           <div className="flex items-center gap-1">
             <IconToggle
-              title={density === 'compact' ? 'Comfortable rows' : 'Compact rows'}
+              title={density === 'compact' ? tx('Comfortable rows') : tx('Compact rows')}
               onClick={() => setDensity(density === 'compact' ? 'comfortable' : 'compact')}
             >
               <Rows3 size={13} />
@@ -167,7 +167,7 @@ export function DataTable({
                     checked={allSelected}
                     ref={(el) => { if (el) el.indeterminate = someSelected }}
                     onChange={toggleAll}
-                    aria-label="Select all rows"
+                    aria-label={tx('Select all rows')}
                     style={{ accentColor: 'var(--crimson)', cursor: 'pointer' }}
                   />
                 </th>
@@ -179,7 +179,7 @@ export function DataTable({
                     key={c.key}
                     scope="col"
                     style={{
-                      textAlign: c.align || 'left',
+                      textAlign: c.align === 'right' ? 'end' : c.align === 'center' ? 'center' : 'start',
                       padding: `${d.py} 12px`,
                       width: c.width,
                       whiteSpace: 'nowrap',
@@ -197,12 +197,12 @@ export function DataTable({
                           color: active ? 'var(--crimson)' : 'inherit',
                         }}
                       >
-                        {c.header}
+                        {tx(c.header)}
                         {active
                           ? (sort.dir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />)
                           : <ChevronsUpDown size={11} style={{ opacity: 0.35 }} />}
                       </button>
-                    ) : c.header}
+                    ) : tx(c.header)}
                   </th>
                 )
               })}
@@ -234,9 +234,11 @@ export function DataTable({
             {!loading && sorted.map((row) => {
               const k = rowKey(row)
               const isSel = selected.includes(k)
+              const isOpen = renderExpanded && expandedKey != null && expandedKey === k
               return (
+                <Fragment key={k}>
                 <tr
-                  key={k}
+                  aria-expanded={renderExpanded ? isOpen : undefined}
                   className={onRowClick ? 'row-hover' : undefined}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                   tabIndex={onRowClick ? 0 : undefined}
@@ -245,8 +247,8 @@ export function DataTable({
                   } : undefined}
                   style={{
                     cursor: onRowClick ? 'pointer' : 'default',
-                    background: isSel ? 'var(--crimson-wash)' : undefined,
-                    borderBottom: '1px solid var(--border-3)',
+                    background: isSel || isOpen ? 'var(--crimson-wash)' : undefined,
+                    borderBottom: isOpen ? 'none' : '1px solid var(--border-3)',
                   }}
                 >
                   {selectable && (
@@ -255,7 +257,7 @@ export function DataTable({
                         type="checkbox"
                         checked={isSel}
                         onChange={() => toggleOne(k)}
-                        aria-label="Select row"
+                        aria-label={tx('Select row')}
                         style={{ accentColor: 'var(--crimson)', cursor: 'pointer' }}
                       />
                     </td>
@@ -266,7 +268,7 @@ export function DataTable({
                       className={c.mono ? 'mono' : undefined}
                       style={{
                         padding: `${d.py} 12px`,
-                        textAlign: c.align || 'left',
+                        textAlign: c.align === 'right' ? 'end' : c.align === 'center' ? 'center' : 'start',
                         fontSize: c.mono ? 'var(--t-sm)' : d.fs,
                         color: c.muted ? 'var(--text-3)' : 'var(--text-2)',
                         verticalAlign: 'middle',
@@ -281,6 +283,15 @@ export function DataTable({
                     </td>
                   )}
                 </tr>
+                {isOpen && (
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td colSpan={visible.length + (selectable ? 1 : 0) + (rowActions ? 1 : 0)}
+                        style={{ padding: 0, background: 'var(--bg-3)' }}>
+                      {renderExpanded(row)}
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               )
             })}
           </tbody>
@@ -324,16 +335,16 @@ function ColumnMenu({ columns, hidden, onChange }) {
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <IconToggle title="Columns" active={open} onClick={() => setOpen((o) => !o)}>
+      <IconToggle title={tx('Columns')} active={open} onClick={() => setOpen((o) => !o)}>
         <Columns3 size={13} />
       </IconToggle>
       {open && (
         <div className="anim-pop" style={{
-          position: 'absolute', right: 0, top: 'calc(100% + 4px)', width: 190,
+          position: 'absolute', insetInlineEnd: 0, top: 'calc(100% + 4px)', width: 190,
           background: 'var(--bg-2)', border: '1px solid var(--border)',
           borderRadius: 'var(--r-md)', boxShadow: 'var(--e-3)', zIndex: 'var(--z-popover)', padding: 5,
         }}>
-          <div className="eyebrow" style={{ padding: '4px 7px 6px' }}>Columns</div>
+          <div className="eyebrow" style={{ padding: '4px 7px 6px' }}>{tx('Columns')}</div>
           {columns.map((c) => (
             <label key={c.key} style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '5px 7px',
@@ -345,7 +356,7 @@ function ColumnMenu({ columns, hidden, onChange }) {
                 onChange={() => onChange(hidden.includes(c.key) ? hidden.filter((h) => h !== c.key) : [...hidden, c.key])}
                 style={{ accentColor: 'var(--crimson)' }}
               />
-              {c.header}
+              {tx(c.header)}
             </label>
           ))}
         </div>
@@ -382,7 +393,7 @@ export function RowMenu({ children }) {
       <button
         ref={btn}
         onClick={toggle}
-        aria-label="Row actions"
+        aria-label={tx('Row actions')}
         aria-expanded={open}
         style={{
           width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -417,7 +428,7 @@ export function MenuItem({ children, onClick, danger, icon: Icon }) {
     <button
       onClick={onClick}
       style={{
-        display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
+        display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'start',
         padding: '6px 9px', borderRadius: 'var(--r)', border: 'none', background: 'transparent',
         fontSize: 'var(--t-sm)', color: danger ? 'var(--critical)' : 'var(--text-2)', cursor: 'pointer',
       }}
@@ -440,19 +451,19 @@ export function Pagination({ page, pageSize, total, onPageChange }) {
       padding: '8px 12px', borderTop: '1px solid var(--border)',
     }}>
       <span className="tnum" style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>
-        {from}–{to} of {total}
+        {from}–{to} {tx('of')} {total}
       </span>
       <div className="flex items-center gap-1">
         <button className="btn-secondary" disabled={page <= 1} onClick={() => onPageChange(page - 1)}
-          style={{ padding: '4px 8px' }} aria-label="Previous page">
-          <ChevronLeft size={13} />
+          style={{ padding: '4px 8px' }} aria-label={tx('Previous page')}>
+          <ChevronLeft size={13} className='rtl-flip' />
         </button>
         <span className="tnum" style={{ fontSize: 'var(--t-meta)', color: 'var(--text-2)', padding: '0 8px' }}>
           {page} / {pages}
         </span>
         <button className="btn-secondary" disabled={page >= pages} onClick={() => onPageChange(page + 1)}
-          style={{ padding: '4px 8px' }} aria-label="Next page">
-          <ChevronRight size={13} />
+          style={{ padding: '4px 8px' }} aria-label={tx('Next page')}>
+          <ChevronRight size={13} className='rtl-flip' />
         </button>
       </div>
     </div>

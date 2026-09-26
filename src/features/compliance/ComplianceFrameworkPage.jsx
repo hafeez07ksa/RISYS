@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import {
   ArrowLeft, ChevronRight, ChevronDown, ChevronUp,
-  Search, Check, X, Plus, Link2, Trash2, SlidersHorizontal,
+  Search, Check, X, Link2, SlidersHorizontal,
   ShieldCheck, AlertTriangle, Minus, Loader2, Zap, Layers, Contrast, FileText, RefreshCw,
 } from 'lucide-react'
 import {
@@ -16,6 +16,7 @@ import { usePermissions } from '@/hooks/usePermissions'
 import { Spinner } from '@/components/ui/Spinner'
 import { BackLink } from '@/components/ui/BackLink'
 import { AUTOMATION_CLASSES, AUTOMATION_META, automationClassFor } from '@/data/eccAutomation'
+import { tx } from '@/lib/i18n'
 
 const AUTOMATION_ICONS = { automated: Zap, semi_automated: Contrast, manual_evidence: FileText }
 
@@ -41,7 +42,7 @@ function AutomationChip({ cls }) {
 // counts are the point, so they stay visible instead of hiding behind a click.
 function EvidenceTypeFilter({ value, onChange, counts }) {
   const options = [
-    { value: '', label: 'All controls', Icon: Layers, count: counts ? counts.all : '—', meta: null },
+    { value: '', label: tx('All controls'), Icon: Layers, count: counts ? counts.all : '—', meta: null },
     ...AUTOMATION_CLASSES.map(c => ({
       value: c, label: AUTOMATION_META[c].label, Icon: AUTOMATION_ICONS[c], count: counts ? counts[c] : '—', meta: AUTOMATION_META[c],
     })),
@@ -51,8 +52,8 @@ function EvidenceTypeFilter({ value, onChange, counts }) {
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <span className="eyebrow">Evidence type</span>
-        <div role="radiogroup" aria-label="Filter by evidence type" style={{
+        <span className="eyebrow">{tx('Evidence type')}</span>
+        <div role="radiogroup" aria-label={tx('Filter by evidence type')} style={{
           display: 'inline-flex', flexWrap: 'wrap', gap: 2, padding: 3,
           background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
         }}>
@@ -90,8 +91,7 @@ function EvidenceTypeFilter({ value, onChange, counts }) {
       </div>
       {active && (
         <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', marginTop: 6 }}>
-          {active.note} Subcontrols follow their main control.
-        </p>
+          {active.note} {tx('Subcontrols follow their main control.')}</p>
       )}
     </div>
   )
@@ -144,14 +144,14 @@ function StatusPicker({ currentStatus, onSet, disabled, hideCompliant }) {
           ? <Loader2 size={14} style={{ color: 'var(--text-3)', animation: 'spin 1s linear infinite' }} />
           : <StatusBadge status={currentStatus} />
         }
-        {!saving && <ChevronDown size={11} style={{ color: 'var(--text-3)', marginLeft: 2 }} />}
+        {!saving && <ChevronDown size={11} style={{ color: 'var(--text-3)', marginInlineStart: 2 }} />}
       </button>
 
       {open && (
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setOpen(false)} />
           <div style={{
-            position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 50,
+            position: 'absolute', top: 'calc(100% + 4px)', insetInlineStart: 0, zIndex: 50,
             background: '#fff', border: '1px solid var(--border)', borderRadius: 8,
             boxShadow: '0 4px 16px rgba(26,19,20,0.12)', minWidth: 180, overflow: 'hidden',
           }}>
@@ -160,7 +160,7 @@ function StatusPicker({ currentStatus, onSet, disabled, hideCompliant }) {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8, width: '100%',
                   padding: '9px 12px', background: currentStatus === opt.value ? 'var(--surface)' : 'none',
-                  border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 12,
+                  border: 'none', cursor: 'pointer', textAlign: 'start', fontSize: 12,
                   color: opt.color, fontWeight: currentStatus === opt.value ? 600 : 400,
                 }}
                 onMouseEnter={e => { if (currentStatus !== opt.value) e.currentTarget.style.background = 'var(--surface)' }}
@@ -168,7 +168,7 @@ function StatusPicker({ currentStatus, onSet, disabled, hideCompliant }) {
               >
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: opt.dot, flexShrink: 0 }} />
                 {opt.label}
-                {currentStatus === opt.value && <Check size={11} style={{ marginLeft: 'auto' }} />}
+                {currentStatus === opt.value && <Check size={11} style={{ marginInlineStart: 'auto' }} />}
               </button>
             ))}
           </div>
@@ -178,119 +178,64 @@ function StatusPicker({ currentStatus, onSet, disabled, hideCompliant }) {
   )
 }
 
-// ── Link control modal ────────────────────────────────────────────────────────
-export function LinkControlModal({ open, requirementId, requirementText, controls, mappingsFor, onLink, onUnlink, onClose }) {
+// ── Control mapper (inline) ───────────────────────────────────────────────────
+/* Opens inside the "Mapped controls" card on the requirement page, in place of
+ * the mapped list, instead of over the page. Map and unmap take effect at once;
+ * Done folds it back to the list. */
+export function ControlMapper({ requirementId, controls, mappingsFor, onLink, onUnlink, onDone }) {
   const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(null)
-
-  if (!open) return null
+  const [error, setError] = useState('')
 
   const linked = mappingsFor(requirementId)
-  const linkedIds = linked.map(m => m.control_id)
-  const filtered = controls.filter(c =>
-    !search || c.name.toLowerCase().includes(search.toLowerCase())
-  )
+  const byControl = Object.fromEntries(linked.map((m) => [m.control_id, m]))
+  const q = search.trim().toLowerCase()
+  const filtered = controls
+    .filter((c) => !q || c.name.toLowerCase().includes(q) || (c.control_id || '').toLowerCase().includes(q))
+    .sort((a, b) => (byControl[b.id] ? 1 : 0) - (byControl[a.id] ? 1 : 0))
 
-  const handleLink = async (controlId) => {
-    setSaving(controlId)
-    try { await onLink(controlId, requirementId) } finally { setSaving(null) }
-  }
-
-  const handleUnlink = async (mappingId) => {
-    setSaving(mappingId)
-    try { await onUnlink(mappingId) } finally { setSaving(null) }
+  const toggle = async (ctrl) => {
+    const m = byControl[ctrl.id]
+    setSaving(ctrl.id); setError('')
+    try { m ? await onUnlink(m.id) : await onLink(ctrl.id, requirementId) }
+    catch (e) { setError(e.message) } finally { setSaving(null) }
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.22)', backdropFilter: 'blur(2px)' }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: '#fff', borderRadius: 12, width: 520, maxHeight: '80vh', display: 'flex', flexDirection: 'column', border: '1px solid var(--border)', boxShadow: '0 8px 32px rgba(26,19,20,0.14)' }}>
-        {/* Header */}
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Map Controls</h3>
-            <button onClick={onClose} style={{ color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer' }}><X size={16} /></button>
-          </div>
-          <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5, marginBottom: 12 }}>
-            <strong style={{ color: 'var(--text-2)' }}>{requirementId}</strong> — {requirementText}
-          </p>
-          <div style={{ position: 'relative' }}>
-            <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search your controls…"
-              className="risys-input" style={{ paddingLeft: 30, fontSize: 12 }} autoFocus />
-          </div>
-        </div>
-
-        {/* Currently linked */}
-        {linked.length > 0 && (
-          <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0, background: '#fdf9f9' }}>
-            <p className="eyebrow" style={{ marginBottom: 8 }}>Mapped Controls</p>
-            {linked.map(m => {
-              const ctrl = controls.find(c => c.id === m.control_id)
-              return (
-                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
-                  <Check size={13} style={{ color: '#166534', flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, color: 'var(--text-2)', flex: 1 }}>{ctrl?.name || m.control_id}</span>
-                  <button onClick={() => handleUnlink(m.id)} disabled={saving === m.id}
-                    style={{ color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}>
-                    {saving === m.id ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Trash2 size={12} />}
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-        {/* All controls list */}
-        <div style={{ overflowY: 'auto', flex: 1 }}>
-          {controls.length === 0 ? (
-            <div style={{ padding: '32px 20px', textAlign: 'center' }}>
-              <p style={{ fontSize: 13, color: 'var(--text-3)' }}>No active controls in your library yet.</p>
-              <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>Add controls from the Controls page first.</p>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div style={{ padding: '24px 20px', textAlign: 'center' }}>
-              <p style={{ fontSize: 12, color: 'var(--text-3)' }}>No controls match your search.</p>
-            </div>
-          ) : (
-            filtered.map(ctrl => {
-              const isLinked = linkedIds.includes(ctrl.id)
-              return (
-                <div key={ctrl.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: '10px 20px',
-                  borderBottom: '1px solid var(--surface)', background: isLinked ? '#f9fdfb' : '#fff',
-                }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text)', marginBottom: 2 }}>{ctrl.name}</p>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {ctrl.control_type && <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{ctrl.control_type}</span>}
-                      {ctrl.testing_status && ctrl.testing_status !== 'Not Tested' && (
-                        <span style={{ fontSize: 10, color: ctrl.testing_status === 'Pass' ? '#166534' : '#991b1b', fontWeight: 600 }}>
-                          {ctrl.testing_status}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {isLinked ? (
-                    <span style={{ fontSize: 11, color: '#166534', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Check size={12} /> Mapped
-                    </span>
-                  ) : (
-                    <button onClick={() => handleLink(ctrl.id)} disabled={saving === ctrl.id} className="btn-secondary" style={{ fontSize: 11, padding: '4px 10px' }}>
-                      {saving === ctrl.id ? <Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> : <Plus size={11} />}
-                      Map
-                    </button>
-                  )}
-                </div>
-              )
-            })
-          )}
-        </div>
-
-        <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
-          <button onClick={onClose} className="btn-primary" style={{ width: '100%' }}>Done</button>
-        </div>
+    <div className="anim-fade" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ position: 'relative' }}>
+        <Search size={13} style={{ position: 'absolute', insetInlineStart: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tx('Search your controls…')}
+          className="risys-input" style={{ paddingInlineStart: 30, fontSize: 'var(--t-sm)' }} autoFocus />
       </div>
+      {controls.length === 0 ? (
+        <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-3)', margin: 0 }}>{tx('No active controls in your library yet. Add controls from the Controls page first.')}</p>
+      ) : (
+        <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--r)' }}>
+          {filtered.length === 0 && <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-3)', margin: 0, padding: 12 }}>{tx('No controls match your search.')}</p>}
+          {filtered.map((ctrl) => {
+            const on = !!byControl[ctrl.id]
+            return (
+              <label key={ctrl.id} style={{
+                display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 10px', cursor: 'pointer',
+                borderBottom: '1px solid var(--border-3)', background: on ? 'var(--low-bg)' : 'var(--bg-2)',
+              }}>
+                {saving === ctrl.id
+                  ? <Loader2 size={14} className="animate-spin" style={{ marginTop: 2, flexShrink: 0 }} />
+                  : <input type="checkbox" checked={on} onChange={() => toggle(ctrl)} style={{ marginTop: 3, accentColor: 'var(--crimson)' }} />}
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 'var(--t-sm)', color: 'var(--text)', fontWeight: 500 }}>{ctrl.name}</span>
+                  <span style={{ display: 'block', fontSize: 'var(--t-micro)', color: 'var(--text-3)' }}>
+                    {[ctrl.control_type, ctrl.testing_status].filter(Boolean).join(' · ')}
+                  </span>
+                </span>
+              </label>
+            )
+          })}
+        </div>
+      )}
+      {error && <p className="field-error" style={{ margin: 0 }}>{error}</p>}
+      <div><button className="btn-secondary" onClick={onDone}><Check size={13} /> {tx('Done')}</button></div>
     </div>
   )
 }
@@ -311,7 +256,7 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto
     }}>
       <div
         onClick={() => onOpenControl(reqId)}
-        title="Open control"
+        title={tx('Open control')}
         style={{
           display: 'grid',
           gridTemplateColumns: isSubCtrl ? '28px 130px 1fr 160px 200px 80px' : '28px 130px 1fr 160px 200px 80px',
@@ -328,7 +273,7 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto
           color: isSubCtrl ? 'var(--border-2)' : 'var(--text-3)',
           display: 'flex', alignItems: 'center',
         }}>
-          <ChevronRight size={13} />
+          <ChevronRight size={13} className='rtl-flip' />
         </span>
 
         {/* ID, with the automation class beside main controls */}
@@ -337,7 +282,7 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto
             fontSize: isSubCtrl ? 11 : 12, fontWeight: isSubCtrl ? 400 : 600,
             color: isSubCtrl ? 'var(--text-3)' : 'var(--crimson)',
             fontFamily: 'var(--font-mono)', letterSpacing: '0.02em',
-            paddingLeft: isSubCtrl ? 22 : 0,
+            paddingInlineStart: isSubCtrl ? 22 : 0,
           }}>
             {isSubCtrl ? String(reqId).replace(/-/g, '.') : reqId}
           </span>
@@ -365,8 +310,7 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto
                 background: hasAutomatedResult(auto) ? '#eff6ff' : 'var(--surface-2)',
                 border: `1px solid ${hasAutomatedResult(auto) ? '#bfdbfe' : 'var(--border)'}`,
               }}>
-              <Zap size={9} /> {auto.signal_count} auto
-            </span>
+              <Zap size={9} /> {auto.signal_count} {tx('auto')}</span>
           )}
           {isOverridingEvidence(status?.status, auto) && (
             <span
@@ -374,9 +318,7 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto
               style={{
                 fontSize: 10, padding: '2px 6px', borderRadius: 99, fontWeight: 600,
                 color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a',
-              }}>
-              override
-            </span>
+              }}>{tx('override')}</span>
           )}
           {mappedControls.length === 0 && !isAutomated(auto) ? (
             <span style={{ fontSize: 11, color: 'var(--text-3)' }}>—</span>
@@ -406,9 +348,7 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto
             <span title={`Evidence review was due ${status.review_due_at}`} style={{
               fontSize: 10, padding: '1px 6px', borderRadius: 99, fontWeight: 600, whiteSpace: 'nowrap',
               color: 'var(--critical)', background: 'var(--critical-bg)', border: '1px solid var(--critical-bd)',
-            }}>
-              Review overdue
-            </span>
+            }}>{tx('Review overdue')}</span>
           )}
         </div>
 
@@ -446,7 +386,7 @@ function DomainGroup({ domainId, domainName, requirements, fw, statuses, mapping
         style={{
           display: 'flex', alignItems: 'center', gap: 12, width: '100%',
           padding: '12px 16px', background: 'var(--surface)', border: 'none', cursor: 'pointer',
-          textAlign: 'left',
+          textAlign: 'start',
         }}
         onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
         onMouseLeave={e => e.currentTarget.style.background = 'var(--surface)'}
@@ -457,10 +397,10 @@ function DomainGroup({ domainId, domainName, requirements, fw, statuses, mapping
         <div style={{ flex: 1, minWidth: 0 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{domainName}</span>
           {domainLabel && (
-            <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 8 }}>— {domainLabel}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-3)', marginInlineStart: 8 }}>— {domainLabel}</span>
           )}
         </div>
-        <span style={{ fontSize: 11, color: 'var(--text-3)', marginRight: 8 }}>{scoreable.length} controls</span>
+        <span style={{ fontSize: 11, color: 'var(--text-3)', marginInlineEnd: 8 }}>{scoreable.length} {tx('controls')}</span>
         {/* Mini score */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ width: 80, height: 5, background: 'var(--border)', borderRadius: 99, overflow: 'hidden' }}>
@@ -627,7 +567,7 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
           borderBottom: '1px solid var(--border)', background: 'var(--bg-2)', flexShrink: 0,
         }}>
           <div style={{ minWidth: 0 }}>
-            <BackLink to={onBack} label="Compliance" style={{ marginBottom: 8 }} />
+            <BackLink to={onBack} label={tx('Compliance')} style={{ marginBottom: 8 }} />
             <h1 style={{ fontSize: 'var(--t-page)', fontWeight: 600, color: 'var(--text)', margin: 0 }}>
               {fw.label} — {fw.fullName}
             </h1>
@@ -639,7 +579,7 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
             <button onClick={onRefreshSignals} disabled={refreshing} className="btn-secondary"
               style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
               <RefreshCw size={12} className={refreshing ? 'animate-spin' : undefined} />
-              {refreshing ? 'Recomputing…' : 'Refresh signals'}
+              {refreshing ? tx('Recomputing…') : tx('Refresh signals')}
             </button>
             <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{fw.version}</span>
             <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, fontWeight: 600, color: fw.color, background: fw.bg, border: `1px solid ${fw.color}22` }}>
@@ -653,7 +593,7 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
           {/* Score summary */}
           <div className="card mb-5" style={{ display: 'grid', gridTemplateColumns: '200px 1fr', overflow: 'hidden' }}>
             {/* Left: overall score */}
-            <div style={{ padding: '20px 24px', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <div style={{ padding: '20px 24px', borderInlineEnd: '1px solid var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
               {loading ? <Spinner /> : (
                 <>
                   <div style={{ position: 'relative' }}>
@@ -676,7 +616,7 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
                       </text>
                     </svg>
                   </div>
-                  <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center' }}>Compliance Score</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center' }}>{tx('Compliance Score')}</p>
                 </>
               )}
             </div>
@@ -684,23 +624,23 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
             {/* Right: breakdown */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)' }}>
               {[
-                { label: 'Compliant',    value: score.compliant,    color: STATUS_CONFIG.compliant.color,      filter: 'compliant' },
-                { label: 'Partial',      value: score.partial,       color: STATUS_CONFIG.partial.color,        filter: 'partial' },
-                { label: 'Non-Compliant', value: score.notCompliant, color: STATUS_CONFIG.not_compliant.color,  filter: 'not_compliant' },
-                { label: 'In Progress',  value: score.inProgress,    color: STATUS_CONFIG.in_progress.color,    filter: 'in_progress' },
-                { label: 'Not Started',  value: score.notStarted,    color: 'var(--text-3)',                    filter: 'not_started' },
+                { label: tx('Compliant'),    value: score.compliant,    color: STATUS_CONFIG.compliant.color,      filter: 'compliant' },
+                { label: tx('Partial'),      value: score.partial,       color: STATUS_CONFIG.partial.color,        filter: 'partial' },
+                { label: tx('Non-Compliant'), value: score.notCompliant, color: STATUS_CONFIG.not_compliant.color,  filter: 'not_compliant' },
+                { label: tx('In Progress'),  value: score.inProgress,    color: STATUS_CONFIG.in_progress.color,    filter: 'in_progress' },
+                { label: tx('Not Started'),  value: score.notStarted,    color: 'var(--text-3)',                    filter: 'not_started' },
               ].map((s, i) => (
                 <button key={s.label}
                   onClick={() => setStatusFilter(f => f === s.filter ? '' : s.filter)}
                   style={{
                     padding: '20px 12px', background: statusFilter === s.filter ? '#F6EBE8' : 'transparent',
-                    border: 'none', borderRight: i < 4 ? '1px solid var(--border)' : 'none',
+                    border: 'none', borderInlineEnd: i < 4 ? '1px solid var(--border)' : 'none',
                     cursor: 'pointer', textAlign: 'center', position: 'relative',
                   }}
                   onMouseEnter={e => { if (statusFilter !== s.filter) e.currentTarget.style.background = '#FAF3F1' }}
                   onMouseLeave={e => { e.currentTarget.style.background = statusFilter === s.filter ? '#F6EBE8' : 'transparent' }}
                 >
-                  {statusFilter === s.filter && <span style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: '#5D0F0F' }} />}
+                  {statusFilter === s.filter && <span style={{ position: 'absolute', top: 0, insetInlineStart: 0, insetInlineEnd: 0, height: 3, background: '#5D0F0F' }} />}
                   <p className="eyebrow mb-1">{s.label}</p>
                   <p className="tnum" style={{ fontSize: 28, fontWeight: 300, color: s.color }}>{loading ? '—' : s.value}</p>
                 </button>
@@ -714,15 +654,14 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
           )}
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
             <div style={{ position: 'relative', flex: 1 }}>
-              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }} />
+              <Search size={13} style={{ position: 'absolute', insetInlineStart: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }} />
               <input value={search} onChange={e => setSearch(e.target.value)}
-                placeholder={`Search ${fw.label} requirements…`}
-                className="risys-input" style={{ paddingLeft: 30 }} />
+                placeholder={tx('Search {{fw}} requirements…', { fw: fw.label })}
+                className="risys-input" style={{ paddingInlineStart: 30 }} />
             </div>
             {(statusFilter || search || evidenceFilter) && (
               <button onClick={() => { setStatusFilter(''); setSearch(''); setEvidenceFilter('') }} className="btn-secondary" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <X size={13} /> Clear filters
-              </button>
+                <X size={13} /> {tx('Clear filters')}</button>
             )}
           </div>
 
@@ -734,7 +673,7 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
               <p style={{ fontSize: 13, color: 'var(--text-3)' }}>
                 {evidenceFilter
                   ? `No ${AUTOMATION_META[evidenceFilter].label.toLowerCase()} controls match your search or status filter.`
-                  : 'No requirements match your filters.'}
+                  : tx('No requirements match your filters.')}
               </p>
             </div>
           ) : (

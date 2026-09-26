@@ -56,6 +56,31 @@
      they stay in Western digits regardless of interface language. */
   [lang='ar'] .mono, [lang='ar'] .tnum { font-feature-settings: 'lnum' 1; }
 
+  /* ── Right-to-left (Arabic) ─────────────────────────────────────────────
+   * Layout is written with logical properties (margin-inline-start, ps-3,
+   * inset-inline-end …) so it mirrors by itself when <html dir="rtl">; see
+   * tools/check-logical-css.mjs, which keeps it that way. What cannot be
+   * expressed logically is handled here. */
+
+  /* Arrows and chevrons that mean "forward/back" point the other way. */
+  [dir='rtl'] .rtl-flip { scale: -1 1; }
+
+  /* Tailwind's space-x-* uses physical margins; reverse them. */
+  [dir='rtl'] [class*='space-x-'] > :not([hidden]) ~ :not([hidden]) { --tw-space-x-reverse: 1; }
+
+  /* Addresses, URLs and secrets are always typed left-to-right. */
+  [dir='rtl'] input[type='email'], [dir='rtl'] input[type='url'],
+  [dir='rtl'] input[type='tel'], [dir='rtl'] input[type='password'] { direction: ltr; text-align: right; } /* rtl-ok: LTR text in an RTL page */
+
+  /* Identifiers (RSK-0002, 2-2-3-1, SHA-256 hashes) keep their own order
+     inside Arabic sentences instead of being re-ordered by the bidi algorithm. */
+  [dir='rtl'] .mono, [dir='rtl'] .tnum, [dir='rtl'] code, [dir='rtl'] kbd { unicode-bidi: isolate; }
+
+  /* Letter-spacing breaks Arabic joining; tracked-out labels read as broken
+     letters. Arabic is never letter-spaced, whatever a component sets. */
+  [lang='ar'] body * { letter-spacing: 0 !important; }
+  [lang='ar'] body { line-height: 1.55; }
+
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
@@ -99,7 +124,7 @@
     color: var(--text-2);
     margin-bottom: 5px;
   }
-  .field-req { color: var(--crimson); margin-left: 2px; }
+  .field-req { color: var(--crimson); margin-inline-start: 2px; }
   .field-help { font-size: var(--t-meta); color: var(--text-3); margin-top: 5px; }
   .field-error {
     @apply flex items-center gap-1.5;
@@ -124,7 +149,7 @@
   .btn-ghost:hover:not(:disabled) { background: var(--surface); color: var(--text-2); }
 
   /* Legacy call sites still say btn-primary/secondary/ghost standalone. */
-  .btn-primary, .btn-secondary, .btn-ghost {
+  .btn-primary, .btn-secondary, .btn-ghost, .btn-danger {
     @apply inline-flex items-center justify-center gap-1.5 font-medium rounded-md transition-colors cursor-pointer;
     font-size: var(--t-sm);
     padding: 7px 12px;
@@ -191,8 +216,9 @@
   .nav-item.active { background: rgba(255,255,255,0.07); color: var(--on-dark); font-weight: 500; }
   .nav-item.active::before {
     content: '';
-    position: absolute; left: -8px; top: 6px; bottom: 6px; width: 2.5px;
-    border-radius: 0 2px 2px 0;
+    position: absolute; inset-inline-start: -8px; top: 6px; bottom: 6px; width: 2.5px;
+    border-start-start-radius: 0; border-end-start-radius: 0;
+    border-start-end-radius: 2px; border-end-end-radius: 2px;
     background: var(--rose);
   }
   .nav-item.active svg { color: #d9a0a0; }
@@ -280,9 +306,80 @@
 
   /* ── Motion (§35) ─────────────────────────────────────────────────────── */
   @keyframes drawer-in { from { transform: translateX(100%) } to { transform: translateX(0) } }
+  /* Drawers sit on the inline-end edge, which is the left in Arabic, so they
+     slide in from the left there. */
+  @keyframes drawer-in-rtl { from { transform: translateX(-100%) } to { transform: translateX(0) } }
+  [dir='rtl'] .anim-drawer { animation-name: drawer-in-rtl; }
   @keyframes fade-in   { from { opacity: 0 } to { opacity: 1 } }
   @keyframes pop-in    { from { opacity: 0; transform: translateY(-4px) scale(0.98) } to { opacity: 1; transform: none } }
   .anim-drawer { animation: drawer-in var(--dur-3) var(--ease); }
   .anim-fade   { animation: fade-in var(--dur-2) var(--ease); }
   .anim-pop    { animation: pop-in var(--dur-2) var(--ease); transform-origin: top; }
+}
+
+/* ── Full-page forms and record pages ──────────────────────────────────────
+ * Every create/edit/record flow is a page with its own URL, not a dialog over
+ * the page. Sections put the explanation on the left and the fields on the
+ * right, so a long form reads as a document and each part says what it is
+ * for. The action bar is pinned to the bottom of the scroll area, so the
+ * primary action is always in the same place however long the form is. */
+.fp-root   { display: flex; flex-direction: column; min-height: 100%; }
+.fp-head   { padding: var(--s-5) var(--gutter) var(--s-4); border-bottom: 1px solid var(--border); background: var(--bg); }
+.fp-body   { flex: 1; padding: var(--s-6) var(--gutter) var(--s-10); }
+.fp-inner  { max-width: 980px; }
+.fp-section {
+  display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: var(--s-8);
+  padding-block: var(--s-6); border-top: 1px solid var(--border);
+}
+.fp-section:first-child { border-top: none; padding-top: 0; }
+.fp-section-title { font-size: var(--t-section); font-weight: 600; color: var(--text); margin: 0; }
+.fp-section-desc  { font-size: var(--t-sm); color: var(--text-3); line-height: 1.6; margin: 6px 0 0; }
+.fp-fields { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.fp-foot {
+  position: sticky; bottom: 0; z-index: 5;
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px var(--gutter); background: var(--bg-2);
+  border-top: 1px solid var(--border); box-shadow: 0 -4px 12px rgba(41,32,33,0.04);
+}
+.fp-foot-note { font-size: var(--t-meta); color: var(--text-3); margin-inline-end: auto; min-width: 0; }
+.fp-foot-note.is-error { color: var(--critical); }
+.fp-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px 14px; }
+.fp-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px 14px; }
+
+/* Record pages: the record on the left, its facts and next action on the right. */
+.rp-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--s-6); align-items: start; max-width: 1180px; }
+.rp-aside  { position: sticky; top: var(--s-4); display: flex; flex-direction: column; gap: var(--s-4); }
+.rp-block + .rp-block { margin-top: var(--s-5); }
+.rp-label  { font-size: var(--t-meta); font-weight: 600; color: var(--text-3); margin: 0 0 4px; }
+.rp-text   { font-size: var(--t-body); color: var(--text); line-height: 1.65; white-space: pre-wrap; margin: 0; max-width: 72ch; }
+
+/* Inline confirmation: the button turns into the question, in place. */
+.ic-strip {
+  display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 5px 6px 5px 10px; border-radius: var(--r);
+  background: var(--critical-bg); border: 1px solid var(--critical-bd);
+  font-size: var(--t-sm); color: var(--text); animation: fade-in var(--dur-2) var(--ease);
+}
+.ic-strip.is-neutral { background: var(--surface); border-color: var(--border-2); }
+.ic-panel {
+  display: flex; flex-direction: column; gap: 10px; padding: 14px;
+  border-radius: var(--r-md); background: var(--critical-bg); border: 1px solid var(--critical-bd);
+  animation: fade-in var(--dur-2) var(--ease);
+}
+.ic-panel.is-neutral { background: var(--surface); border-color: var(--border-2); }
+.btn-danger { background: var(--critical); color: #fff; border: 1px solid var(--critical); }
+.btn-danger:hover:not(:disabled) { background: #991b1b; }
+.btn-danger:disabled { opacity: 0.45; cursor: not-allowed; }
+
+@media (max-width: 1100px) {
+  .rp-layout { grid-template-columns: minmax(0,1fr); }
+  .rp-aside  { position: static; }
+}
+@media (max-width: 860px) {
+  .fp-section { grid-template-columns: minmax(0,1fr); gap: var(--s-3); }
+  .fp-grid-3 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 560px) {
+  .fp-grid-2, .fp-grid-3 { grid-template-columns: minmax(0,1fr); }
+  .hide-mobile { display: none; }
 }

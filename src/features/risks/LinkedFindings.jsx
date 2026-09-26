@@ -1,6 +1,7 @@
 import { FileWarning, CheckCircle2 } from 'lucide-react'
 import { useRiskFindings } from '@/hooks/useTriage'
 import { SEVERITY_CONFIG, findingDisplayTitle } from '@/lib/findings'
+import { tx, appLocale } from '@/lib/i18n'
 
 /**
  * Findings that raised this risk or were attached to it during triage.
@@ -26,13 +27,15 @@ export function LinkedFindings({ riskId, member = () => null }) {
         padding: '8px 14px', background: 'var(--surface)', borderBottom: '1px solid var(--border-3)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
       }}>
-        <span className="eyebrow">Findings on this risk · {links.length}</span>
+        <span className="eyebrow">{tx('Findings on this risk ·')} {links.length}</span>
         <span style={{ fontSize: 'var(--t-micro)', color: allResolved ? 'var(--low, #166534)' : 'var(--text-3)' }}>
           {allResolved
-            ? 'All linked findings are resolved in the source system — re-assess residual risk and consider closing'
+            ? tx(
+            'All linked findings are resolved in the source system — re-assess residual risk and consider closing'
+          )
             : resolved.length
               ? `${resolved.length} of ${links.length} resolved in the source system — re-assess if they change the picture`
-              : 'Evidence of control failure — re-assess if they change the picture'}
+              : tx('Evidence of control failure — re-assess if they change the picture')}
         </span>
       </div>
       {links.map((l, idx) => {
@@ -47,17 +50,16 @@ export function LinkedFindings({ riskId, member = () => null }) {
               {findingDisplayTitle(l.finding_title, l.subject_name)}
             </span>
             {l.source_status === 'resolved' && (
-              <span className="badge" title={l.source_resolved_at ? `Resolved ${new Date(l.source_resolved_at).toLocaleString('en-GB')}` : undefined}
+              <span className="badge" title={l.source_resolved_at ? `Resolved ${new Date(l.source_resolved_at).toLocaleString(appLocale())}` : undefined}
                 style={{ color: '#166534', background: '#f0fdf4', border: '1px solid #bbf7d0', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <CheckCircle2 size={11} /> Resolved in source
-              </span>
+                <CheckCircle2 size={11} /> {tx('Resolved in source')}</span>
             )}
             <span className="badge" style={{ color: sev.color, background: sev.bg, border: `1px solid ${sev.border}` }}>
               {sev.label}
             </span>
             <span style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
-              {l.disposition === 'created' ? 'raised this risk' : 'attached'}
-              {' · '}{new Date(l.decided_at).toLocaleDateString('en-GB')}
+              {l.disposition === 'created' ? tx('raised this risk') : 'attached'}
+              {' · '}{new Date(l.decided_at).toLocaleDateString(appLocale())}
               {member(l.decided_by) ? ` · ${member(l.decided_by)}` : ''}
             </span>
           </div>

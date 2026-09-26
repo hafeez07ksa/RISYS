@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, Plus, Trash2, AlertTriangle, X,
-  CheckCircle, Settings, GitBranch,
+  ArrowLeft, Plus, Trash2, AlertTriangle, CheckCircle, Settings, GitBranch,
 } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { useMappings } from '@/hooks/useMappings'
@@ -17,6 +16,8 @@ import { supabase } from '@/lib/supabase'
 import { Summary } from '@/features/settings/shared/ConnectorScanSettings'
 import { formatRelative } from '@/hooks/useConnectorScans'
 import { ControlReferences } from '@/components/ui/ControlReferences'
+import { InlineConfirm } from '@/components/ui/InlineConfirm'
+import { tx } from '@/lib/i18n'
 
 // Incidents that arrive from Jira are the entity's incident-management process in
 // action, so the same ECC 2-13 controls apply as on the incident itself.
@@ -33,88 +34,35 @@ const INGEST_CHANNELS = [
     key: 'jira',
     Icon: Webhook,
     name: 'Jira webhook',
-    what: 'issues created and updated',
-    detail: 'Registered automatically when Jira is connected, and authenticated with a per-tenant token. Reconnect Jira if issues stop arriving.',
+    what: tx('issues created and updated'),
+    detail: tx(
+      'Registered automatically when Jira is connected, and authenticated with a per-tenant token. Reconnect Jira if issues stop arriving.'
+    ),
   },
   {
     key: 'jira-n8n',
     Icon: Workflow,
     name: 'n8n or other automation',
-    what: 'issues pushed by a workflow',
-    detail: 'Optional. POST to the ingest-incident function with the x-risys-token header; generate that token below.',
+    what: tx('issues pushed by a workflow'),
+    detail: tx(
+      'Optional. POST to the ingest-incident function with the x-risys-token header; generate that token below.'
+    ),
   },
 ]
 
-// ── Disconnect modal + button ─────────────────────────────────────────────────
+// ── Disconnect ───────────────────────────────────────────────────────────────
+/* Confirmation opens in place, with the consequences and a typed keyword —
+ * the same safeguard the old dialog had, without covering the page. */
 function DisconnectControl({ onDisconnected }) {
   const { disconnect } = useConnectors()
-  const [open, setOpen]                   = useState(false)
-  const [input, setInput]                 = useState('')
-  const [disconnecting, setDisconnecting] = useState(false)
-  const [error, setError]                 = useState(null)
-  const keyword = 'DISCONNECT'
-  const matches = input.trim().toUpperCase() === keyword
-
-  const handleDisconnect = async () => {
-    if (!matches) return
-    setDisconnecting(true); setError(null)
-    try { await disconnect('jira'); onDisconnected?.() }
-    catch (e) { setError(e.message); setDisconnecting(false) }
-  }
-
   return (
-    <>
-      {open && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)' }}
-          onClick={e => e.target === e.currentTarget && setOpen(false)}>
-          <div style={{ width: '100%', maxWidth: 440, borderRadius: 14, overflow: 'hidden', background: '#fff', border: '1px solid #e5e0e0', boxShadow: '0 16px 48px rgba(0,0,0,0.12)' }}>
-            <div style={{ padding: '16px 20px', background: '#fef2f2', borderBottom: '1px solid #fecaca', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 9, background: '#fff', border: '1px solid #fecaca', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <AlertTriangle size={18} style={{ color: '#b91c1c' }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 14, fontWeight: 600, color: '#b91c1c' }}>Disconnect Jira?</p>
-                <p style={{ fontSize: 11.5, color: '#991b1b' }}>This will stop all issue syncs immediately</p>
-              </div>
-              <button onClick={() => setOpen(false)} style={{ color: '#b91c1c', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}><X size={15} /></button>
-            </div>
-            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ padding: '12px 14px', borderRadius: 8, background: '#f8f7f7', border: '1px solid #e5e0e0', fontSize: 12, color: '#4a3a3a', lineHeight: 1.7 }}>
-                <p style={{ fontWeight: 600, color: '#1a1314', marginBottom: 6 }}>What happens when you disconnect:</p>
-                <p>· Jira webhooks stop sending new issues immediately</p>
-                <p>· Existing incidents from Jira remain in RISYS</p>
-                <p>· Issue type mappings are preserved for reconnection</p>
-                <p>· You can reconnect again at any time</p>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 11.5, color: '#8a7070', marginBottom: 6 }}>
-                  Type <strong style={{ color: '#1a1314', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>{keyword}</strong> to confirm
-                </label>
-                <input value={input} onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && matches && handleDisconnect()}
-                  placeholder={keyword} autoFocus
-                  style={{ width: '100%', fontSize: 13, fontFamily: 'var(--font-mono)', padding: '9px 12px', borderRadius: 8, outline: 'none', border: `1.5px solid ${matches ? '#bbf7d0' : '#e5e0e0'}`, background: matches ? '#f0fdf4' : '#fff', color: '#1a1314', boxSizing: 'border-box', letterSpacing: '0.08em', transition: 'border-color 0.15s' }} />
-              </div>
-              {error && <p style={{ fontSize: 12, color: '#b91c1c' }}>{error}</p>}
-            </div>
-            <div style={{ display: 'flex', gap: 8, padding: '0 20px 20px' }}>
-              <button onClick={() => { setOpen(false); setInput('') }}
-                style={{ flex: 1, padding: '9px', borderRadius: 8, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', background: '#fff', color: '#4a3a3a', border: '1px solid #e5e0e0' }}>
-                Cancel
-              </button>
-              <button onClick={handleDisconnect} disabled={!matches || disconnecting}
-                style={{ flex: 1, padding: '9px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: matches ? 'pointer' : 'not-allowed', border: 'none', background: matches ? '#b91c1c' : '#f5f3f3', color: matches ? '#fff' : '#d4cccc', opacity: disconnecting ? 0.6 : 1, transition: 'background 0.15s' }}>
-                {disconnecting ? 'Disconnecting...' : 'Disconnect'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      <button onClick={() => setOpen(true)}
-        style={{ flexShrink: 0, fontSize: 12.5, fontWeight: 600, padding: '8px 16px', borderRadius: 8, cursor: 'pointer', background: '#fff', color: '#b91c1c', border: '1.5px solid #fca5a5', whiteSpace: 'nowrap' }}>
-        Disconnect
-      </button>
-    </>
+    <InlineConfirm variant="panel" requireText="DISCONNECT" confirmLabel={tx('Disconnect')}
+      triggerClassName="btn-secondary" triggerStyle={{ color: 'var(--critical)', borderColor: 'var(--critical-bd)' }}
+      message={tx('Disconnect Jira?')}
+      detail={tx('Jira webhooks stop sending new issues immediately. Existing incidents from Jira remain in RISYS, issue type mappings are kept, and you can reconnect at any time.')}
+      onConfirm={async () => { await disconnect('jira'); onDisconnected?.() }}>
+      {tx('Disconnect')}
+    </InlineConfirm>
   )
 }
 
@@ -169,27 +117,25 @@ export function JiraManagePage() {
       await saveMapping(typeToSave, newSeverity)
       setNewType(''); setCustomType(''); setNewSeverity('medium')
     } catch (err) {
-      setError(err.message || 'Failed to save mapping')
+      setError(err.message || tx('Failed to save mapping'))
     } finally { setSaving(false) }
   }
 
   return (
     <div className="h-full flex flex-col">
       <Topbar
-        title="Jira"
-        subtitle="Integration Settings"
+        title={tx('Jira')}
+        subtitle={tx('Integration Settings')}
         actions={
           <div className="flex items-center gap-2">
             <button onClick={() => navigate('/app/incidents')}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border transition-colors hover:bg-[#f5f3f3]"
-              style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
-              View incidents <ArrowRight size={13} />
+              style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>{tx('View incidents')} <ArrowRight size={13} className='rtl-flip' />
             </button>
             <button onClick={() => navigate('/app/settings')}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border transition-colors hover:bg-[#f5f3f3]"
               style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
-              <ArrowLeft size={13} /> Back
-            </button>
+              <ArrowLeft size={13} className='rtl-flip' /> {tx('Back')}</button>
           </div>
         }
       />
@@ -209,19 +155,15 @@ export function JiraManagePage() {
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
-                <p className="text-sm font-semibold" style={{ color: '#1a1314' }}>Jira</p>
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
-                  ● Active
-                </span>
+                <p className="text-sm font-semibold" style={{ color: '#1a1314' }}>{tx('Jira')}</p>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>{tx('● Active')}</span>
               </div>
-              <p className="text-xs" style={{ color: '#8a7070' }}>
-                Connected · Atlassian · Issues flow in as RISYS incidents in real time
-              </p>
+              <p className="text-xs" style={{ color: '#8a7070' }}>{tx('Connected · Atlassian · Issues flow in as RISYS incidents in real time')}</p>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-              <div style={{ textAlign: 'right' }}>
-                <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070', marginBottom: 2 }}>Incidents ingested</p>
+              <div style={{ textAlign: 'end' }}>
+                <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070', marginBottom: 2 }}>{tx('Incidents ingested')}</p>
                 <p style={{ fontSize: 20, fontWeight: 300, color: '#1a1314' }}>{/* dynamic later */}—</p>
               </div>
             </div>
@@ -230,20 +172,20 @@ export function JiraManagePage() {
 
         {/* ── Summary ──────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-          <Summary label="Incidents from Jira" value={stats ? stats.total : '—'} sub="Last 500 ingested" />
-          <Summary label="Open" value={stats ? stats.open : '—'} sub="Not yet resolved" warn={!!stats?.open} />
-          <Summary label="Last received" value={stats?.last ? formatRelative(stats.last) : '—'}
-            sub={stats && !stats.last ? 'Nothing has arrived yet' : 'Most recent Jira issue'}
+          <Summary label={tx('Incidents from Jira')} value={stats ? stats.total : '—'} sub={tx('Last 500 ingested')} />
+          <Summary label={tx('Open')} value={stats ? stats.open : '—'} sub={tx('Not yet resolved')} warn={!!stats?.open} />
+          <Summary label={tx('Last received')} value={stats?.last ? formatRelative(stats.last) : '—'}
+            sub={stats && !stats.last ? tx('Nothing has arrived yet') : tx('Most recent Jira issue')}
             warn={!!stats && !stats.last} />
-          <Summary label="Issue type mappings" value={loading ? '—' : mappings.length} sub="Type → severity rules" />
+          <Summary label={tx('Issue type mappings')} value={loading ? '—' : mappings.length} sub={tx('Type → severity rules')} />
         </div>
 
         {/* ── Inbound channels ─────────────────────────────────────────── */}
         <div className="rounded-xl mb-4" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
           <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid #f0ecec' }}>
             <Info size={14} style={{ color: '#5D0F0F' }} />
-            <p className="text-sm font-medium flex-1" style={{ color: '#1a1314' }}>Inbound channels</p>
-            <span className="text-[11px]" style={{ color: '#8a7070' }}>Jira pushes to RISYS — there is no scan to run</span>
+            <p className="text-sm font-medium flex-1" style={{ color: '#1a1314' }}>{tx('Inbound channels')}</p>
+            <span className="text-[11px]" style={{ color: '#8a7070' }}>{tx('Jira pushes to RISYS — there is no scan to run')}</span>
           </div>
           <div className="px-4">
             {INGEST_CHANNELS.map((ch, i) => {
@@ -260,7 +202,7 @@ export function JiraManagePage() {
                       <span style={{ marginInlineStart: 'auto', fontSize: 10.5, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
                         color: delivered ? '#166534' : '#6b5555', background: delivered ? '#f0fdf4' : '#f8f7f7',
                         border: `1px solid ${delivered ? '#bbf7d0' : '#e5e0e0'}` }}>
-                        {delivered ? 'Receiving' : 'Nothing received yet'}
+                        {delivered ? tx('Receiving') : tx('Nothing received yet')}
                       </span>
                     </div>
                     <p className="text-[11px] mt-1" style={{ color: '#8a7070' }}>{ch.detail}</p>
@@ -270,7 +212,7 @@ export function JiraManagePage() {
             })}
           </div>
           <div className="px-4 py-3" style={{ borderTop: '1px solid #f0ecec' }}>
-            <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: '#8a7070' }}>Framework reference</p>
+            <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: '#8a7070' }}>{tx('Framework reference')}</p>
             <ControlReferences control={JIRA_CONTROLS} />
           </div>
         </div>
@@ -278,8 +220,8 @@ export function JiraManagePage() {
         {/* ── Tabs ─────────────────────────────────────────────────────── */}
         <div className="flex mb-5" style={{ borderBottom: '1px solid #e5e0e0' }}>
           {[
-            { id: 'mappings', label: 'Issue Type Mappings', icon: GitBranch },
-            { id: 'settings', label: 'Settings',            icon: Settings  },
+            { id: 'mappings', label: tx('Issue Type Mappings'), icon: GitBranch },
+            { id: 'settings', label: tx('Settings'),            icon: Settings  },
           ].map(({ id, label, icon: Icon }) => (
             <button key={id} onClick={() => setTab(id)}
               className="flex items-center gap-1.5 px-4 py-2.5 text-xs -mb-px border-b-2 transition-colors"
@@ -302,13 +244,10 @@ export function JiraManagePage() {
             {/* Mappings table */}
             <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
               <div className="px-5 py-4" style={{ borderBottom: '1px solid #e5e0e0' }}>
-                <h2 className="text-sm font-semibold mb-1" style={{ color: '#1a1314' }}>
-                  Issue Type → Severity Mapping
-                </h2>
-                <p className="text-xs" style={{ color: '#8a7070', lineHeight: 1.6 }}>
-                  Define how Jira issue types map to RISYS incident severity levels.
-                  If an issue type has no mapping, severity is determined by Jira's priority field.
-                </p>
+                <h2 className="text-sm font-semibold mb-1" style={{ color: '#1a1314' }}>{tx('Issue Type → Severity Mapping')}</h2>
+                <p className="text-xs" style={{ color: '#8a7070', lineHeight: 1.6 }}>{tx(
+                  'Define how Jira issue types map to RISYS incident severity levels. If an issue type has no mapping, severity is determined by Jira\'s priority field.'
+                )}</p>
               </div>
 
               {loading ? (
@@ -316,15 +255,17 @@ export function JiraManagePage() {
               ) : mappings.length === 0 ? (
                 <div className="px-5 py-10 text-center">
                   <GitBranch size={28} strokeWidth={1} className="mx-auto mb-3" style={{ color: '#d4cccc' }} />
-                  <p className="text-sm font-medium mb-1" style={{ color: '#4a3a3a' }}>No mappings yet</p>
-                  <p className="text-xs" style={{ color: '#8a7070' }}>Add your first mapping below to control how Jira issues become RISYS incidents.</p>
+                  <p className="text-sm font-medium mb-1" style={{ color: '#4a3a3a' }}>{tx('No mappings yet')}</p>
+                  <p className="text-xs" style={{ color: '#8a7070' }}>{tx(
+                    'Add your first mapping below to control how Jira issues become RISYS incidents.'
+                  )}</p>
                 </div>
               ) : (
                 <>
                   <div className="grid px-5 py-2.5 text-[11px] uppercase tracking-wider"
                     style={{ gridTemplateColumns: '1fr 200px 48px', background: '#f8f7f7', borderBottom: '1px solid #e5e0e0', color: '#8a7070' }}>
-                    <span>Jira Issue Type</span>
-                    <span>RISYS Severity</span>
+                    <span>{tx('Jira Issue Type')}</span>
+                    <span>{tx('RISYS Severity')}</span>
                     <span />
                   </div>
                   {mappings.map((m, i) => {
@@ -351,22 +292,22 @@ export function JiraManagePage() {
 
               {/* Add mapping row */}
               <div className="px-5 py-4" style={{ borderTop: '1px solid #e5e0e0', background: '#f8f7f7' }}>
-                <p className="text-xs font-medium mb-3" style={{ color: '#4a3a3a' }}>Add mapping</p>
+                <p className="text-xs font-medium mb-3" style={{ color: '#4a3a3a' }}>{tx('Add mapping')}</p>
                 <div className="flex items-center gap-3">
                   <div className="relative flex-1">
                     <SelectField value={newType} onChange={e => { setNewType(e.target.value); setCustomType('') }}
-                      className="w-full text-xs pl-3 pr-7 py-2.5 rounded-lg border outline-none appearance-none"
+                      className='w-full text-xs ps-3 pe-7 py-2.5 rounded-lg border outline-none appearance-none'
                       style={{ background: '#fff', borderColor: '#e5e0e0', color: newType ? '#1a1314' : '#8a7070' }}>
-                      <option value="">Select issue type...</option>
+                      <option value="">{tx('Select issue type...')}</option>
                       {unmappedTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                      <option value="__custom__">Custom type...</option>
+                      <option value="__custom__">{tx('Custom type...')}</option>
                     </SelectField>
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#8a7070' }}>▾</span>
+                    <span className='absolute end-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]' style={{ color: '#8a7070' }}>▾</span>
                   </div>
 
                   {newType === '__custom__' && (
                     <input value={customType} onChange={e => setCustomType(e.target.value)}
-                      placeholder="Enter type name..."
+                      placeholder={tx('Enter type name...')}
                       className="flex-1 text-xs px-3 py-2.5 rounded-lg border outline-none"
                       style={{ borderColor: '#e5e0e0', color: '#1a1314' }} />
                   )}
@@ -375,19 +316,18 @@ export function JiraManagePage() {
 
                   <div className="relative flex-shrink-0">
                     <SelectField value={newSeverity} onChange={e => setNewSeverity(e.target.value)}
-                      className="text-xs pl-3 pr-7 py-2.5 rounded-lg border outline-none appearance-none"
+                      className='text-xs ps-3 pe-7 py-2.5 rounded-lg border outline-none appearance-none'
                       style={{ background: '#fff', borderColor: '#e5e0e0', color: '#1a1314' }}>
                       {SEVERITIES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                     </SelectField>
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#8a7070' }}>▾</span>
+                    <span className='absolute end-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]' style={{ color: '#8a7070' }}>▾</span>
                   </div>
 
                   <button onClick={handleAdd}
                     disabled={saving || !newType || (newType === '__custom__' && !customType.trim())}
                     className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-semibold flex-shrink-0"
                     style={{ background: '#5D0F0F', color: '#fff', border: 'none', opacity: (saving || !newType || (newType === '__custom__' && !customType.trim())) ? 0.5 : 1 }}>
-                    {saving ? <Spinner size="sm" /> : <Plus size={13} />} Add
-                  </button>
+                    {saving ? <Spinner size="sm" /> : <Plus size={13} />} {tx('Add')}</button>
                 </div>
                 {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
               </div>
@@ -395,10 +335,10 @@ export function JiraManagePage() {
 
             {/* Default behaviour */}
             <div className="rounded-xl p-4 text-xs" style={{ background: '#f8f7f7', border: '1px solid #e5e0e0', color: '#8a7070', lineHeight: 1.7 }}>
-              <p className="font-semibold mb-1" style={{ color: '#4a3a3a' }}>Default behaviour</p>
-              When a Jira issue arrives with no matching issue type mapping, RISYS automatically maps
-              Jira's priority field: <strong style={{ color: '#1a1314' }}>Highest → Critical</strong>, <strong style={{ color: '#1a1314' }}>High → High</strong>, <strong style={{ color: '#1a1314' }}>Medium → Medium</strong>, <strong style={{ color: '#1a1314' }}>Low → Low</strong>, <strong style={{ color: '#1a1314' }}>Lowest → Informational</strong>.
-            </div>
+              <p className="font-semibold mb-1" style={{ color: '#4a3a3a' }}>{tx('Default behaviour')}</p>{tx(
+                'When a Jira issue arrives with no matching issue type mapping, RISYS automatically maps Jira\'s priority field:'
+              )} <strong style={{ color: '#1a1314' }}>{tx('Highest → Critical')}</strong>, <strong style={{ color: '#1a1314' }}>{tx('High → High')}</strong>, <strong style={{ color: '#1a1314' }}>{tx('Medium → Medium')}</strong>, <strong style={{ color: '#1a1314' }}>{tx('Low → Low')}</strong>, <strong style={{ color: '#1a1314' }}>{tx('Lowest → Informational')}</strong>.
+                          </div>
 
           </div>
         )}
@@ -412,16 +352,16 @@ export function JiraManagePage() {
             {/* Connection info */}
             <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
               <div style={{ padding: '12px 20px', borderBottom: '1px solid #f0eded', background: '#f8f7f7' }}>
-                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>Connection</p>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>{tx('Connection')}</p>
               </div>
               <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[
-                  { label: 'Connector',       value: 'Jira (Atlassian)' },
-                  { label: 'Status',          value: 'Active', color: '#166534' },
-                  { label: 'Sync direction',  value: 'One-way — Jira → RISYS (inbound only)' },
-                  { label: 'Trigger',         value: 'Real-time webhook — issues appear in RISYS within seconds' },
-                  { label: 'Scope',           value: 'All projects · Webhook fires on issue create, update, delete' },
-                  { label: 'Data retained',   value: 'All ingested incidents are kept if disconnected' },
+                  { label: tx('Connector'),       value: 'Jira (Atlassian)' },
+                  { label: tx('Status'),          value: 'Active', color: '#166534' },
+                  { label: tx('Sync direction'),  value: 'One-way — Jira → RISYS (inbound only)' },
+                  { label: tx('Trigger'),         value: 'Real-time webhook — issues appear in RISYS within seconds' },
+                  { label: tx('Scope'),           value: 'All projects · Webhook fires on issue create, update, delete' },
+                  { label: tx('Data retained'),   value: 'All ingested incidents are kept if disconnected' },
                 ].map(item => (
                   <div key={item.label} style={{ display: 'flex', gap: 16 }}>
                     <span style={{ fontSize: 12, color: '#8a7070', width: 140, flexShrink: 0 }}>{item.label}</span>
@@ -434,14 +374,14 @@ export function JiraManagePage() {
             {/* Permissions */}
             <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
               <div style={{ padding: '12px 20px', borderBottom: '1px solid #f0eded', background: '#f8f7f7' }}>
-                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>Permissions & Scopes</p>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>{tx('Permissions & Scopes')}</p>
               </div>
               <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {[
-                  { scope: 'read:jira-work',      desc: 'Read issues, projects, boards, and sprints' },
-                  { scope: 'read:jira-user',       desc: 'Read user profiles and account details' },
-                  { scope: 'manage:jira-webhook',  desc: 'Register and manage webhook subscriptions' },
-                  { scope: 'offline_access',       desc: 'Maintain connection without repeated logins' },
+                  { scope: 'read:jira-work',      desc: tx('Read issues, projects, boards, and sprints') },
+                  { scope: 'read:jira-user',       desc: tx('Read user profiles and account details') },
+                  { scope: 'manage:jira-webhook',  desc: tx('Register and manage webhook subscriptions') },
+                  { scope: 'offline_access',       desc: tx('Maintain connection without repeated logins') },
                 ].map(p => (
                   <div key={p.scope} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 10px', borderRadius: 7, background: '#f8f7f7' }}>
                     <CheckCircle size={13} style={{ color: '#22c55e', flexShrink: 0, marginTop: 1 }} />
@@ -457,19 +397,19 @@ export function JiraManagePage() {
             {/* What RISYS captures */}
             <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
               <div style={{ padding: '12px 20px', borderBottom: '1px solid #f0eded', background: '#f8f7f7' }}>
-                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>What RISYS Captures</p>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>{tx('What RISYS Captures')}</p>
               </div>
               <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {[
-                  { field: 'Issue key',     desc: 'e.g. SEC-142 · used to link back to Jira' },
-                  { field: 'Summary',       desc: 'Becomes the RISYS incident title' },
-                  { field: 'Description',   desc: 'Full issue description, stored on the incident' },
-                  { field: 'Issue type',    desc: 'Mapped to RISYS severity via your mappings above' },
-                  { field: 'Priority',      desc: 'Fallback severity when no issue type mapping exists' },
-                  { field: 'Status',        desc: 'Synced when issue transitions (open → in progress → done)' },
-                  { field: 'Assignee',      desc: 'Mapped to RISYS incident assignee if email matches' },
-                  { field: 'Reporter',      desc: 'Stored as incident source metadata' },
-                  { field: 'Labels / tags', desc: 'Stored for search and filtering' },
+                  { field: 'Issue key',     desc: tx('e.g. SEC-142 · used to link back to Jira') },
+                  { field: 'Summary',       desc: tx('Becomes the RISYS incident title') },
+                  { field: 'Description',   desc: tx('Full issue description, stored on the incident') },
+                  { field: 'Issue type',    desc: tx('Mapped to RISYS severity via your mappings above') },
+                  { field: 'Priority',      desc: tx('Fallback severity when no issue type mapping exists') },
+                  { field: 'Status',        desc: tx('Synced when issue transitions (open → in progress → done)') },
+                  { field: 'Assignee',      desc: tx('Mapped to RISYS incident assignee if email matches') },
+                  { field: 'Reporter',      desc: tx('Stored as incident source metadata') },
+                  { field: 'Labels / tags', desc: tx('Stored for search and filtering') },
                 ].map(p => (
                   <div key={p.field} style={{ display: 'flex', gap: 16, padding: '4px 0', borderBottom: '1px solid #f5f3f3' }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: '#1a1314', width: 120, flexShrink: 0 }}>{p.field}</span>
@@ -483,15 +423,14 @@ export function JiraManagePage() {
             <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #fecaca' }}>
               <div style={{ padding: '12px 20px', background: '#fef2f2', borderBottom: '1px solid #fecaca', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <AlertTriangle size={13} style={{ color: '#b91c1c' }} />
-                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#b91c1c' }}>Danger Zone</p>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#b91c1c' }}>{tx('Danger Zone')}</p>
               </div>
-              <div style={{ padding: '16px 20px', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+              <div style={{ padding: '16px 20px', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1314', marginBottom: 3 }}>Disconnect Jira</p>
-                  <p style={{ fontSize: 12, color: '#8a7070', lineHeight: 1.6 }}>
-                    Stops all webhook delivery and issue syncs immediately.
-                    Existing incidents are preserved. Mappings are kept for when you reconnect.
-                  </p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1314', marginBottom: 3 }}>{tx('Disconnect Jira')}</p>
+                  <p style={{ fontSize: 12, color: '#8a7070', lineHeight: 1.6 }}>{tx(
+                    'Stops all webhook delivery and issue syncs immediately. Existing incidents are preserved. Mappings are kept for when you reconnect.'
+                  )}</p>
                 </div>
                 <DisconnectControl onDisconnected={() => navigate('/app/settings')} />
               </div>

@@ -12,6 +12,7 @@ import { usePermissions } from '@/hooks/usePermissions'
 import { roleLabel } from '@/lib/roles'
 import { NAV_ITEMS } from '@/lib/constants'
 import clsx from 'clsx'
+import { tx } from '@/lib/i18n'
 
 /* ── Sidebar (§5) ─────────────────────────────────────────────────────────────
  *
@@ -91,7 +92,7 @@ function WorkspaceSwitcher({ collapsed }) {
       onClick={() => many && setOpen(o => !o)}
       aria-haspopup={many ? 'listbox' : undefined}
       aria-expanded={many ? open : undefined}
-      className="w-full flex items-center gap-2 rounded-md text-left transition-colors"
+      className='w-full flex items-center gap-2 rounded-md text-start transition-colors'
       style={{
         padding: collapsed ? '6px 0' : '6px 8px',
         justifyContent: collapsed ? 'center' : undefined,
@@ -123,20 +124,18 @@ function WorkspaceSwitcher({ collapsed }) {
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setOpen(false)} />
           <div role="listbox" style={{
-            position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: collapsed ? 'auto' : 0,
+            position: 'absolute', top: 'calc(100% + 6px)', insetInlineStart: 0, insetInlineEnd: collapsed ? 'auto' : 0,
             minWidth: 230, zIndex: 50, background: 'var(--ink-2, #2b1f20)',
             border: '1px solid rgba(255,255,255,0.10)', borderRadius: 10,
             boxShadow: '0 10px 30px rgba(0,0,0,0.35)', overflow: 'hidden', padding: 4,
           }}>
-            <p style={{ fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-3)', padding: '6px 8px 4px' }}>
-              Workspaces
-            </p>
+            <p style={{ fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-3)', padding: '6px 8px 4px' }}>{tx('Workspaces')}</p>
             {memberships.map(o => {
               const active = o.id === organization?.id
               return (
                 <button key={o.id} role="option" aria-selected={active}
                   onClick={() => { setOpen(false); if (!active) switchOrganization(o.id) }}
-                  className="w-full flex items-center gap-2 rounded-md text-left"
+                  className='w-full flex items-center gap-2 rounded-md text-start'
                   style={{
                     padding: '7px 8px', border: 'none', cursor: 'pointer',
                     background: active ? 'rgba(255,255,255,0.08)' : 'transparent',
@@ -221,29 +220,29 @@ export function Sidebar() {
         className="flex-1 overflow-y-auto flex flex-col gap-5"
         style={{ padding: collapsed ? '12px 8px' : '12px 10px' }}
       >
-        <Section title="Workspace" items={visible('workspace')} collapsed={collapsed} />
-        <Section title="System" items={visible('system')} collapsed={collapsed} />
+        <Section title={tx('Workspace')} items={visible('workspace')} collapsed={collapsed} />
+        <Section title={tx('System')} items={visible('system')} collapsed={collapsed} />
       </nav>
 
       {/* Reference library — pinned below the scrolling nav. ECC is assessed,
           the rest are browsable. */}
       {visible('library').length > 0 && (
         <div style={{ padding: collapsed ? '10px 8px' : '10px', borderTop: line, flexShrink: 0 }}>
-          <Section title="Frameworks" items={visible('library')} collapsed={collapsed} />
+          <Section title={tx('Frameworks')} items={visible('library')} collapsed={collapsed} />
         </div>
       )}
 
       {/* Collapse control */}
       <div style={{ padding: collapsed ? '6px 8px' : '6px 10px', borderTop: line, flexShrink: 0 }}>
-        <Tooltip label={collapsed ? 'Expand sidebar' : null}>
+        <Tooltip label={collapsed ? tx('Expand sidebar') : null}>
           <button
             onClick={() => setCollapsed((c) => !c)}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={collapsed ? tx('Expand sidebar') : tx('Collapse sidebar')}
             className="nav-item w-full"
             style={collapsed ? { justifyContent: 'center', padding: '7px 0' } : undefined}
           >
             {collapsed ? <PanelLeftOpen size={15} strokeWidth={1.6} /> : <PanelLeftClose size={15} strokeWidth={1.6} />}
-            {!collapsed && <span>Collapse</span>}
+            {!collapsed && <span>{tx('Collapse')}</span>}
           </button>
         </Tooltip>
       </div>
@@ -271,10 +270,10 @@ export function Sidebar() {
                 onClick={handleSignOut}
                 className="p-1 transition-opacity hover:opacity-70"
                 style={{ color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer' }}
-                title="Sign out"
-                aria-label="Sign out"
+                title={tx('Sign out')}
+                aria-label={tx('Sign out')}
               >
-                <LogOut size={13} />
+                <LogOut size={13} className='rtl-flip' />
               </button>
             </>
           )}

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
+import { tx, appLocale } from '@/lib/i18n'
 
 /* ── Date field ───────────────────────────────────────────────────────────────
  *
@@ -131,17 +132,17 @@ export function DateField({
         onClick={() => !disabled && setOpen((o) => !o)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={ariaLabel || 'Choose a date'}
+        aria-label={ariaLabel || tx('Choose a date')}
         className="risys-input"
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-          width: '100%', textAlign: 'left', cursor: disabled ? 'not-allowed' : 'pointer',
+          width: '100%', textAlign: 'start', cursor: disabled ? 'not-allowed' : 'pointer',
           color: selected ? 'var(--text)' : 'var(--text-3)',
           borderColor: open ? 'var(--rose)' : undefined,
         }}
       >
         <span className="tnum truncate">
-          {selected ? selected.toLocaleDateString('en-GB') : placeholder}
+          {selected ? selected.toLocaleDateString(appLocale()) : placeholder}
         </span>
         <Calendar size={13} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
       </button>
@@ -150,7 +151,7 @@ export function DateField({
         <div
           ref={panelRef}
           role="dialog"
-          aria-label="Choose a date"
+          aria-label={tx('Choose a date')}
           className="anim-pop"
           style={{
             position: 'fixed', top: rect.top, left: rect.left, width: 268,
@@ -160,13 +161,13 @@ export function DateField({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            <button type="button" onClick={() => shiftMonth(-1)} aria-label="Previous month"
-              style={navBtn}><ChevronLeft size={14} /></button>
+            <button type="button" onClick={() => shiftMonth(-1)} aria-label={tx('Previous month')}
+              style={navBtn}><ChevronLeft size={14} className='rtl-flip' /></button>
             <span style={{ fontSize: 'var(--t-sm)', fontWeight: 600, color: 'var(--text)' }}>
-              {MONTHS[cursor.getMonth()]} {cursor.getFullYear()}
+              {tx(MONTHS[cursor.getMonth()])} {cursor.getFullYear()}
             </span>
-            <button type="button" onClick={() => shiftMonth(1)} aria-label="Next month"
-              style={navBtn}><ChevronRight size={14} /></button>
+            <button type="button" onClick={() => shiftMonth(1)} aria-label={tx('Next month')}
+              style={navBtn}><ChevronRight size={14} className='rtl-flip' /></button>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
@@ -174,7 +175,7 @@ export function DateField({
               <span key={d} style={{
                 textAlign: 'center', fontSize: 'var(--t-micro)', color: 'var(--text-3)',
                 fontWeight: 500, padding: '2px 0 4px',
-              }}>{d}</span>
+              }}>{tx(d)}</span>
             ))}
 
             {cells.map((d) => {
@@ -212,9 +213,9 @@ export function DateField({
             display: 'flex', justifyContent: 'space-between', gap: 8,
             marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-3)',
           }}>
-            <button type="button" onClick={() => pick(new Date())} style={linkBtn}>Today</button>
+            <button type="button" onClick={() => pick(new Date())} style={linkBtn}>{tx('Today')}</button>
             <button type="button" onClick={() => { emit(''); setOpen(false); btnRef.current?.focus() }}
-              style={{ ...linkBtn, color: 'var(--text-3)' }}>Clear</button>
+              style={{ ...linkBtn, color: 'var(--text-3)' }}>{tx('Clear')}</button>
           </div>
         </div>,
         document.body

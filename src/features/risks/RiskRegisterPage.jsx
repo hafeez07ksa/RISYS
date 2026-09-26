@@ -20,7 +20,9 @@ import {
   RISK_CATEGORIES, RISK_STATUSES, WORKFLOW_STATES, RISK_TREATMENTS,
 } from '@/lib/risks'
 import { Spinner } from '@/components/ui/Spinner'
+import { InlineConfirm } from '@/components/ui/InlineConfirm'
 import { SelectField } from '@/components/ui/Combobox'
+import { tx, appLocale } from '@/lib/i18n'
 
 function RiskBadge({ score }) {
   const l = getRiskLevel(score)
@@ -35,16 +37,16 @@ function RiskBadge({ score }) {
 function Segment({ label, value, color, barColor, sub, onClick, active, last }) {
   return (
     <button onClick={onClick} disabled={!onClick}
-      className="relative text-left px-4 pt-3.5 pb-4 transition-colors"
+      className='relative text-start px-4 pt-3.5 pb-4 transition-colors'
       style={{
         background: active ? '#F6EBE8' : 'transparent',
         border: 'none',
-        borderRight: last ? 'none' : '1px solid var(--border)',
+        borderInlineEnd: last ? 'none' : '1px solid var(--border)',
         cursor: onClick ? 'pointer' : 'default',
       }}
       onMouseEnter={e => { if (onClick && !active) e.currentTarget.style.background = '#FAF3F1' }}
       onMouseLeave={e => { e.currentTarget.style.background = active ? '#F6EBE8' : 'transparent' }}>
-      {active && <span style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: '#5D0F0F' }} />}
+      {active && <span style={{ position: 'absolute', top: 0, insetInlineStart: 0, insetInlineEnd: 0, height: 3, background: '#5D0F0F' }} />}
       <p className="eyebrow mb-1.5">{label}</p>
       <p className="text-3xl font-light" style={{ color: color || 'var(--text)' }}>{value}</p>
       <div className="flex items-center gap-1.5 mt-1.5">
@@ -159,7 +161,6 @@ export function RiskRegisterPage() {
   }
 
   const bulkDelete = async () => {
-    if (!confirm(`Delete ${selected.size} risk(s)? This cannot be undone.`)) return
     setBulkBusy(true)
     try {
       for (const id of selected) await deleteRisk(id)
@@ -189,7 +190,7 @@ export function RiskRegisterPage() {
 
   const SortHeader = ({ k, children }) => (
     <button onClick={() => handleSort(k)}
-      className="flex items-center gap-1 uppercase text-left"
+      className='flex items-center gap-1 uppercase text-start'
       style={{ fontSize: 10.5, letterSpacing: '0.1em', color: sortKey === k ? '#5D0F0F' : '#895353', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: sortKey === k ? 700 : 500 }}>
       {children}
       {sortKey === k && (sortAsc ? <ChevronUp size={11} /> : <ChevronDown size={11} />)}
@@ -201,7 +202,7 @@ export function RiskRegisterPage() {
   return (
     <div className="h-full flex flex-col">
       <Topbar
-        title="Risk Register"
+        title={tx('Risk Register')}
         subtitle={organization?.name}
         actions={
           <div className="flex items-center gap-2">
@@ -214,7 +215,7 @@ export function RiskRegisterPage() {
                 </button>
               ))}
             </div>
-            <button onClick={exportCSV} title="Export filtered register to CSV"
+            <button onClick={exportCSV} title={tx('Export filtered register to CSV')}
               className="w-8 h-8 flex items-center justify-center rounded-md border transition-colors hover:bg-[#f6eeec]"
               style={{ borderColor: '#e9dad7', color: '#97817d' }}>
               <Download size={13} />
@@ -224,21 +225,18 @@ export function RiskRegisterPage() {
               <RefreshCw size={13} />
             </button>
             {perms.isManager && (
-              <button onClick={() => navigate('/app/risks/tolerances')} title="Set the tolerance rules the gate evaluates"
+              <button onClick={() => navigate('/app/risks/tolerances')} title={tx('Set the tolerance rules the gate evaluates')}
                 className="flex items-center gap-1.5 text-xs px-2.5 py-2 rounded-md border transition-colors hover:bg-[#f6eeec]"
                 style={{ borderColor: '#e9dad7', color: 'var(--text-2)' }}>
-                <SlidersHorizontal size={13} /> Tolerances
-              </button>
+                <SlidersHorizontal size={13} /> {tx('Tolerances')}</button>
             )}
             {perms.canCreateRisk && <button onClick={() => navigate('/app/risks/new')}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md"
               style={{ background: '#5D0F0F', color: '#fff', border: 'none' }}>
-              <Plus size={13} /> Add Risk
-            </button>}
+              <Plus size={13} /> {tx('Add Risk')}</button>}
           </div>
         }
       />
-
 
       <div className="flex-1 overflow-y-auto page-content">
         {/* How much risk, is any of it outside the line, and what needs doing */}
@@ -256,9 +254,9 @@ export function RiskRegisterPage() {
         {/* Filters */}
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           <div className="relative flex-1 min-w-[180px] max-w-xs">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#97817d' }} />
+            <Search size={13} className='absolute start-3 top-1/2 -translate-y-1/2' style={{ color: '#97817d' }} />
             <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search risks..." className="w-full text-xs pl-8 pr-3 py-2 rounded-md border outline-none"
+              placeholder={tx('Search risks...')} className='w-full text-xs ps-8 pe-3 py-2 rounded-md border outline-none'
               style={{ borderColor: '#e9dad7' }} />
           </div>
           <button onClick={() => setQuickFilter(q => q === 'mine' ? '' : 'mine')}
@@ -268,52 +266,51 @@ export function RiskRegisterPage() {
               background: quickFilter === 'mine' ? '#f6ebe8' : '#fff',
               color: quickFilter === 'mine' ? '#5D0F0F' : '#97817d',
             }}>
-            <User size={11} /> My Risks
-          </button>
+            <User size={11} /> {tx('My Risks')}</button>
           {[
-            { value: statusFilter, onChange: setStatusFilter, options: RISK_STATUSES, placeholder: 'All statuses' },
-            { value: categoryFilter, onChange: setCategoryFilter, options: RISK_CATEGORIES.map(c => ({ value: c, label: c })), placeholder: 'All categories' },
-            { value: treatmentFilter, onChange: setTreatmentFilter, options: RISK_TREATMENTS, placeholder: 'All treatments' },
+            { value: statusFilter, onChange: setStatusFilter, options: RISK_STATUSES, placeholder: tx('All statuses') },
+            { value: categoryFilter, onChange: setCategoryFilter, options: RISK_CATEGORIES.map(c => ({ value: c, label: c })), placeholder: tx('All categories') },
+            { value: treatmentFilter, onChange: setTreatmentFilter, options: RISK_TREATMENTS, placeholder: tx('All treatments') },
           ].map((f, i) => (
             <div key={i} className="relative">
               <SelectField value={f.value} onChange={e => f.onChange(e.target.value)}
-                className="text-xs pl-3 pr-7 py-2 rounded-md border appearance-none outline-none cursor-pointer"
+                className='text-xs ps-3 pe-7 py-2 rounded-md border appearance-none outline-none cursor-pointer'
                 style={{ borderColor: '#e9dad7', color: f.value ? '#292021' : '#97817d', background: '#fff' }}>
                 <option value="">{f.placeholder}</option>
                 {f.options.map(o => <option key={o.value || o} value={o.value || o}>{o.label || o}</option>)}
               </SelectField>
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]" style={{ color: '#97817d' }}>▾</span>
+              <span className='absolute end-2 top-1/2 -translate-y-1/2 pointer-events-none text-[10px]' style={{ color: '#97817d' }}>▾</span>
             </div>
           ))}
           {hasFilters && (
             <button onClick={clearFilters}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border transition-colors hover:bg-[#f6eeec]"
               style={{ borderColor: '#e9dad7', background: '#fff', color: '#97817d' }}>
-              <Filter size={11} /> Clear filters
-            </button>
+              <Filter size={11} /> {tx('Clear filters')}</button>
           )}
-          <span className="text-xs ml-auto" style={{ color: '#97817d' }}>{filtered.length} risk{filtered.length !== 1 ? 's' : ''}</span>
+          <span className='text-xs ms-auto' style={{ color: '#97817d' }}>{filtered.length} {tx('risk')}{filtered.length !== 1 ? 's' : ''}</span>
         </div>
 
         {/* Bulk action bar */}
         {selected.size > 0 && (
           <div className="flex items-center gap-3 mb-3 px-4 py-2.5 rounded-lg"
             style={{ background: '#f6ebe8', border: '1px solid #e6cfc9' }}>
-            <span className="text-xs font-medium" style={{ color: '#5D0F0F' }}>{selected.size} selected</span>
+            <span className="text-xs font-medium" style={{ color: '#5D0F0F' }}>{selected.size} {tx('selected')}</span>
             <SelectField onChange={e => { bulkSetStatus(e.target.value); e.target.value = '' }} defaultValue=""
               className="text-xs px-2 py-1.5 rounded-md border outline-none cursor-pointer"
               style={{ borderColor: '#e9dad7', background: '#fff', color: '#4d3e3e' }} disabled={bulkBusy}>
-              <option value="" disabled>Set status…</option>
+              <option value="" disabled>{tx('Set status…')}</option>
               {RISK_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </SelectField>
-            {perms.canDeleteRisk && <button onClick={bulkDelete} disabled={bulkBusy}
-              className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md"
-              style={{ background: '#fff', color: '#8C1616', border: '1px solid #F0CECE' }}>
-              <Trash2 size={11} /> Delete
-            </button>}
-            <button onClick={() => setSelected(new Set())} className="text-xs ml-auto" style={{ color: '#97817d', background: 'none', border: 'none', cursor: 'pointer' }}>
-              Clear selection
-            </button>
+            {perms.canDeleteRisk && (
+              <InlineConfirm disabled={bulkBusy} triggerClassName="btn-secondary"
+                triggerStyle={{ color: '#8C1616', borderColor: '#F0CECE', padding: '5px 10px' }}
+                message={`${tx('Delete')} ${selected.size} ${tx('risk(s)? This cannot be undone.')}`}
+                confirmLabel={tx('Delete')} onConfirm={bulkDelete}>
+                <Trash2 size={11} /> {tx('Delete')}
+              </InlineConfirm>
+            )}
+            <button onClick={() => setSelected(new Set())} className='text-xs ms-auto' style={{ color: '#97817d', background: 'none', border: 'none', cursor: 'pointer' }}>{tx('Clear selection')}</button>
             {bulkBusy && <Spinner size="sm" />}
           </div>
         )}
@@ -325,22 +322,22 @@ export function RiskRegisterPage() {
           <div className="rounded-xl py-16 text-center" style={{ background: '#fff', border: '1px dashed #e9dad7' }}>
             <ShieldAlert size={32} strokeWidth={1} className="mx-auto mb-4" style={{ color: '#d9c5c1' }} />
             <p className="text-sm font-medium mb-1" style={{ color: '#4d3e3e' }}>
-              {quickFilter === 'breached' ? 'Nothing is outside tolerance'
-                : quickFilter === 'within' ? 'Nothing is within tolerance yet'
-                : quickFilter === 'unjudged' ? 'Every open risk has been judged'
-                : hasFilters ? 'No risks match your filters' : 'No risks yet'}
+              {quickFilter === 'breached' ? tx('Nothing is outside tolerance')
+                : quickFilter === 'within' ? tx('Nothing is within tolerance yet')
+                : quickFilter === 'unjudged' ? tx('Every open risk has been judged')
+                : hasFilters ? tx('No risks match your filters') : tx('No risks yet')}
             </p>
             <p className="text-xs mb-4" style={{ color: '#97817d' }}>
-              {quickFilter === 'breached' ? 'Every scored risk is currently within the line set for its category'
-                : quickFilter === 'within' ? 'No open risk has passed the gate — score a residual and set a tolerance for its category'
-                : quickFilter === 'unjudged' ? 'The gate has returned a verdict on every open risk'
-                : hasFilters ? 'Try adjusting your filters' : 'Start building your risk register'}
+              {quickFilter === 'breached' ? tx('Every scored risk is currently within the line set for its category')
+                : quickFilter === 'within' ? tx(
+                'No open risk has passed the gate — score a residual and set a tolerance for its category'
+              )
+                : quickFilter === 'unjudged' ? tx('The gate has returned a verdict on every open risk')
+                : hasFilters ? tx('Try adjusting your filters') : tx('Start building your risk register')}
             </p>
             {!hasFilters && perms.canCreateRisk && (
               <button onClick={() => navigate('/app/risks/new')} className="text-xs px-4 py-2 rounded-md"
-                style={{ background: '#5D0F0F', color: '#fff', border: 'none' }}>
-                Add first risk
-              </button>
+                style={{ background: '#5D0F0F', color: '#fff', border: 'none' }}>{tx('Add first risk')}</button>
             )}
           </div>
         ) : (
@@ -349,14 +346,14 @@ export function RiskRegisterPage() {
               style={{ gridTemplateColumns: GRID, background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
               <input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0} onChange={toggleSelectAll}
                 style={{ cursor: 'pointer', accentColor: '#5D0F0F' }} />
-              <SortHeader k="risk_id">ID</SortHeader>
-              <SortHeader k="title">Risk</SortHeader>
-              <SortHeader k="residual">Inherent → Residual</SortHeader>
-              <SortHeader k="breach">Tolerance</SortHeader>
-              <span className="uppercase" style={{ fontSize: 10.5, letterSpacing: '0.1em', fontWeight: 500, color: '#895353' }}>Status</span>
-              <span className="uppercase" style={{ fontSize: 10.5, letterSpacing: '0.1em', fontWeight: 500, color: '#895353' }}>Lifecycle</span>
-              <span className="uppercase" style={{ fontSize: 10.5, letterSpacing: '0.1em', fontWeight: 500, color: '#895353' }}>Owner</span>
-              <SortHeader k="review">Next Review</SortHeader>
+              <SortHeader k="risk_id">{tx('ID')}</SortHeader>
+              <SortHeader k="title">{tx('Risk')}</SortHeader>
+              <SortHeader k="residual">{tx('Inherent → Residual')}</SortHeader>
+              <SortHeader k="breach">{tx('Tolerance')}</SortHeader>
+              <span className="uppercase" style={{ fontSize: 10.5, letterSpacing: '0.1em', fontWeight: 500, color: '#895353' }}>{tx('Status')}</span>
+              <span className="uppercase" style={{ fontSize: 10.5, letterSpacing: '0.1em', fontWeight: 500, color: '#895353' }}>{tx('Lifecycle')}</span>
+              <span className="uppercase" style={{ fontSize: 10.5, letterSpacing: '0.1em', fontWeight: 500, color: '#895353' }}>{tx('Owner')}</span>
+              <SortHeader k="review">{tx('Next Review')}</SortHeader>
             </div>
             <div style={{ background: '#fff' }}>
               {filtered.map((risk, i) => {
@@ -372,23 +369,23 @@ export function RiskRegisterPage() {
                     <input type="checkbox" checked={selected.has(risk.id)} onChange={() => {}} onClick={e => toggleSelect(risk.id, e)}
                       style={{ cursor: 'pointer', accentColor: '#5D0F0F' }} />
                     <span className="text-[10px] font-mono" style={{ color: '#97817d' }}>{risk.risk_id || ''}</span>
-                    <div className="pr-4 min-w-0">
+                    <div className='pe-4 min-w-0'>
                       <p className="text-xs font-medium truncate" style={{ color: '#292021' }}>{risk.title}</p>
                       <p className="text-[11px] truncate" style={{ color: '#97817d' }}>
                         {risk.category}{risk.subcategory ? ` · ${risk.subcategory}` : ''}{risk.business_unit ? ` — ${risk.business_unit}` : ''}
                       </p>
                     </div>
                     <ScoreTransition risk={risk} matrix={matrix} />
-                    <span className="flex min-w-0 overflow-hidden pr-3"><ToleranceChip risk={risk} /></span>
+                    <span className='flex min-w-0 overflow-hidden pe-3'><ToleranceChip risk={risk} /></span>
                     <span className="text-xs px-2 py-0.5 rounded-full border w-fit"
                       style={{ color: s.color, background: s.bg, borderColor: s.border }}>{s.label}</span>
                     <span className="text-xs px-2 py-0.5 rounded-full border w-fit"
                       style={{ color: w.color, background: w.bg, borderColor: w.border }}>{w.label}</span>
-                    <span className="pr-2 min-w-0"><OwnerCell name={memberName(risk.owner_id)} /></span>
+                    <span className='pe-2 min-w-0'><OwnerCell name={memberName(risk.owner_id)} /></span>
                     {risk.review_date ? (
                       <span className="flex items-center gap-1 text-xs" style={{ color: overdue ? '#8C1616' : '#97817d', fontWeight: overdue ? 600 : 400 }}>
                         {overdue && <AlertTriangle size={11} />}
-                        {new Date(risk.review_date).toLocaleDateString('en-GB')}
+                        {new Date(risk.review_date).toLocaleDateString(appLocale())}
                       </span>
                     ) : <span className="text-xs" style={{ color: '#d9c5c1' }}>—</span>}
                   </div>

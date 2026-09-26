@@ -1,3 +1,4 @@
+import { tx } from '@/lib/i18n'
 // ============================================================
 // ACCEPTANCE AUTHORITY — who may accept a risk
 //
@@ -21,10 +22,10 @@
 // ============================================================
 
 export const AUTHORITY_TIERS = [
-  { value: 'risk_owner', label: 'Risk owner',         rank: 0, desc: 'The accountable owner of the risk. Needs no assignment.' },
-  { value: 'ciso',       label: 'CISO',               rank: 1, desc: 'Chief Information Security Officer, or the delegated head of security.' },
-  { value: 'committee',  label: 'Steering Committee', rank: 2, desc: 'The cybersecurity or enterprise risk steering committee.' },
-  { value: 'board',      label: 'Board',              rank: 3, desc: 'The board of directors or its risk committee.' },
+  { value: 'risk_owner', label: tx('Risk owner'),         rank: 0, desc: tx('The accountable owner of the risk. Needs no assignment.') },
+  { value: 'ciso',       label: 'CISO',               rank: 1, desc: tx('Chief Information Security Officer, or the delegated head of security.') },
+  { value: 'committee',  label: tx('Steering Committee'), rank: 2, desc: tx('The cybersecurity or enterprise risk steering committee.') },
+  { value: 'board',      label: tx('Board'),              rank: 3, desc: tx('The board of directors or its risk committee.') },
 ]
 
 /** The authority each band needs for an acceptance within tolerance. */
@@ -91,7 +92,7 @@ export function eligibleApprovers({ required, risk, holders = [], members = [] }
  *      exactly the decision the ladder gives them.
  */
 export function canApprove({ userId, risk, holders = [], required, requestedBy }) {
-  if (!userId) return { allowed: false, reason: 'Sign in to decide.', held: null }
+  if (!userId) return { allowed: false, reason: tx('Sign in to decide.'), held: null }
   const held = highestTierFor({ userId, risk, holders })
   if (tierRank(held) < tierRank(required)) {
     return {
@@ -102,7 +103,9 @@ export function canApprove({ userId, risk, holders = [], required, requestedBy }
   }
   const selfApprovalAllowed = required === 'risk_owner' && risk?.owner_id === userId
   if (requestedBy && requestedBy === userId && !selfApprovalAllowed) {
-    return { allowed: false, held, reason: 'You raised this request, so someone else with the authority has to approve it.' }
+    return { allowed: false, held, reason: tx(
+      'You raised this request, so someone else with the authority has to approve it.'
+    ) }
   }
   return { allowed: true, held, reason: null }
 }

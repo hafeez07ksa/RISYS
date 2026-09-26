@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useRiskWorkflow } from '@/hooks/useRisks'
 import { WORKFLOW_ACTIONS, getWorkflowState, normalizeWorkflowState } from '@/lib/risks'
 import { Spinner } from '@/components/ui/Spinner'
+import { tx, appLocale } from '@/lib/i18n'
 
 const ICONS = {
   admitted:           ClipboardCheck,
@@ -73,7 +74,7 @@ export function WorkflowBar({ risk, member, onChanged, perms, treatmentReadiness
     try {
       await transition({ action: a.action, to: a.to, comment: withComment || null })
       setConfirming(null); setComment('')
-    } catch (e) { setError(e.message || 'Transition failed') }
+    } catch (e) { setError(e.message || tx('Transition failed')) }
   }
 
   const handleClick = (a) => {
@@ -85,19 +86,18 @@ export function WorkflowBar({ risk, member, onChanged, perms, treatmentReadiness
     <div style={{ margin: '12px 28px 0', borderRadius: 12, background: '#fff', border: '1px solid var(--border)', padding: '12px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)' }}>Workflow</span>
+          <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)' }}>{tx('Workflow')}</span>
           <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 20, border: `1px solid ${wf.border}`, background: wf.bg, color: wf.color, fontWeight: 500 }}>
             {wf.label}
           </span>
           {reviewPending && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: isReviewer ? '#9C6F0F' : 'var(--text-3)' }}>
               <AlertCircle size={13} />
-              {isReviewer ? 'Awaiting your admission' : `Awaiting admission by ${member(risk.reviewer_id) || member(risk.approver_id) || 'a reviewer'}`}
+              {isReviewer ? tx('Awaiting your admission') : `Awaiting admission by ${member(risk.reviewer_id) || member(risk.approver_id) || 'a reviewer'}`}
             </span>
           )}
           {state !== 'draft' && risk.approved_at && (
-            <span style={{ fontSize: 12, color: 'var(--text-3)' }}>
-              Admitted {new Date(risk.approved_at).toLocaleDateString('en-GB')}{risk.approved_by ? ` by ${member(risk.approved_by)}` : ''}
+            <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{tx('Admitted')} {new Date(risk.approved_at).toLocaleDateString(appLocale())}{risk.approved_by ? ` by ${member(risk.approved_by)}` : ''}
             </span>
           )}
         </div>
@@ -119,8 +119,8 @@ export function WorkflowBar({ risk, member, onChanged, perms, treatmentReadiness
 
       {state === 'treatment_required' && treatmentReadiness && !treatmentReadiness.ready && (
         <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
-          <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-2)', marginBottom: 3 }}>Before the treatment plan can be approved:</p>
-          <ul style={{ margin: 0, paddingLeft: 18 }}>
+          <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-2)', marginBottom: 3 }}>{tx('Before the treatment plan can be approved:')}</p>
+          <ul style={{ margin: 0, paddingInlineStart: 18 }}>
             {treatmentReadiness.blockers.map((b, i) => <li key={i} style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.6 }}>{b}</li>)}
           </ul>
         </div>
@@ -129,22 +129,25 @@ export function WorkflowBar({ risk, member, onChanged, perms, treatmentReadiness
       {confirming && (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
           <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', marginBottom: 6 }}>
-            {confirming.action === 'returned' ? 'Why is this being returned?'
-              : confirming.action === 'acceptance_revoked' ? 'Why is the acceptance being revoked?'
-              : 'Closure reason — what makes the cause unable to recur?'}
+            {confirming.action === 'returned' ? tx('Why is this being returned?')
+              : confirming.action === 'acceptance_revoked' ? tx('Why is the acceptance being revoked?')
+              : tx('Closure reason — what makes the cause unable to recur?')}
             <span style={{ color: '#8C1616' }}> *</span>
           </p>
           <textarea value={comment} onChange={e => setComment(e.target.value)} rows={2} autoFocus
             placeholder={confirming.action === 'returned'
-              ? 'e.g. Inherent impact appears understated; please re-assess against the Q2 incident data.'
-              : 'e.g. Legacy VPN concentrator decommissioned on 14 Jun — the cause can no longer occur.'}
+              ? tx(
+              'e.g. Inherent impact appears understated; please re-assess against the Q2 incident data.'
+            )
+              : tx(
+              'e.g. Legacy VPN concentrator decommissioned on 14 Jun — the cause can no longer occur.'
+            )}
             className="risys-input" style={{ width: '100%', fontSize: 13, resize: 'vertical' }} />
           {error && <p style={{ fontSize: 12, color: '#8C1616', marginTop: 6 }}>{error}</p>}
           <div style={{ display: 'flex', gap: 8, marginTop: 8, justifyContent: 'flex-end' }}>
-            <button onClick={() => setConfirming(null)} className="btn-secondary" style={{ fontSize: 12 }}>Cancel</button>
+            <button onClick={() => setConfirming(null)} className="btn-secondary" style={{ fontSize: 12 }}>{tx('Cancel')}</button>
             <button onClick={() => run(confirming, comment)} disabled={!comment.trim() || busy}
-              style={{ fontSize: 12, fontWeight: 500, padding: '7px 14px', borderRadius: 8, cursor: 'pointer', opacity: !comment.trim() ? 0.5 : 1, ...STYLES[confirming.style] }}>
-              Confirm {confirming.label}
+              style={{ fontSize: 12, fontWeight: 500, padding: '7px 14px', borderRadius: 8, cursor: 'pointer', opacity: !comment.trim() ? 0.5 : 1, ...STYLES[confirming.style] }}>{tx('Confirm')} {confirming.label}
             </button>
           </div>
         </div>

@@ -24,7 +24,7 @@ import { LinkedFindings } from './LinkedFindings'
 import { TreatmentTab } from './TreatmentWorkspace'
 import { ReviewsTab } from './ReviewsTab'
 import { ControlTestsPanel } from './ControlTestsPanel'
-import { FrameworkClausePicker } from '../controls/FrameworkClausePicker'
+import { ClausePickerField } from '../controls/FrameworkClausePicker'
 import {
   getRiskLevel, getRiskStatus, getWorkflowState, getControlTestingStatus, getRAGStatus,
   LIKELIHOOD_LABELS, IMPACT_LABELS, EFFECTIVENESS_LABELS, CONTROL_TYPES, CONTROL_FREQUENCIES, EVIDENCE_TYPES,
@@ -34,6 +34,7 @@ import { logAudit, AUDIT } from '@/lib/audit'
 import { Spinner } from '@/components/ui/Spinner'
 import { SelectField } from '@/components/ui/Combobox'
 import { EvidenceFileLink } from '@/components/ui/EvidenceFileLink'
+import { tx, appLocale } from '@/lib/i18n'
 
 const EVIDENCE_ICONS = {
   Document: FileText, Screenshot: Image, Log: ClipboardList, Attestation: PenLine,
@@ -41,16 +42,16 @@ const EVIDENCE_ICONS = {
 }
 
 const TABS = [
-  { id: 'overview',  label: 'Overview',    icon: Shield },
-  { id: 'scoring',   label: 'Scoring',     icon: TrendingDown },
-  { id: 'controls',  label: 'Controls',    icon: Check },
-  { id: 'treatment', label: 'Treatment',   icon: Wrench },
-  { id: 'evidence',  label: 'Evidence',    icon: FileText },
-  { id: 'kris',      label: 'KRIs',        icon: Activity },
-  { id: 'loss',      label: 'Loss Events', icon: AlertTriangle },
-  { id: 'reviews',   label: 'Reviews',     icon: CalendarCheck },
-  { id: 'comments',  label: 'Discussion',  icon: MessageSquare },
-  { id: 'audit',     label: 'History',     icon: Clock },
+  { id: 'overview',  label: tx('Overview'),    icon: Shield },
+  { id: 'scoring',   label: tx('Scoring'),     icon: TrendingDown },
+  { id: 'controls',  label: tx('Controls'),    icon: Check },
+  { id: 'treatment', label: tx('Treatment'),   icon: Wrench },
+  { id: 'evidence',  label: tx('Evidence'),    icon: FileText },
+  { id: 'kris',      label: tx('KRIs'),        icon: Activity },
+  { id: 'loss',      label: tx('Loss Events'), icon: AlertTriangle },
+  { id: 'reviews',   label: tx('Reviews'),     icon: CalendarCheck },
+  { id: 'comments',  label: tx('Discussion'),  icon: MessageSquare },
+  { id: 'audit',     label: tx('History'),     icon: Clock },
 ]
 
 export function RiskDetailPage() {
@@ -116,8 +117,8 @@ export function RiskDetailPage() {
 
   if (!risk) return (
     <div style={{ padding: '80px 28px', textAlign: 'center' }}>
-      <p style={{ color: 'var(--text-3)', fontSize: 13 }}>Risk not found</p>
-      <button onClick={() => navigate('/app/risks')} style={{ color: 'var(--crimson)', fontSize: 12, marginTop: 8 }}>← Back to register</button>
+      <p style={{ color: 'var(--text-3)', fontSize: 13 }}>{tx('Risk not found')}</p>
+      <button onClick={() => navigate('/app/risks')} style={{ color: 'var(--crimson)', fontSize: 12, marginTop: 8 }}>{tx('← Back to register')}</button>
     </div>
   )
 
@@ -144,16 +145,15 @@ export function RiskDetailPage() {
       <div style={{ padding: '14px 28px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
         <button onClick={() => navigate('/app/risks')}
           style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-3)', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-          <ArrowLeft size={13} /> Risk Register
-        </button>
-        <ChevronRight size={11} style={{ color: 'var(--border-2)' }} />
+          <ArrowLeft size={13} className='rtl-flip' /> {tx('Risk Register')}</button>
+        <ChevronRight size={11} style={{ color: 'var(--border-2)' }} className='rtl-flip' />
         <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{risk.risk_id || id.slice(0, 8)}</span>
       </div>
 
       {/* ── HERO BAND ── */}
       <div style={{ margin: '12px 28px 0', borderRadius: 14, background: '#fff', border: '1px solid var(--border)', position: 'relative', overflow: 'hidden' }}>
         {/* cherry identity rule */}
-        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 4, background: 'linear-gradient(180deg, var(--crimson) 0%, var(--rose) 100%)' }} />
+        <div style={{ position: 'absolute', top: 0, insetInlineStart: 0, bottom: 0, width: 4, background: 'linear-gradient(180deg, var(--crimson) 0%, var(--rose) 100%)' }} />
 
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24, padding: '20px 24px 20px 26px' }}>
           {/* Left */}
@@ -186,7 +186,7 @@ export function RiskDetailPage() {
               {risk.business_unit ? ` — ${risk.business_unit}` : ''}
             </p>
             {risk.risk_statement && (
-              <p style={{ fontSize: 13, color: 'var(--text-2)', fontStyle: 'italic', lineHeight: 1.5, maxWidth: 680, borderLeft: '2px solid var(--blush)', paddingLeft: 10 }}>
+              <p style={{ fontSize: 13, color: 'var(--text-2)', fontStyle: 'italic', lineHeight: 1.5, maxWidth: 680, borderInlineStart: '2px solid var(--blush)', paddingInlineStart: 10 }}>
                 "{risk.risk_statement}"
               </p>
             )}
@@ -197,7 +197,7 @@ export function RiskDetailPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {/* Inherent chip */}
               <div style={{ textAlign: 'center', padding: '8px 14px', borderRadius: 10, background: iLevel.bg, border: `1px solid ${iLevel.border}` }}>
-                <p style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Inherent</p>
+                <p style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>{tx('Inherent')}</p>
                 <p style={{ fontSize: 22, fontWeight: 400, color: iLevel.color, lineHeight: 1 }}>{iScore}</p>
                 <p style={{ fontSize: 10, color: iLevel.color, marginTop: 2, fontWeight: 600 }}>{iLevel.label}</p>
               </div>
@@ -206,7 +206,7 @@ export function RiskDetailPage() {
 
               {/* Residual chip */}
               <div style={{ textAlign: 'center', padding: '8px 14px', borderRadius: 10, background: rLevel.bg, border: `1px solid ${rLevel.border}` }}>
-                <p style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Residual</p>
+                <p style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>{tx('Residual')}</p>
                 <p style={{ fontSize: 22, fontWeight: 400, color: rLevel.color, lineHeight: 1 }}>{rScore ?? '—'}</p>
                 <p style={{ fontSize: 10, color: rLevel.color, marginTop: 2, fontWeight: 600 }}>{rLevel.label}</p>
               </div>
@@ -214,7 +214,7 @@ export function RiskDetailPage() {
               {reduction > 0 && (
                 <div style={{ padding: '8px 12px', borderRadius: 10, background: '#ECF4EE', border: '1px solid #C8DECD', textAlign: 'center' }}>
                   <p style={{ fontSize: 16, fontWeight: 600, color: '#2F6B3C' }}>↓{reduction}%</p>
-                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>reduced</p>
+                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>{tx('reduced')}</p>
                 </div>
               )}
             </div>
@@ -223,30 +223,26 @@ export function RiskDetailPage() {
             <div style={{ display: 'flex', gap: 8 }}>
               {perms.canEditRisk(riskWithCollabs) && (
                 <button onClick={() => navigate(`/app/risks/${id}/assess`)}
-                  title="Walk the assessment: statement, inherent score, controls, residual score, then the gate"
+                  title={tx(
+                    'Walk the assessment: statement, inherent score, controls, residual score, then the gate'
+                  )}
                   style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '6px 14px', borderRadius: 7, background: 'var(--bg-2)', color: 'var(--crimson)', border: '1px solid var(--crimson)', cursor: 'pointer', fontWeight: 500 }}>
-                  <ShieldAlert size={12} /> Run assessment
-                </button>
+                  <ShieldAlert size={12} /> {tx('Run assessment')}</button>
               )}
               {perms.canEditRisk(riskWithCollabs) && (
                 <button onClick={() => navigate(`/app/risks/${id}/edit`)}
                   style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '6px 14px', borderRadius: 7, background: 'var(--crimson)', color: '#fff', border: 'none', cursor: 'pointer' }}>
-                  <Edit2 size={12} /> Edit
-                </button>
+                  <Edit2 size={12} /> {tx('Edit')}</button>
               )}
               {perms.canDeleteRisk && (deleteConfirm ? (
                 <>
                   <button onClick={handleDelete}
-                    style={{ fontSize: 12, padding: '6px 12px', borderRadius: 7, background: '#FBEAEA', color: '#8C1616', border: '1px solid #F0CECE', cursor: 'pointer' }}>
-                    Confirm Delete
-                  </button>
+                    style={{ fontSize: 12, padding: '6px 12px', borderRadius: 7, background: '#FBEAEA', color: '#8C1616', border: '1px solid #F0CECE', cursor: 'pointer' }}>{tx('Confirm Delete')}</button>
                   <button onClick={() => setDeleteConfirm(false)}
-                    style={{ fontSize: 12, padding: '6px 10px', borderRadius: 7, background: '#fff', color: 'var(--text-3)', border: '1px solid var(--border)', cursor: 'pointer' }}>
-                    Cancel
-                  </button>
+                    style={{ fontSize: 12, padding: '6px 10px', borderRadius: 7, background: '#fff', color: 'var(--text-3)', border: '1px solid var(--border)', cursor: 'pointer' }}>{tx('Cancel')}</button>
                 </>
               ) : (
-                <button onClick={() => setDeleteConfirm(true)} title="Delete risk"
+                <button onClick={() => setDeleteConfirm(true)} title={tx('Delete risk')}
                   style={{ display: 'flex', alignItems: 'center', padding: '6px 10px', borderRadius: 7, background: '#fff', color: 'var(--text-3)', border: '1px solid var(--border)', cursor: 'pointer' }}>
                   <Trash2 size={13} />
                 </button>
@@ -261,20 +257,17 @@ export function RiskDetailPage() {
         <div style={{ margin: '8px 28px 0', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 10, background: '#fdf5f5', border: '1px solid #f0dada' }}>
           <ShieldAlert size={14} style={{ color: '#5D0F0F', flexShrink: 0 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 12, color: '#5D0F0F', fontWeight: 600 }}>
-              Originated from {risk.source_connector === 'entra' ? 'Microsoft Entra ID' : risk.source_connector}
+            <p style={{ fontSize: 12, color: '#5D0F0F', fontWeight: 600 }}>{tx('Originated from')} {risk.source_connector === 'entra' ? tx('Microsoft Entra ID') : risk.source_connector}
               {risk.source_finding ? ` — ${risk.source_finding}` : ''}
             </p>
             {risk.source_entity_name && (
-              <p style={{ fontSize: 11, color: '#8a7070' }}>User: {risk.source_entity_name}</p>
+              <p style={{ fontSize: 11, color: '#8a7070' }}>{tx('User:')} {risk.source_entity_name}</p>
             )}
           </div>
           {risk.source_connector === 'entra' && risk.source_entity_id && (
             <button
               onClick={() => navigate(`/app/findings/entra/users/${risk.source_entity_id}`)}
-              style={{ fontSize: 11, fontWeight: 500, padding: '4px 10px', borderRadius: 6, background: '#fff', color: '#5D0F0F', border: '1px solid #f0dada', cursor: 'pointer', flexShrink: 0 }}>
-              View user →
-            </button>
+              style={{ fontSize: 11, fontWeight: 500, padding: '4px 10px', borderRadius: 6, background: '#fff', color: '#5D0F0F', border: '1px solid #f0dada', cursor: 'pointer', flexShrink: 0 }}>{tx('View user →')}</button>
           )}
         </div>
       )}
@@ -297,12 +290,9 @@ export function RiskDetailPage() {
       {isReviewOverdue(risk) && (
         <div style={{ margin: '10px 28px 0', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 14px', borderRadius: 10, background: '#FBEAEA', border: '1px solid #F0CECE' }}>
           <AlertTriangle size={13} style={{ color: '#8C1616', flexShrink: 0 }} />
-          <p style={{ fontSize: 12, color: '#8C1616' }}>
-            Periodic review overdue (was due {new Date(risk.review_date).toLocaleDateString('en-GB')}) —
-          </p>
-          <button onClick={() => setTab('reviews')} style={{ fontSize: 12, color: '#8C1616', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
-            complete review
-          </button>
+          <p style={{ fontSize: 12, color: '#8C1616' }}>{tx('Periodic review overdue (was due')} {new Date(risk.review_date).toLocaleDateString(appLocale())}) —
+                      </p>
+          <button onClick={() => setTab('reviews')} style={{ fontSize: 12, color: '#8C1616', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>{tx('complete review')}</button>
         </div>
       )}
 
@@ -352,6 +342,7 @@ export function RiskDetailPage() {
 ═══════════════════════════════════════════════════ */
 function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organization, members,
   collaborators, addCollaborator, removeCollaborator, showAddCollab, setShowAddCollab, onAssess }) {
+  const [collabError, setCollabError] = useState('')
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 16 }}>
       {/* Main column */}
@@ -366,9 +357,9 @@ function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organizatio
         {(risk.cause || risk.event || risk.impact_statement) ? (
           <Card>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <FieldLabel>Cause → Event → Impact</FieldLabel>
+              <FieldLabel>{tx('Cause → Event → Impact')}</FieldLabel>
               {onAssess && (
-                <button onClick={onAssess} className="btn-ghost" style={{ fontSize: 11, padding: '2px 6px' }}>Revise</button>
+                <button onClick={onAssess} className="btn-ghost" style={{ fontSize: 11, padding: '2px 6px' }}>{tx('Revise')}</button>
               )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -388,7 +379,7 @@ function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organizatio
                   </div>
                   <div>
                     <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6 }}>
-                      {value || <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>Not stated — {hint.toLowerCase()}</span>}
+                      {value || <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>{tx('Not stated —')} {hint.toLowerCase()}</span>}
                     </p>
                   </div>
                 </div>
@@ -397,14 +388,11 @@ function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organizatio
           </Card>
         ) : onAssess ? (
           <Card>
-            <FieldLabel>Cause → Event → Impact</FieldLabel>
-            <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginTop: 6 }}>
-              This risk is still written as a single statement. Splitting it into cause, event and impact makes it
-              testable — and makes it obvious whether the treatment plan is aimed at the right thing.
-            </p>
-            <button onClick={onAssess} className="btn-secondary" style={{ fontSize: 12, marginTop: 10 }}>
-              Run assessment
-            </button>
+            <FieldLabel>{tx('Cause → Event → Impact')}</FieldLabel>
+            <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginTop: 6 }}>{tx(
+              'This risk is still written as a single statement. Splitting it into cause, event and impact makes it testable — and makes it obvious whether the treatment plan is aimed at the right thing.'
+            )}</p>
+            <button onClick={onAssess} className="btn-secondary" style={{ fontSize: 12, marginTop: 10 }}>{tx('Run assessment')}</button>
           </Card>
         ) : null}
 
@@ -412,13 +400,13 @@ function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organizatio
           <Card>
             {risk.risk_drivers && (
               <div style={risk.description ? { marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--border)' } : {}}>
-                <FieldLabel>Risk Drivers & Root Causes</FieldLabel>
+                <FieldLabel>{tx('Risk Drivers & Root Causes')}</FieldLabel>
                 <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6, marginTop: 4 }}>{risk.risk_drivers}</p>
               </div>
             )}
             {risk.description && (
               <div>
-                <FieldLabel>Description</FieldLabel>
+                <FieldLabel>{tx('Description')}</FieldLabel>
                 <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6, marginTop: 4 }}>{risk.description}</p>
               </div>
             )}
@@ -428,7 +416,7 @@ function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organizatio
         {risk.treatment_notes && (
           <Card>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <FieldLabel>Treatment Plan</FieldLabel>
+              <FieldLabel>{tx('Treatment Plan')}</FieldLabel>
               {risk.treatment && (
                 <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'var(--surface)', color: 'var(--crimson)', fontWeight: 500, textTransform: 'capitalize' }}>
                   {risk.treatment}
@@ -440,24 +428,24 @@ function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organizatio
         )}
 
         <Card>
-          <FieldLabel>Risk Assessment</FieldLabel>
+          <FieldLabel>{tx('Risk Assessment')}</FieldLabel>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 14 }}>
             <div>
-              <p style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Inherent — before controls</p>
-              <ScoreDim label="Likelihood" value={risk.inherent_likelihood || risk.likelihood} desc={LIKELIHOOD_LABELS[risk.inherent_likelihood || risk.likelihood]} />
-              <ScoreDim label="Impact"     value={risk.inherent_impact     || risk.impact}     desc={IMPACT_LABELS[risk.inherent_impact     || risk.impact]}     />
+              <p style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>{tx('Inherent — before controls')}</p>
+              <ScoreDim label={tx('Likelihood')} value={risk.inherent_likelihood || risk.likelihood} desc={LIKELIHOOD_LABELS[risk.inherent_likelihood || risk.likelihood]} />
+              <ScoreDim label={tx('Impact')}     value={risk.inherent_impact     || risk.impact}     desc={IMPACT_LABELS[risk.inherent_impact     || risk.impact]}     />
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Inherent Score</span>
+                <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{tx('Inherent Score')}</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: getRiskLevel(iScore).color }}>{iScore} — {getRiskLevel(iScore).label}</span>
               </div>
             </div>
             {risk.residual_likelihood ? (
               <div>
-                <p style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Residual — after controls</p>
-                <ScoreDim label="Likelihood" value={risk.residual_likelihood} desc={LIKELIHOOD_LABELS[risk.residual_likelihood]} />
-                <ScoreDim label="Impact"     value={risk.residual_impact}     desc={IMPACT_LABELS[risk.residual_impact]}          />
+                <p style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>{tx('Residual — after controls')}</p>
+                <ScoreDim label={tx('Likelihood')} value={risk.residual_likelihood} desc={LIKELIHOOD_LABELS[risk.residual_likelihood]} />
+                <ScoreDim label={tx('Impact')}     value={risk.residual_impact}     desc={IMPACT_LABELS[risk.residual_impact]}          />
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                  <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Residual Score</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{tx('Residual Score')}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: getRiskLevel(risk.residual_score).color }}>{risk.residual_score} — {getRiskLevel(risk.residual_score).label}</span>
                 </div>
               </div>
@@ -469,16 +457,12 @@ function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organizatio
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 background: 'var(--surface)', borderRadius: 8, padding: 16, gap: 8, textAlign: 'center',
               }}>
-                <p style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6 }}>
-                  Residual risk has not been scored.
-                </p>
-                <p style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6, maxWidth: 220 }}>
-                  Until it is, the gate has nothing to judge and this risk carries its inherent score.
-                </p>
+                <p style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6 }}>{tx('Residual risk has not been scored.')}</p>
+                <p style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6, maxWidth: 220 }}>{tx(
+                  'Until it is, the gate has nothing to judge and this risk carries its inherent score.'
+                )}</p>
                 {onAssess && (
-                  <button className="btn-secondary" style={{ fontSize: 12, marginTop: 2 }} onClick={onAssess}>
-                    Run assessment
-                  </button>
+                  <button className="btn-secondary" style={{ fontSize: 12, marginTop: 2 }} onClick={onAssess}>{tx('Run assessment')}</button>
                 )}
               </div>
             )}
@@ -489,7 +473,7 @@ function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organizatio
       {/* Sidebar */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <Card>
-          <FieldLabel>Ownership</FieldLabel>
+          <FieldLabel>{tx('Ownership')}</FieldLabel>
           <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[['Risk Owner', risk.owner_id], ['Assigned To', risk.assigned_to], ['Reviewer', risk.reviewer_id], ['Approver', risk.approver_id]].map(([lbl, uid]) =>
               member(uid) ? (
@@ -509,12 +493,11 @@ function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organizatio
           {/* Collaborators */}
           <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <p style={{ fontSize: 11, color: 'var(--text-3)' }}>Collaborators ({collaborators.length}/10)</p>
+              <p style={{ fontSize: 11, color: 'var(--text-3)' }}>{tx('Collaborators (')}{collaborators.length}/10)</p>
               {perms.canEditRisk(riskWithCollabs) && collaborators.length < 10 && (
                 <button onClick={() => setShowAddCollab(s => !s)}
                   style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--crimson)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                  <Plus size={12} /> Add
-                </button>
+                  <Plus size={12} /> {tx('Add')}</button>
               )}
             </div>
 
@@ -522,13 +505,14 @@ function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organizatio
               <div style={{ marginBottom: 10 }}>
                 <SelectField onChange={async (e) => {
                     if (!e.target.value) return
+                    setCollabError('')
                     try { await addCollaborator(e.target.value, organization.id) }
-                    catch (err) { alert(err.message) }
+                    catch (err) { setCollabError(err.message) }
                     e.target.value = ''; setShowAddCollab(false)
                   }}
                   defaultValue=""
                   className="risys-input" style={{ fontSize: 12, width: '100%' }}>
-                  <option value="" disabled>Select a person…</option>
+                  <option value="" disabled>{tx('Select a person…')}</option>
                   {members
                     .filter(m => m.user_id !== risk.owner_id
                       && m.user_id !== risk.assigned_to
@@ -538,8 +522,9 @@ function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organizatio
               </div>
             )}
 
+            {collabError && <p className="field-error" role="alert" style={{ margin: '0 0 8px' }}>{collabError}</p>}
             {collaborators.length === 0 ? (
-              <p style={{ fontSize: 11.5, color: 'var(--text-3)', fontStyle: 'italic' }}>None — owner works alone</p>
+              <p style={{ fontSize: 11.5, color: 'var(--text-3)', fontStyle: 'italic' }}>{tx('None — owner works alone')}</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {collaborators.map(c => (
@@ -549,8 +534,8 @@ function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organizatio
                     </div>
                     <span style={{ fontSize: 12, color: 'var(--text)', flex: 1 }}>{member(c.user_id)}</span>
                     {perms.canEditRisk(riskWithCollabs) && (
-                      <button onClick={async () => { try { await removeCollaborator(c.id) } catch (err) { alert(err.message) } }}
-                        title="Remove collaborator"
+                      <button onClick={async () => { setCollabError(''); try { await removeCollaborator(c.id) } catch (err) { setCollabError(err.message) } }}
+                        title={tx('Remove collaborator')}
                         style={{ padding: 3, borderRadius: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)' }}>
                         <Trash2 size={12} />
                       </button>
@@ -563,25 +548,25 @@ function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organizatio
         </Card>
 
         <Card>
-          <FieldLabel>Schedule</FieldLabel>
+          <FieldLabel>{tx('Schedule')}</FieldLabel>
           <div style={{ marginTop: 10 }}>
-            <SideRow label="Frequency"   value={risk.review_frequency} />
-            <SideRow label="Next Review" value={risk.review_date ? new Date(risk.review_date).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : null} />
-            <SideRow label="Created"     value={new Date(risk.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })} />
+            <SideRow label={tx('Frequency')}   value={risk.review_frequency} />
+            <SideRow label={tx('Next Review')} value={risk.review_date ? new Date(risk.review_date).toLocaleDateString(appLocale(), { day:'numeric', month:'short', year:'numeric' }) : null} />
+            <SideRow label={tx('Created')}     value={new Date(risk.created_at).toLocaleDateString(appLocale(), { day:'numeric', month:'short', year:'numeric' })} />
           </div>
         </Card>
 
         <Card>
-          <FieldLabel>Classification</FieldLabel>
+          <FieldLabel>{tx('Classification')}</FieldLabel>
           <div style={{ marginTop: 10 }}>
-            <SideRow label="Category"      value={risk.category} />
-            <SideRow label="Subcategory"   value={risk.subcategory} />
-            <SideRow label="Type"          value={risk.risk_type} />
-            <SideRow label="Business Unit" value={risk.business_unit} />
-            <SideRow label="Framework"     value={risk.framework_ref} mono />
-            <SideRow label="Appetite"      value={risk.risk_appetite} />
-            <SideRow label="Source"        value={risk.source_connector === 'entra' ? 'Microsoft Entra ID' : risk.source_connector} />
-            <SideRow label="Finding"       value={risk.source_finding} />
+            <SideRow label={tx('Category')}      value={risk.category} />
+            <SideRow label={tx('Subcategory')}   value={risk.subcategory} />
+            <SideRow label={tx('Type')}          value={risk.risk_type} />
+            <SideRow label={tx('Business Unit')} value={risk.business_unit} />
+            <SideRow label={tx('Framework')}     value={risk.framework_ref} mono />
+            <SideRow label={tx('Appetite')}      value={risk.risk_appetite} />
+            <SideRow label={tx('Source')}        value={risk.source_connector === 'entra' ? 'Microsoft Entra ID' : risk.source_connector} />
+            <SideRow label={tx('Finding')}       value={risk.source_finding} />
           </div>
         </Card>
       </div>
@@ -613,7 +598,6 @@ function ControlsTab({ riskId, canManage, canTest, gaps = [] }) {
   const [showAdd, setShowAdd] = useState(false)
   const [showLink, setShowLink] = useState(false)
   const [editCtrl, setEditCtrl] = useState(null)
-  const [showPicker, setShowPicker] = useState(false)
   const blank = { name:'', description:'', control_type:'Preventive', control_frequency:'Monthly', effectiveness:3, is_automated:false, framework_ref:'', notes:'' }
   const [form, setForm] = useState(blank)
   const [saving, setSaving] = useState(false)
@@ -636,22 +620,20 @@ function ControlsTab({ riskId, canManage, canTest, gaps = [] }) {
   if (loading) return <CenterSpin />
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <TabHeader title={`${controls.length} Controls`} sub="Preventive, detective, and corrective controls linked to this risk">
+      <TabHeader title={`${controls.length} Controls`} sub={tx('Preventive, detective, and corrective controls linked to this risk')}>
         <div style={{ display: 'flex', gap: 8 }}>
           {unmapped.length > 0 && (
             <button onClick={() => setShowLink(!showLink)} className="btn-secondary" style={{ fontSize: 12, padding: '6px 12px', gap: 5 }}>
-              <Link size={11} /> Link Existing
-            </button>
+              <Link size={11} /> {tx('Link Existing')}</button>
           )}
           {canManage && <button onClick={() => { setShowAdd(true); setEditCtrl(null); setForm(blank) }} className="btn-primary" style={{ fontSize: 12, padding: '6px 12px', gap: 5 }}>
-            <Plus size={11} /> New Control
-          </button>}
+            <Plus size={11} /> {tx('New Control')}</button>}
         </div>
       </TabHeader>
 
       {showLink && (
         <Card>
-          <FieldLabel>Link an existing control</FieldLabel>
+          <FieldLabel>{tx('Link an existing control')}</FieldLabel>
           <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
             {unmapped.map(c => (
               <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: 'var(--surface)' }}>
@@ -660,9 +642,7 @@ function ControlsTab({ riskId, canManage, canTest, gaps = [] }) {
                   <p style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.control_id} · {c.control_type}</p>
                 </div>
                 <button onClick={() => { linkControl(c.id); setShowLink(false) }}
-                  style={{ fontSize: 12, padding: '5px 12px', borderRadius: 6, background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe', cursor: 'pointer' }}>
-                  Link
-                </button>
+                  style={{ fontSize: 12, padding: '5px 12px', borderRadius: 6, background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe', cursor: 'pointer' }}>{tx('Link')}</button>
               </div>
             ))}
           </div>
@@ -671,60 +651,31 @@ function ControlsTab({ riskId, canManage, canTest, gaps = [] }) {
 
       {(showAdd || editCtrl) && (
         <Card>
-          <FieldLabel>{editCtrl ? 'Edit Control' : 'New Control'}</FieldLabel>
+          <FieldLabel>{editCtrl ? tx('Edit Control') : tx('New Control')}</FieldLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-            <input value={form.name} onChange={set('name')} placeholder="Control name *" className="risys-input" />
-            <textarea value={form.description} onChange={set('description')} placeholder="What does this control do?" rows={2} className="risys-input" style={{ resize: 'none' }} />
+            <input value={form.name} onChange={set('name')} placeholder={tx('Control name *')} className="risys-input" />
+            <textarea value={form.description} onChange={set('description')} placeholder={tx('What does this control do?')} rows={2} className="risys-input" style={{ resize: 'none' }} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <LS label="Control Type" value={form.control_type} onChange={set('control_type')} options={CONTROL_TYPES} />
-              <LS label="Frequency" value={form.control_frequency} onChange={set('control_frequency')} options={CONTROL_FREQUENCIES} />
+              <LS label={tx('Control Type')} value={form.control_type} onChange={set('control_type')} options={CONTROL_TYPES} />
+              <LS label={tx('Frequency')} value={form.control_frequency} onChange={set('control_frequency')} options={CONTROL_FREQUENCIES} />
             </div>
             <div>
-              <p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>
-                Effectiveness: <strong style={{ color: 'var(--text)' }}>{form.effectiveness}/5</strong> — {EFFECTIVENESS_LABELS[form.effectiveness]?.split('—')[0]?.trim()}
+              <p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>{tx('Effectiveness:')} <strong style={{ color: 'var(--text)' }}>{form.effectiveness}/5</strong> — {EFFECTIVENESS_LABELS[form.effectiveness]?.split('—')[0]?.trim()}
               </p>
               <input type="range" min="1" max="5" value={form.effectiveness}
                 onChange={e => setForm(f => ({ ...f, effectiveness: parseInt(e.target.value) }))} style={{ width: '100%' }} />
             </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text)', cursor: 'pointer' }}>
-              <input type="checkbox" checked={form.is_automated} onChange={e => setForm(f => ({ ...f, is_automated: e.target.checked }))} />
-              Automated (system-enforced)
-            </label>
+              <input type="checkbox" checked={form.is_automated} onChange={e => setForm(f => ({ ...f, is_automated: e.target.checked }))} />{tx('Automated (system-enforced)')}</label>
             <div>
-              <p style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4 }}>Framework Reference <span style={{ fontWeight: 400 }}>(optional)</span></p>
-              <button
-                type="button"
-                onClick={() => setShowPicker(true)}
-                style={{
-                  width: '100%', textAlign: 'left', padding: '9px 12px',
-                  border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer',
-                  background: form.framework_ref ? '#fdf5f5' : '#fff',
-                  fontSize: 13, color: form.framework_ref ? 'var(--crimson)' : 'var(--text-3)',
-                  fontFamily: form.framework_ref ? 'var(--font-mono)' : 'inherit',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  transition: 'border-color 0.15s',
-                }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--rose)'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
-              >
-                <span>{form.framework_ref || 'Select framework clause…'}</span>
-                <ChevronRight size={13} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
-              </button>
-              <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3 }}>Links this control to a specific framework clause</p>
+              <p style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4 }}>{tx('Framework Reference')} <span style={{ fontWeight: 400 }}>{tx('(optional)')}</span></p>
+              <ClausePickerField value={form.framework_ref} help={tx('Links this control to a specific framework clause')}
+                onChange={(ref) => setForm(f => ({ ...f, framework_ref: ref }))} />
             </div>
-            {showPicker && (
-              <FrameworkClausePicker
-                open={showPicker}
-                onClose={() => setShowPicker(false)}
-                currentValue={form.framework_ref}
-                onSelect={(ref) => setForm(f => ({ ...f, framework_ref: ref }))}
-              />
-            )}
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => { setShowAdd(false); setEditCtrl(null) }} className="btn-secondary" style={{ flex: 1, fontSize: 13 }}>Cancel</button>
+              <button onClick={() => { setShowAdd(false); setEditCtrl(null) }} className="btn-secondary" style={{ flex: 1, fontSize: 13 }}>{tx('Cancel')}</button>
               <button onClick={save} disabled={saving || !form.name.trim()} className="btn-primary" style={{ flex: 1, fontSize: 13, opacity: !form.name.trim() ? 0.5 : 1 }}>
-                {saving ? <Spinner size="sm" /> : null} Save Control
-              </button>
+                {saving ? <Spinner size="sm" /> : null} {tx('Save Control')}</button>
             </div>
           </div>
         </Card>
@@ -734,7 +685,7 @@ function ControlsTab({ riskId, canManage, canTest, gaps = [] }) {
       {gaps.length > 0 && <CoverageGapNotice gaps={gaps} />}
 
       {controls.length === 0 && !showAdd
-        ? <EmptyBox icon={Check} title="No controls linked" sub="Add preventive, detective, or corrective controls to reduce exposure" />
+        ? <EmptyBox icon={Check} title={tx('No controls linked')} sub={tx('Add preventive, detective, or corrective controls to reduce exposure')} />
         : controls.map(ctrl => {
           const mapping = mappingFor(ctrl.id) || {}
           const ts = getControlTestingStatus(ctrl.testing_status)
@@ -748,7 +699,7 @@ function ControlsTab({ riskId, canManage, canTest, gaps = [] }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', background: 'var(--surface)', padding: '1px 5px', borderRadius: 3 }}>{ctrl.control_id}</span>
                     <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{ctrl.name}</span>
-                    {ctrl.is_automated && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: '#eff6ff', color: '#1e40af' }}>Auto</span>}
+                    {ctrl.is_automated && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: '#eff6ff', color: '#1e40af' }}>{tx('Auto')}</span>}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: ctrl.description ? 8 : 0 }}>
                     <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: tc+'18', color: tc }}>{ctrl.control_type}</span>
@@ -763,7 +714,7 @@ function ControlsTab({ riskId, canManage, canTest, gaps = [] }) {
                   {ctrl.description && <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5 }}>{ctrl.description}</p>}
                   <div style={{ marginTop: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
-                      <span style={{ color: 'var(--text-3)' }}>Effectiveness</span>
+                      <span style={{ color: 'var(--text-3)' }}>{tx('Effectiveness')}</span>
                       <span style={{ color: ec, fontWeight: 600 }}>{eff}/5</span>
                     </div>
                     <div style={{ height: 4, borderRadius: 2, background: 'var(--border)' }}>
@@ -782,7 +733,7 @@ function ControlsTab({ riskId, canManage, canTest, gaps = [] }) {
                     border: `1px solid ${mapping.coverage === 'none' ? 'var(--critical-bd)'
                       : mapping.coverage === 'partial' ? 'var(--medium-bd)' : 'var(--border)'}`,
                   }}>
-                    <p className="eyebrow" style={{ marginBottom: 7 }}>Coverage of this risk</p>
+                    <p className="eyebrow" style={{ marginBottom: 7 }}>{tx('Coverage of this risk')}</p>
                     {canManage ? (
                       <>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -792,14 +743,14 @@ function ControlsTab({ riskId, canManage, canTest, gaps = [] }) {
                           </SelectField>
                           <SelectField size="sm" value={mapping.reduces || 'both'}
                             onChange={e => updateMapping(ctrl.id, { reduces: e.target.value })}>
-                            {REDUCES_OPTIONS.map(o => <option key={o.value} value={o.value}>Reduces {o.label.toLowerCase()}</option>)}
+                            {REDUCES_OPTIONS.map(o => <option key={o.value} value={o.value}>{tx('Reduces')} {o.label.toLowerCase()}</option>)}
                           </SelectField>
                         </div>
                         {(mapping.coverage === 'partial' || mapping.coverage === 'none') && (
                           <input className="risys-input" style={{ width: '100%', marginTop: 8, fontSize: 12 }}
                             defaultValue={mapping.coverage_note || ''}
                             onBlur={e => updateMapping(ctrl.id, { coverage_note: e.target.value })}
-                            placeholder="What does it exclude? e.g. SaaS apps only — excludes the VPN" />
+                            placeholder={tx('What does it exclude? e.g. SaaS apps only — excludes the VPN')} />
                         )}
                       </>
                     ) : (
@@ -864,36 +815,34 @@ function EvidenceTab({ riskId, canManage }) {
   if (loading) return <CenterSpin />
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <TabHeader title={`${evidence.length} Evidence Items`} sub="Audit-ready proof of controls">
+      <TabHeader title={`${evidence.length} Evidence Items`} sub={tx('Audit-ready proof of controls')}>
         {canManage && <button onClick={() => setShowAdd(!showAdd)} className="btn-primary" style={{ fontSize: 12, padding: '6px 12px', gap: 5 }}>
-          <Plus size={11} /> Add Evidence
-        </button>}
+          <Plus size={11} /> {tx('Add Evidence')}</button>}
       </TabHeader>
 
       {showAdd && (
         <Card>
-          <FieldLabel>Add Evidence</FieldLabel>
+          <FieldLabel>{tx('Add Evidence')}</FieldLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-            <input value={form.title} onChange={set('title')} placeholder="Title *" className="risys-input" />
+            <input value={form.title} onChange={set('title')} placeholder={tx('Title *')} className="risys-input" />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <LS label="Type" value={form.evidence_type} onChange={set('evidence_type')} options={EVIDENCE_TYPES} />
-              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Period</p><input value={form.evidence_period} onChange={set('evidence_period')} placeholder="e.g. Q2 2025" className="risys-input" /></div>
+              <LS label={tx('Type')} value={form.evidence_type} onChange={set('evidence_type')} options={EVIDENCE_TYPES} />
+              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>{tx('Period')}</p><input value={form.evidence_period} onChange={set('evidence_period')} placeholder="e.g. Q2 2025" className="risys-input" /></div>
             </div>
-            <textarea value={form.description} onChange={set('description')} placeholder="What does this prove?" rows={2} className="risys-input" style={{ resize: 'none' }} />
-            <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>File (optional)</p><input type="file" onChange={e => setFile(e.target.files[0])} style={{ fontSize: 12 }} /></div>
+            <textarea value={form.description} onChange={set('description')} placeholder={tx('What does this prove?')} rows={2} className="risys-input" style={{ resize: 'none' }} />
+            <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>{tx('File (optional)')}</p><input type="file" onChange={e => setFile(e.target.files[0])} style={{ fontSize: 12 }} /></div>
             {saveError && <p style={{ fontSize: 12, color: '#8C1616', padding: '6px 10px', background: '#FBEAEA', borderRadius: 6 }}>{saveError}</p>}
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => { setShowAdd(false); setSaveError('') }} className="btn-secondary" style={{ flex: 1, fontSize: 13 }}>Cancel</button>
+              <button onClick={() => { setShowAdd(false); setSaveError('') }} className="btn-secondary" style={{ flex: 1, fontSize: 13 }}>{tx('Cancel')}</button>
               <button onClick={save} disabled={saving || !form.title.trim()} className="btn-primary" style={{ flex: 1, fontSize: 13, opacity: !form.title.trim() ? 0.5 : 1 }}>
-                {saving ? <Spinner size="sm" /> : null} Save
-              </button>
+                {saving ? <Spinner size="sm" /> : null} {tx('Save')}</button>
             </div>
           </div>
         </Card>
       )}
 
       {evidence.length === 0 && !showAdd
-        ? <EmptyBox icon={FileText} title="No evidence yet" sub="Upload documents, screenshots, and attestations" />
+        ? <EmptyBox icon={FileText} title={tx('No evidence yet')} sub={tx('Upload documents, screenshots, and attestations')} />
         : (
           <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
             {evidence.map((ev, i) => {
@@ -919,13 +868,12 @@ function EvidenceTab({ riskId, canManage }) {
                       )}
                       {ev.is_approved && (
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, padding: '1.5px 7px', borderRadius: 20, background: '#ECF4EE', color: '#2F6B3C', fontWeight: 500 }}>
-                          <Check size={9} /> Approved
-                        </span>
+                          <Check size={9} /> {tx('Approved')}</span>
                       )}
                       {expired ? (
-                        <span style={{ fontSize: 10, padding: '1.5px 7px', borderRadius: 20, background: '#FBEAEA', color: '#8C1616', fontWeight: 500 }}>Expired</span>
+                        <span style={{ fontSize: 10, padding: '1.5px 7px', borderRadius: 20, background: '#FBEAEA', color: '#8C1616', fontWeight: 500 }}>{tx('Expired')}</span>
                       ) : expiring ? (
-                        <span style={{ fontSize: 10, padding: '1.5px 7px', borderRadius: 20, background: '#FAF3E2', color: '#9C6F0F', fontWeight: 500 }}>Expiring soon</span>
+                        <span style={{ fontSize: 10, padding: '1.5px 7px', borderRadius: 20, background: '#FAF3E2', color: '#9C6F0F', fontWeight: 500 }}>{tx('Expiring soon')}</span>
                       ) : null}
                     </div>
                     {ev.description && <p style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.5, marginTop: 3 }}>{ev.description}</p>}
@@ -933,15 +881,15 @@ function EvidenceTab({ riskId, canManage }) {
                       {ev.file_path && (
                         <EvidenceFileLink evidence={ev}
                           style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500, color: 'var(--crimson)', textDecoration: 'none', padding: '3px 9px', borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                          <ExternalLink size={11} /> {ev.file_name || 'View file'}
+                          <ExternalLink size={11} /> {ev.file_name || tx('View file')}
                         </EvidenceFileLink>
                       )}
-                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Collected {new Date(ev.collected_at).toLocaleDateString('en-GB')}</span>
-                      {ev.expires_at && <span style={{ fontSize: 11, color: expired ? '#8C1616' : 'var(--text-3)' }}>Valid until {new Date(ev.expires_at).toLocaleDateString('en-GB')}</span>}
+                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{tx('Collected')} {new Date(ev.collected_at).toLocaleDateString(appLocale())}</span>
+                      {ev.expires_at && <span style={{ fontSize: 11, color: expired ? '#8C1616' : 'var(--text-3)' }}>{tx('Valid until')} {new Date(ev.expires_at).toLocaleDateString(appLocale())}</span>}
                     </div>
                   </div>
 
-                  <button onClick={() => deleteEvidence(ev.id)} title="Remove evidence"
+                  <button onClick={() => deleteEvidence(ev.id)} title={tx('Remove evidence')}
                     style={{ padding: 5, borderRadius: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', flexShrink: 0 }}>
                     <Trash size={13} />
                   </button>
@@ -976,40 +924,38 @@ function KRIsTab({ riskId, canManage }) {
   if (loading) return <CenterSpin />
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <TabHeader title={`${kris.length} Key Risk Indicators`} sub="Early warning signals — monitor before the risk materialises">
+      <TabHeader title={`${kris.length} Key Risk Indicators`} sub={tx('Early warning signals — monitor before the risk materialises')}>
         {canManage && <button onClick={() => setShowAdd(!showAdd)} className="btn-primary" style={{ fontSize: 12, padding: '6px 12px', gap: 5 }}>
-          <Plus size={11} /> Add KRI
-        </button>}
+          <Plus size={11} /> {tx('Add KRI')}</button>}
       </TabHeader>
 
       {showAdd && (
         <Card>
-          <FieldLabel>New KRI</FieldLabel>
+          <FieldLabel>{tx('New KRI')}</FieldLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-            <input value={form.name} onChange={set('name')} placeholder="KRI name *" className="risys-input" />
-            <textarea value={form.description} onChange={set('description')} placeholder="What does this metric measure?" rows={2} className="risys-input" style={{ resize: 'none' }} />
+            <input value={form.name} onChange={set('name')} placeholder={tx('KRI name *')} className="risys-input" />
+            <textarea value={form.description} onChange={set('description')} placeholder={tx('What does this metric measure?')} rows={2} className="risys-input" style={{ resize: 'none' }} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Current Value</p><input value={form.current_value} onChange={set('current_value')} placeholder="42" className="risys-input" /></div>
-              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Unit</p><input value={form.unit} onChange={set('unit')} placeholder="%, count" className="risys-input" /></div>
-              <LS label="Frequency" value={form.frequency} onChange={set('frequency')} options={['Daily','Weekly','Monthly','Quarterly']} />
+              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>{tx('Current Value')}</p><input value={form.current_value} onChange={set('current_value')} placeholder="42" className="risys-input" /></div>
+              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>{tx('Unit')}</p><input value={form.unit} onChange={set('unit')} placeholder={tx('%, count')} className="risys-input" /></div>
+              <LS label={tx('Frequency')} value={form.frequency} onChange={set('frequency')} options={['Daily','Weekly','Monthly','Quarterly']} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, padding: '10px 12px', borderRadius: 8, background: 'var(--surface)' }}>
-              <div><p style={{ fontSize: 12, marginBottom: 4, color: '#2F6B3C', fontWeight: 500 }}>🟢 Green ≤</p><input value={form.green_threshold} onChange={set('green_threshold')} placeholder="5" className="risys-input" /></div>
-              <div><p style={{ fontSize: 12, marginBottom: 4, color: '#9C6F0F', fontWeight: 500 }}>🟡 Amber ≤</p><input value={form.amber_threshold} onChange={set('amber_threshold')} placeholder="10" className="risys-input" /></div>
-              <div><p style={{ fontSize: 12, marginBottom: 4, color: '#8C1616', fontWeight: 500 }}>🔴 Red &gt;</p><input value={form.red_threshold} onChange={set('red_threshold')} placeholder="10" className="risys-input" /></div>
+              <div><p style={{ fontSize: 12, marginBottom: 4, color: '#2F6B3C', fontWeight: 500 }}>{tx('🟢 Green ≤')}</p><input value={form.green_threshold} onChange={set('green_threshold')} placeholder="5" className="risys-input" /></div>
+              <div><p style={{ fontSize: 12, marginBottom: 4, color: '#9C6F0F', fontWeight: 500 }}>{tx('🟡 Amber ≤')}</p><input value={form.amber_threshold} onChange={set('amber_threshold')} placeholder="10" className="risys-input" /></div>
+              <div><p style={{ fontSize: 12, marginBottom: 4, color: '#8C1616', fontWeight: 500 }}>{tx('🔴 Red >')}</p><input value={form.red_threshold} onChange={set('red_threshold')} placeholder="10" className="risys-input" /></div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setShowAdd(false)} className="btn-secondary" style={{ flex: 1, fontSize: 13 }}>Cancel</button>
+              <button onClick={() => setShowAdd(false)} className="btn-secondary" style={{ flex: 1, fontSize: 13 }}>{tx('Cancel')}</button>
               <button onClick={save} disabled={saving || !form.name.trim()} className="btn-primary" style={{ flex: 1, fontSize: 13, opacity: !form.name.trim() ? 0.5 : 1 }}>
-                {saving ? <Spinner size="sm" /> : null} Save KRI
-              </button>
+                {saving ? <Spinner size="sm" /> : null} {tx('Save KRI')}</button>
             </div>
           </div>
         </Card>
       )}
 
       {kris.length === 0 && !showAdd
-        ? <EmptyBox icon={Activity} title="No KRIs yet" sub="Add metrics to continuously monitor this risk" />
+        ? <EmptyBox icon={Activity} title={tx('No KRIs yet')} sub={tx('Add metrics to continuously monitor this risk')} />
         : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {kris.map(kri => {
@@ -1071,39 +1017,37 @@ function LossTab({ riskId, canManage }) {
   if (loading) return <CenterSpin />
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <TabHeader title={`${lossEvents.length} Loss Events`} sub={total > 0 ? `Total recorded: $${total.toLocaleString()}` : 'Log actual incidents when this risk materialises'}>
+      <TabHeader title={`${lossEvents.length} Loss Events`} sub={total > 0 ? `Total recorded: $${total.toLocaleString(appLocale())}` : tx('Log actual incidents when this risk materialises')}>
         {canManage && <button onClick={() => setShowAdd(!showAdd)} className="btn-primary" style={{ fontSize: 12, padding: '6px 12px', gap: 5 }}>
-          <Plus size={11} /> Log Event
-        </button>}
+          <Plus size={11} /> {tx('Log Event')}</button>}
       </TabHeader>
 
       {showAdd && (
         <Card>
-          <FieldLabel>Log Loss Event</FieldLabel>
+          <FieldLabel>{tx('Log Loss Event')}</FieldLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-            <input value={form.title} onChange={set('title')} placeholder="Event title *" className="risys-input" />
+            <input value={form.title} onChange={set('title')} placeholder={tx('Event title *')} className="risys-input" />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Event Date *</p><input type="date" value={form.event_date} onChange={set('event_date')} className="risys-input" /></div>
-              <LS label="Root Cause" value={form.root_cause_category} onChange={set('root_cause_category')} options={['People','Process','System','External']} />
+              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>{tx('Event Date *')}</p><input type="date" value={form.event_date} onChange={set('event_date')} className="risys-input" /></div>
+              <LS label={tx('Root Cause')} value={form.root_cause_category} onChange={set('root_cause_category')} options={['People','Process','System','External']} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Gross Loss</p><input value={form.gross_loss} onChange={set('gross_loss')} placeholder="0.00" className="risys-input" /></div>
-              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>Net Loss</p><input value={form.net_loss} onChange={set('net_loss')} placeholder="0.00" className="risys-input" /></div>
-              <LS label="Currency" value={form.currency} onChange={set('currency')} options={['USD','SAR','EUR','GBP','AED']} />
+              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>{tx('Gross Loss')}</p><input value={form.gross_loss} onChange={set('gross_loss')} placeholder="0.00" className="risys-input" /></div>
+              <div><p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>{tx('Net Loss')}</p><input value={form.net_loss} onChange={set('net_loss')} placeholder="0.00" className="risys-input" /></div>
+              <LS label={tx('Currency')} value={form.currency} onChange={set('currency')} options={['USD','SAR','EUR','GBP','AED']} />
             </div>
-            <textarea value={form.root_cause} onChange={set('root_cause')} placeholder="Root cause analysis…" rows={3} className="risys-input" style={{ resize: 'none' }} />
+            <textarea value={form.root_cause} onChange={set('root_cause')} placeholder={tx('Root cause analysis…')} rows={3} className="risys-input" style={{ resize: 'none' }} />
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setShowAdd(false)} className="btn-secondary" style={{ flex: 1, fontSize: 13 }}>Cancel</button>
+              <button onClick={() => setShowAdd(false)} className="btn-secondary" style={{ flex: 1, fontSize: 13 }}>{tx('Cancel')}</button>
               <button onClick={save} disabled={saving || !form.title.trim() || !form.event_date} className="btn-primary" style={{ flex: 1, fontSize: 13, opacity: (!form.title.trim() || !form.event_date) ? 0.5 : 1 }}>
-                {saving ? <Spinner size="sm" /> : null} Log
-              </button>
+                {saving ? <Spinner size="sm" /> : null} {tx('Log')}</button>
             </div>
           </div>
         </Card>
       )}
 
       {lossEvents.length === 0 && !showAdd
-        ? <EmptyBox icon={AlertTriangle} title="No loss events" sub="Log actual incidents to build historical loss data" />
+        ? <EmptyBox icon={AlertTriangle} title={tx('No loss events')} sub={tx('Log actual incidents to build historical loss data')} />
         : lossEvents.map(ev => (
           <Card key={ev.id}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
@@ -1113,8 +1057,8 @@ function LossTab({ riskId, canManage }) {
                   <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{ev.title}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{new Date(ev.event_date).toLocaleDateString('en-GB')}</span>
-                  {ev.gross_loss && <span style={{ fontSize: 14, fontWeight: 700, color: '#8C1616' }}>{ev.currency} {ev.gross_loss.toLocaleString()}</span>}
+                  <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{new Date(ev.event_date).toLocaleDateString(appLocale())}</span>
+                  {ev.gross_loss && <span style={{ fontSize: 14, fontWeight: 700, color: '#8C1616' }}>{ev.currency} {ev.gross_loss.toLocaleString(appLocale())}</span>}
                   <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'var(--surface)', color: 'var(--text-3)' }}>{ev.root_cause_category}</span>
                 </div>
                 {ev.root_cause && <p style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6, marginTop: 8 }}>{ev.root_cause}</p>}
@@ -1142,26 +1086,26 @@ function DiscussionTab({ riskId }) {
   if (loading) return <CenterSpin />
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <TabHeader title="Discussion" sub="Comments and notes from the risk team" />
-      {comments.length === 0 && <EmptyBox icon={MessageSquare} title="No comments yet" sub="Start a discussion about this risk" />}
+      <TabHeader title={tx('Discussion')} sub={tx('Comments and notes from the risk team')} />
+      {comments.length === 0 && <EmptyBox icon={MessageSquare} title={tx('No comments yet')} sub={tx('Start a discussion about this risk')} />}
       {comments.map(c => (
         <Card key={c.id}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
             <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--crimson)', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               {(c.author_id || 'U').slice(0, 1).toUpperCase()}
             </div>
-            <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{new Date(c.created_at).toLocaleString('en-GB')}</span>
+            <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{new Date(c.created_at).toLocaleString(appLocale())}</span>
           </div>
           <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6 }}>{c.content}</p>
         </Card>
       ))}
       <Card>
-        <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Add a comment…" rows={3}
+        <textarea value={text} onChange={e => setText(e.target.value)} placeholder={tx('Add a comment…')} rows={3}
           style={{ width: '100%', fontSize: 13, outline: 'none', resize: 'none', border: 'none', color: 'var(--text)', fontFamily: 'inherit' }} />
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
           <button onClick={submit} disabled={saving || !text.trim()} className="btn-primary"
             style={{ fontSize: 12, padding: '6px 16px', opacity: !text.trim() ? 0.5 : 1 }}>
-            {saving ? 'Posting…' : 'Post Comment'}
+            {saving ? tx('Posting…') : tx('Post Comment')}
           </button>
         </div>
       </Card>
@@ -1190,57 +1134,59 @@ function AuditTab({ riskId, member }) {
   ].sort((a, b) => new Date(b._at) - new Date(a._at))
 
   const FIELD_LABELS = {
-    inherent_likelihood: 'Inherent likelihood', inherent_impact: 'Inherent impact',
-    residual_likelihood: 'Residual likelihood', residual_impact: 'Residual impact',
-    workflow_state: 'Workflow state', risk_appetite: 'Risk appetite',
-    risk_direction: 'Risk direction', review_frequency: 'Review frequency',
-    review_date: 'Review date', business_unit: 'Business unit',
-    owner_id: 'Owner', assigned_to: 'Assigned To', reviewer_id: 'Reviewer', approver_id: 'Approver',
-    treatment_notes: 'Treatment notes', risk_statement: 'Risk statement', risk_drivers: 'Risk drivers',
+    inherent_likelihood: tx('Inherent likelihood'), inherent_impact: tx('Inherent impact'),
+    residual_likelihood: tx('Residual likelihood'), residual_impact: tx('Residual impact'),
+    workflow_state: tx('Workflow state'), risk_appetite: tx('Risk appetite'),
+    risk_direction: tx('Risk direction'), review_frequency: tx('Review frequency'),
+    review_date: tx('Review date'), business_unit: tx('Business unit'),
+    owner_id: tx('Owner'), assigned_to: tx('Assigned To'), reviewer_id: tx('Reviewer'), approver_id: tx('Approver'),
+    treatment_notes: tx('Treatment notes'), risk_statement: tx('Risk statement'), risk_drivers: tx('Risk drivers'),
   }
   const fieldLabel = f => FIELD_LABELS[f] || (f ? f.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()) : '')
   const fmtVal = (field, v) => {
     if (v === null || v === undefined || v === '') return '—'
     if (['owner_id','assigned_to','reviewer_id','approver_id'].includes(field)) return member(v) || v.slice(0, 8)
-    if (field === 'review_date') return new Date(v).toLocaleDateString('en-GB')
+    if (field === 'review_date') return new Date(v).toLocaleDateString(appLocale())
     return String(v).length > 60 ? String(v).slice(0, 60) + '…' : v
   }
 
-  const WF_LABELS = { submitted: 'Submitted for review', approved: 'Approved', rejected: 'Rejected — returned to draft', closed: 'Closed', reopened: 'Reopened' }
+  const WF_LABELS = { submitted: tx('Submitted for review'), approved: tx('Approved'), rejected: tx('Rejected — returned to draft'), closed: tx('Closed'), reopened: tx('Reopened') }
   const WF_COLORS = { submitted: '#1e40af', approved: '#2F6B3C', rejected: '#8C1616', closed: '#6b7280', reopened: '#9C6F0F' }
 
   // Activity actions written by the database when anything happens in the tabs
   const ACT = {
-    control_linked:      { label: 'Control linked',        color: '#2F6B3C' },
-    control_unlinked:    { label: 'Control removed',       color: '#8C1616' },
-    control_updated:     { label: 'Control updated',       color: '#895353' },
-    control_tested:      { label: 'Control tested',        color: '#1e40af' },
-    evidence_added:      { label: 'Evidence added',        color: '#2F6B3C' },
-    evidence_approved:   { label: 'Evidence approved',     color: '#2F6B3C' },
-    evidence_removed:    { label: 'Evidence removed',      color: '#8C1616' },
-    kri_added:           { label: 'KRI added',             color: '#2F6B3C' },
-    kri_updated:         { label: 'KRI reading updated',   color: '#895353' },
-    kri_removed:         { label: 'KRI removed',           color: '#8C1616' },
-    loss_event_added:    { label: 'Loss event recorded',   color: '#8C1616' },
-    loss_event_removed:  { label: 'Loss event removed',    color: '#97817d' },
-    action_created:      { label: 'Treatment action created', color: '#2F6B3C' },
-    action_updated:      { label: 'Treatment action status',  color: '#895353' },
-    action_progress:     { label: 'Progress update',       color: '#1e40af' },
-    action_removed:      { label: 'Treatment action removed', color: '#8C1616' },
-    exception_requested: { label: 'Exception requested',   color: '#9C6F0F' },
-    exception_approved:  { label: 'Exception approved',    color: '#2F6B3C' },
-    exception_rejected:  { label: 'Exception rejected',    color: '#8C1616' },
-    exception_expired:   { label: 'Exception expired',     color: '#9C6F0F' },
-    exception_revoked:   { label: 'Exception revoked',     color: '#8C1616' },
-    review_completed:    { label: 'Periodic review completed', color: '#2F6B3C' },
-    comment_added:       { label: 'Comment',               color: '#895353' },
+    control_linked:      { label: tx('Control linked'),        color: '#2F6B3C' },
+    control_unlinked:    { label: tx('Control removed'),       color: '#8C1616' },
+    control_updated:     { label: tx('Control updated'),       color: '#895353' },
+    control_tested:      { label: tx('Control tested'),        color: '#1e40af' },
+    evidence_added:      { label: tx('Evidence added'),        color: '#2F6B3C' },
+    evidence_approved:   { label: tx('Evidence approved'),     color: '#2F6B3C' },
+    evidence_removed:    { label: tx('Evidence removed'),      color: '#8C1616' },
+    kri_added:           { label: tx('KRI added'),             color: '#2F6B3C' },
+    kri_updated:         { label: tx('KRI reading updated'),   color: '#895353' },
+    kri_removed:         { label: tx('KRI removed'),           color: '#8C1616' },
+    loss_event_added:    { label: tx('Loss event recorded'),   color: '#8C1616' },
+    loss_event_removed:  { label: tx('Loss event removed'),    color: '#97817d' },
+    action_created:      { label: tx('Treatment action created'), color: '#2F6B3C' },
+    action_updated:      { label: tx('Treatment action status'),  color: '#895353' },
+    action_progress:     { label: tx('Progress update'),       color: '#1e40af' },
+    action_removed:      { label: tx('Treatment action removed'), color: '#8C1616' },
+    exception_requested: { label: tx('Exception requested'),   color: '#9C6F0F' },
+    exception_approved:  { label: tx('Exception approved'),    color: '#2F6B3C' },
+    exception_rejected:  { label: tx('Exception rejected'),    color: '#8C1616' },
+    exception_expired:   { label: tx('Exception expired'),     color: '#9C6F0F' },
+    exception_revoked:   { label: tx('Exception revoked'),     color: '#8C1616' },
+    review_completed:    { label: tx('Periodic review completed'), color: '#2F6B3C' },
+    comment_added:       { label: tx('Comment'),               color: '#895353' },
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <TabHeader title="History" sub="Immutable record — every field change and workflow decision is logged automatically by the database" />
+      <TabHeader title={tx('History')} sub={tx(
+        'Immutable record — every field change and workflow decision is logged automatically by the database'
+      )} />
       {timeline.length === 0
-        ? <EmptyBox icon={Clock} title="No entries yet" sub="Actions on this risk appear here automatically" />
+        ? <EmptyBox icon={Clock} title={tx('No entries yet')} sub={tx('Actions on this risk appear here automatically')} />
         : (
           <Card>
             {timeline.map((e, i) => (
@@ -1250,13 +1196,12 @@ function AuditTab({ riskId, member }) {
                   {e._kind === 'workflow' ? (
                     <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>
                       <strong style={{ color: WF_COLORS[e.action] || 'var(--text)' }}>{WF_LABELS[e.action] || e.action}</strong>
-                      {e.performed_by && <span style={{ color: 'var(--text-3)' }}> by {member(e.performed_by)}</span>}
+                      {e.performed_by && <span style={{ color: 'var(--text-3)' }}> {tx('by')} {member(e.performed_by)}</span>}
                       {e.comment && <span style={{ color: 'var(--text-2)' }}> — "{e.comment}"</span>}
                     </p>
                   ) : e.action === 'field_changed' ? (
                     <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>
-                      <strong>{fieldLabel(e.field_name)}</strong> changed
-                      {e.performed_by && <span style={{ color: 'var(--text-3)' }}> by {member(e.performed_by)}</span>}
+                      <strong>{fieldLabel(e.field_name)}</strong> {tx('changed')}{e.performed_by && <span style={{ color: 'var(--text-3)' }}> {tx('by')} {member(e.performed_by)}</span>}
                       <span style={{ color: 'var(--text-3)' }}> ({fmtVal(e.field_name, e.old_value)} → <strong style={{ color: 'var(--text)' }}>{fmtVal(e.field_name, e.new_value)}</strong>)</span>
                     </p>
                   ) : (
@@ -1264,13 +1209,13 @@ function AuditTab({ riskId, member }) {
                       <strong style={{ color: ACT[e.action]?.color || 'var(--text)' }}>
                         {ACT[e.action]?.label || e.action.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase())}
                       </strong>
-                      {e.performed_by && <span style={{ color: 'var(--text-3)' }}> by {member(e.performed_by)}</span>}
+                      {e.performed_by && <span style={{ color: 'var(--text-3)' }}> {tx('by')} {member(e.performed_by)}</span>}
                       {e.note ? <span style={{ color: 'var(--text-2)' }}> — {e.note}</span> : ''}
                       {e.old_value && e.new_value && <span style={{ color: 'var(--text-3)' }}> ({e.old_value} → <strong>{e.new_value}</strong>)</span>}
                     </p>
                   )}
                 </div>
-                <span style={{ fontSize: 11, color: 'var(--text-3)', flexShrink: 0, marginTop: 2 }}>{new Date(e._at).toLocaleString('en-GB')}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-3)', flexShrink: 0, marginTop: 2 }}>{new Date(e._at).toLocaleString(appLocale())}</span>
               </div>
             ))}
           </Card>

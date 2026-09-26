@@ -2,6 +2,7 @@ import { ShieldCheck, ShieldAlert, ShieldQuestion, Clock, CalendarX, Inbox, Chev
 import { bandForScore, bandMeta, BAND_ORDER } from '@/lib/matrix'
 import { WORKFLOW_STATES, isReviewOverdue, normalizeWorkflowState } from '@/lib/risks'
 import { treatmentSLA } from '@/lib/gate'
+import { tx } from '@/lib/i18n'
 
 // ============================================================
 // REGISTER OVERVIEW
@@ -50,10 +51,10 @@ function BandDistribution({ risks, matrix, quickFilter, onQuickFilter }) {
   const bands = BAND_ORDER.slice().reverse()
 
   return (
-    <Panel title="Risk carried" caption="residual where scored, otherwise inherent">
+    <Panel title={tx('Risk carried')} caption={tx('residual where scored, otherwise inherent')}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 12 }}>
         <span className="tnum" style={{ fontSize: 30, fontWeight: 300, color: 'var(--text)', lineHeight: 1 }}>{open.length}</span>
-        <span style={{ fontSize: 'var(--t-sm)', color: 'var(--text-3)' }}>open risk{open.length === 1 ? '' : 's'}</span>
+        <span style={{ fontSize: 'var(--t-sm)', color: 'var(--text-3)' }}>{tx('open risk')}{open.length === 1 ? '' : 's'}</span>
       </div>
 
       {/* Stacked bar — each segment is a filter */}
@@ -77,7 +78,7 @@ function BandDistribution({ risks, matrix, quickFilter, onQuickFilter }) {
             <button key={b} onClick={() => onQuickFilter(`band:${b}`)}
               className="row-hover"
               style={{
-                textAlign: 'left', padding: '6px 8px', borderRadius: 'var(--r-md)', cursor: 'pointer',
+                textAlign: 'start', padding: '6px 8px', borderRadius: 'var(--r-md)', cursor: 'pointer',
                 border: `1px solid ${active ? meta.color : 'transparent'}`,
                 background: active ? meta.bg : 'transparent',
               }}>
@@ -110,13 +111,13 @@ function GateSummary({ risks, quickFilter, onQuickFilter }) {
   const pW = (within / total) * 100
 
   const rows = [
-    { key: 'breached', label: 'Outside tolerance', value: breached, color: 'var(--critical)', bg: 'var(--critical-bg)', icon: ShieldAlert },
-    { key: 'within', label: 'Within tolerance', value: within, color: 'var(--low)', bg: 'var(--low-bg)', icon: ShieldCheck },
-    { key: 'unjudged', label: 'Not yet judged', value: pending, color: 'var(--text-3)', bg: 'var(--surface)', icon: ShieldQuestion },
+    { key: 'breached', label: tx('Outside tolerance'), value: breached, color: 'var(--critical)', bg: 'var(--critical-bg)', icon: ShieldAlert },
+    { key: 'within', label: tx('Within tolerance'), value: within, color: 'var(--low)', bg: 'var(--low-bg)', icon: ShieldCheck },
+    { key: 'unjudged', label: tx('Not yet judged'), value: pending, color: 'var(--text-3)', bg: 'var(--surface)', icon: ShieldQuestion },
   ]
 
   return (
-    <Panel title="Tolerance gate" caption="evaluated on every score change">
+    <Panel title={tx('Tolerance gate')} caption={tx('evaluated on every score change')}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
         <div style={{ position: 'relative', width: 84, height: 84, flexShrink: 0 }}>
           <svg viewBox="0 0 36 36" width="84" height="84" style={{ transform: 'rotate(-90deg)' }}>
@@ -134,7 +135,7 @@ function GateSummary({ risks, quickFilter, onQuickFilter }) {
           </svg>
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <span className="tnum" style={{ fontSize: 20, fontWeight: 600, lineHeight: 1, color: breached ? 'var(--critical)' : 'var(--text)' }}>{breached}</span>
-            <span style={{ fontSize: 9, color: 'var(--text-3)', marginTop: 2 }}>breached</span>
+            <span style={{ fontSize: 9, color: 'var(--text-3)', marginTop: 2 }}>{tx('breached')}</span>
           </div>
         </div>
 
@@ -147,7 +148,7 @@ function GateSummary({ risks, quickFilter, onQuickFilter }) {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 7, padding: '5px 7px', borderRadius: 'var(--r)',
                   border: 'none', background: active ? r.bg : 'transparent',
-                  cursor: 'pointer', textAlign: 'left',
+                  cursor: 'pointer', textAlign: 'start',
                 }}>
                 <Icon size={12} style={{ color: r.color, flexShrink: 0 }} />
                 <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-2)', flex: 1 }}>{r.label}</span>
@@ -164,17 +165,17 @@ function GateSummary({ risks, quickFilter, onQuickFilter }) {
 /* ── 3. What needs attention ──────────────────────────────── */
 function Attention({ risks, quickFilter, onQuickFilter }) {
   const items = [
-    { key: 'sla', label: 'Treatment plan overdue', hint: 'past the SLA the gate started',
+    { key: 'sla', label: tx('Treatment plan overdue'), hint: tx('past the SLA the gate started'),
       value: risks.filter(r => treatmentSLA(r)?.overdue).length, icon: Clock, tone: 'var(--critical)' },
-    { key: 'overdue', label: 'Review overdue', hint: 'needs recertification',
+    { key: 'overdue', label: tx('Review overdue'), hint: tx('needs recertification'),
       value: risks.filter(isReviewOverdue).length, icon: CalendarX, tone: 'var(--high)' },
-    { key: 'pending_review', label: 'Awaiting admission', hint: 'drafts a reviewer has not admitted',
+    { key: 'pending_review', label: tx('Awaiting admission'), hint: tx('drafts a reviewer has not admitted'),
       value: risks.filter(r => normalizeWorkflowState(r.workflow_state) === 'draft').length, icon: Inbox, tone: 'var(--info)' },
   ]
   const total = items.reduce((n, i) => n + i.value, 0)
 
   return (
-    <Panel title="Needs attention" caption={total ? `${total} item${total === 1 ? '' : 's'}` : 'all clear'}>
+    <Panel title={tx('Needs attention')} caption={total ? `${total} item${total === 1 ? '' : 's'}` : tx('all clear')}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {items.map(item => {
           const Icon = item.icon
@@ -184,7 +185,7 @@ function Attention({ risks, quickFilter, onQuickFilter }) {
               style={{
                 display: 'flex', alignItems: 'center', gap: 10, padding: '8px 9px', borderRadius: 'var(--r-md)',
                 border: `1px solid ${active ? 'var(--crimson)' : 'var(--border-3)'}`,
-                background: active ? 'var(--crimson-wash)' : 'transparent', cursor: 'pointer', textAlign: 'left',
+                background: active ? 'var(--crimson-wash)' : 'transparent', cursor: 'pointer', textAlign: 'start',
               }}>
               <span style={{
                 width: 26, height: 26, borderRadius: 'var(--r-md)', flexShrink: 0,
@@ -241,7 +242,7 @@ export function LifecyclePipeline({ risks, value, onChange }) {
           <div key={s.value} style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 104 }}>
             <button onClick={() => onChange(active ? '' : s.value)} title={s.desc}
               style={{
-                flex: 1, textAlign: 'left', padding: '7px 10px', borderRadius: 'var(--r-md)', cursor: 'pointer',
+                flex: 1, textAlign: 'start', padding: '7px 10px', borderRadius: 'var(--r-md)', cursor: 'pointer',
                 border: 'none', background: active ? s.bg : 'transparent',
                 boxShadow: active ? `inset 0 0 0 1px ${s.border}` : 'none',
                 transition: 'background var(--dur-2)',
@@ -260,7 +261,10 @@ export function LifecyclePipeline({ risks, value, onChange }) {
               }}>{n}</span>
             </button>
             {idx < WORKFLOW_STATES.length - 1 && (
-              <ChevronRight size={12} style={{ color: 'var(--border-2)', flexShrink: 0 }} />
+              <ChevronRight
+                size={12}
+                style={{ color: 'var(--border-2)', flexShrink: 0 }}
+                className='rtl-flip' />
             )}
           </div>
         )
@@ -298,13 +302,13 @@ export function ScoreTransition({ risk, matrix }) {
       <span style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)' }}>→</span>
       {res
         ? chip(res, resMeta, false)
-        : <span style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)', fontStyle: 'italic' }}>unscored</span>}
+        : <span style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)', fontStyle: 'italic' }}>{tx('unscored')}</span>}
     </span>
   )
 }
 
 export function OwnerCell({ name }) {
-  if (!name) return <span style={{ fontSize: 'var(--t-meta)', color: 'var(--border-2)' }}>Unassigned</span>
+  if (!name) return <span style={{ fontSize: 'var(--t-meta)', color: 'var(--border-2)' }}>{tx('Unassigned')}</span>
   const initials = name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(p => p[0]?.toUpperCase()).join('')
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 0 }}>

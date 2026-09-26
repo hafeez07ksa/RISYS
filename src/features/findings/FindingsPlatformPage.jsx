@@ -12,6 +12,7 @@ import { ConnectorFindingsListPage, LIST_VIEW_CONNECTORS } from './ConnectorFind
 import { ScanHealthBanner } from './ScanHealth'
 import { useConnectorScans } from '@/hooks/useConnectorScans'
 import { Settings } from 'lucide-react'
+import { tx } from '@/lib/i18n'
 
 // ── Shared bits ───────────────────────────────────────────────────────────────
 
@@ -55,7 +56,7 @@ function StatCard({ label, value, icon: Icon, tone, active, onClick }) {
   }[tone]
   return (
     <button type="button" onClick={onClick}
-      className="rounded-xl p-4 flex flex-col gap-2 transition-all text-left"
+      className='rounded-xl p-4 flex flex-col gap-2 transition-all text-start'
       style={{
         background: map.bg, border: `1px solid ${active ? map.color : map.bd}`, cursor: 'pointer',
         boxShadow: active ? `0 0 0 1px ${map.color}` : 'none',
@@ -144,9 +145,9 @@ function UserFindingsPlatformPage({ connectorId }) {
   if (!provider) {
     return (
       <div className="h-full flex flex-col">
-        <Topbar title="Unknown Platform" subtitle="Findings" />
+        <Topbar title={tx('Unknown Platform')} subtitle={tx('Findings')} />
         <div className="flex-1 flex items-center justify-center">
-          <p style={{ color: '#8a7070' }}>No provider found for "{connectorId}"</p>
+          <p style={{ color: '#8a7070' }}>{tx('No provider found for "')}{connectorId}"</p>
         </div>
       </div>
     )
@@ -165,7 +166,7 @@ function UserFindingsPlatformPage({ connectorId }) {
     <div className="h-full flex flex-col">
       <Topbar
         title={provider.connectorName}
-        subtitle="Security Findings · Users"
+        subtitle={tx('Security Findings · Users')}
         actions={
           <div className="flex items-center gap-2">
             <button onClick={load}
@@ -176,13 +177,11 @@ function UserFindingsPlatformPage({ connectorId }) {
             <button onClick={() => navigate(`/app/settings/${connectorId}`)}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border hover:bg-[#f5f3f3]"
               style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
-              <Settings size={13} /> Scan settings
-            </button>
+              <Settings size={13} /> {tx('Scan settings')}</button>
             <button onClick={() => navigate('/app/findings')}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border hover:bg-[#f5f3f3]"
               style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
-              <ArrowLeft size={13} /> Back to Findings
-            </button>
+              <ArrowLeft size={13} className='rtl-flip' /> {tx('Back to Findings')}</button>
           </div>
         }
       />
@@ -197,13 +196,13 @@ function UserFindingsPlatformPage({ connectorId }) {
 
         {/* Stat row */}
         <div className="grid grid-cols-4 gap-3 mb-5">
-          <StatCard label="Total findings" value={counts.total}    icon={FileWarning}   tone="total"
+          <StatCard label={tx('Total findings')} value={counts.total}    icon={FileWarning}   tone="total"
             active={sevFilter === 'all'}      onClick={() => setSevFilter('all')} />
-          <StatCard label="Critical"       value={counts.critical} icon={AlertTriangle} tone="critical"
+          <StatCard label={tx('Critical')}       value={counts.critical} icon={AlertTriangle} tone="critical"
             active={sevFilter === 'critical'} onClick={() => setSevFilter(sevFilter === 'critical' ? 'all' : 'critical')} />
-          <StatCard label="Warning"        value={counts.warning}  icon={ShieldAlert}   tone="warning"
+          <StatCard label={tx('Warning')}        value={counts.warning}  icon={ShieldAlert}   tone="warning"
             active={sevFilter === 'warning'}  onClick={() => setSevFilter(sevFilter === 'warning' ? 'all' : 'warning')} />
-          <StatCard label="Informational"  value={counts.info}     icon={AlertCircle}   tone="info"
+          <StatCard label={tx('Informational')}  value={counts.info}     icon={AlertCircle}   tone="info"
             active={sevFilter === 'info'}     onClick={() => setSevFilter(sevFilter === 'info' ? 'all' : 'info')} />
         </div>
 
@@ -222,10 +221,10 @@ function UserFindingsPlatformPage({ connectorId }) {
             ))}
           </div>
           <div className="flex-1 relative">
-            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#8a7070' }} />
+            <Search size={12} className='absolute start-3 top-1/2 -translate-y-1/2' style={{ color: '#8a7070' }} />
             <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search by name, email, department…"
-              className="w-full text-xs pl-8 pr-3 py-2 rounded-lg outline-none"
+              placeholder={tx('Search by name, email, department…')}
+              className='w-full text-xs ps-8 pe-3 py-2 rounded-lg outline-none'
               style={{ background: '#fff', border: '1px solid #e5e0e0', color: '#1a1314' }} />
           </div>
         </div>
@@ -237,10 +236,10 @@ function UserFindingsPlatformPage({ connectorId }) {
           <div className="rounded-xl py-14 text-center" style={{ background: '#fff', border: '1px dashed #e5e0e0' }}>
             <CheckCircle size={28} strokeWidth={1} className="mx-auto mb-3" style={{ color: '#bbf7d0' }} />
             <p className="text-sm font-medium mb-1" style={{ color: '#4a3a3a' }}>
-              {rows.length === 0 ? 'No directory data yet' : 'No users match this filter'}
+              {rows.length === 0 ? tx('No directory data yet') : tx('No users match this filter')}
             </p>
             <p className="text-xs" style={{ color: '#8a7070' }}>
-              {rows.length === 0 ? 'Sync the connector to pull user data.' : 'Try a different severity level or search term.'}
+              {rows.length === 0 ? tx('Sync the connector to pull user data.') : tx('Try a different severity level or search term.')}
             </p>
           </div>
         ) : (
@@ -248,10 +247,10 @@ function UserFindingsPlatformPage({ connectorId }) {
             {/* Header */}
             <div className="grid items-center px-4 py-2.5 text-[11px] uppercase tracking-wider"
               style={{ gridTemplateColumns: GRID, background: '#f8f7f7', borderBottom: '1px solid #e5e0e0', color: '#8a7070' }}>
-              <span>User</span>
-              <span>Department · Title</span>
-              <span>Security Findings</span>
-              <span>Status</span>
+              <span>{tx('User')}</span>
+              <span>{tx('Department · Title')}</span>
+              <span>{tx('Security Findings')}</span>
+              <span>{tx('Status')}</span>
               <span />
             </div>
 
@@ -268,12 +267,12 @@ function UserFindingsPlatformPage({ connectorId }) {
                     style={{
                       gridTemplateColumns: GRID,
                       borderTop: i > 0 ? '1px solid #f5f3f3' : 'none',
-                      borderLeft: `3px solid ${leftColor}`,
+                      borderInlineStart: `3px solid ${leftColor}`,
                       opacity: row.enabled ? 1 : 0.6,
                     }}>
 
                     {/* Avatar + name */}
-                    <div className="flex items-center gap-3 min-w-0 pr-3">
+                    <div className='flex items-center gap-3 min-w-0 pe-3'>
                       <Avatar name={row.name} />
                       <div className="min-w-0">
                         <p className="text-xs font-medium truncate" style={{ color: '#1a1314' }}>{row.name}</p>
@@ -282,14 +281,13 @@ function UserFindingsPlatformPage({ connectorId }) {
                     </div>
 
                     {/* Meta */}
-                    <p className="text-xs truncate pr-3" style={{ color: '#8a7070' }}>{row.meta || '—'}</p>
+                    <p className='text-xs truncate pe-3' style={{ color: '#8a7070' }}>{row.meta || '—'}</p>
 
                     {/* Finding badges */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, overflow: 'hidden' }}>
                       {row.findings.length === 0 ? (
                         <span style={{ fontSize: 11, color: '#d4cccc', display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <CheckCircle size={11} style={{ color: '#22c55e' }} /> Clean
-                        </span>
+                          <CheckCircle size={11} style={{ color: '#22c55e' }} /> {tx('Clean')}</span>
                       ) : (
                         row.findings.map(f => <FindingBadge key={f.id} finding={f} />)
                       )}
@@ -299,11 +297,11 @@ function UserFindingsPlatformPage({ connectorId }) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                       <div style={{ width: 6, height: 6, borderRadius: '50%', background: row.enabled ? '#22c55e' : '#9ca3af' }} />
                       <span style={{ fontSize: 11, color: row.enabled ? '#166534' : '#6b7280' }}>
-                        {row.enabled ? 'Active' : 'Disabled'}
+                        {row.enabled ? tx('Active') : tx('Disabled')}
                       </span>
                     </div>
 
-                    <ChevronRight size={14} style={{ color: '#d4cccc' }} />
+                    <ChevronRight size={14} style={{ color: '#d4cccc' }} className='rtl-flip' />
                   </div>
                 )
               })}

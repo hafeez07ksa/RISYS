@@ -23,6 +23,7 @@
 
 import { bandForScore, bandMeta, DEFAULT_MATRIX } from './matrix.js'
 import { requiredAuthority, acceptanceType, tierMeta, tierRank } from './authority.js'
+import { tx } from '@/lib/i18n'
 
 /**
  * The metrics a tolerance rule can read. Anything not on this list is
@@ -30,26 +31,26 @@ import { requiredAuthority, acceptanceType, tierMeta, tierRank } from './authori
  * which is the thing the gate exists to replace.
  */
 export const GATE_METRICS = [
-  { value: 'residual_score',        label: 'Residual score',              unit: 'score', hint: 'The score after crediting control effectiveness' },
-  { value: 'inherent_score',        label: 'Inherent score',              unit: 'score', hint: 'The score before any controls are credited' },
-  { value: 'residual_likelihood',   label: 'Residual likelihood',         unit: '1–5',   hint: 'Useful when likelihood alone must be held down' },
-  { value: 'residual_impact',       label: 'Residual impact',             unit: '1–5',   hint: 'Useful when impact alone must be held down' },
-  { value: 'failed_control_tests',  label: 'Failing control tests',       unit: 'count', hint: 'Linked controls whose last test result was Fail' },
-  { value: 'uncovered_controls',    label: 'Controls with no coverage',   unit: 'count', hint: 'Linked controls whose coverage excludes this risk’s scope' },
-  { value: 'partial_coverage',      label: 'Controls partially covering', unit: 'count', hint: 'Linked controls that cover only part of the scope' },
-  { value: 'untested_controls',     label: 'Untested controls',           unit: 'count', hint: 'Linked controls that have never been tested' },
-  { value: 'expired_evidence',      label: 'Expired evidence items',      unit: 'count', hint: 'Evidence past its validity date — the control is now unverified' },
-  { value: 'kri_breaches',          label: 'KRIs in breach',              unit: 'count', hint: 'Key risk indicators currently rated Red' },
-  { value: 'open_treatment_actions',label: 'Overdue treatment actions',   unit: 'count', hint: 'Mitigation tasks past their target date' },
-  { value: 'days_since_review',     label: 'Days since last review',      unit: 'days',  hint: 'Forces recertification cadence into the gate' },
+  { value: 'residual_score',        label: tx('Residual score'),              unit: 'score', hint: tx('The score after crediting control effectiveness') },
+  { value: 'inherent_score',        label: tx('Inherent score'),              unit: 'score', hint: tx('The score before any controls are credited') },
+  { value: 'residual_likelihood',   label: tx('Residual likelihood'),         unit: '1–5',   hint: tx('Useful when likelihood alone must be held down') },
+  { value: 'residual_impact',       label: tx('Residual impact'),             unit: '1–5',   hint: tx('Useful when impact alone must be held down') },
+  { value: 'failed_control_tests',  label: tx('Failing control tests'),       unit: 'count', hint: tx('Linked controls whose last test result was Fail') },
+  { value: 'uncovered_controls',    label: tx('Controls with no coverage'),   unit: 'count', hint: tx('Linked controls whose coverage excludes this risk’s scope') },
+  { value: 'partial_coverage',      label: tx('Controls partially covering'), unit: 'count', hint: tx('Linked controls that cover only part of the scope') },
+  { value: 'untested_controls',     label: tx('Untested controls'),           unit: 'count', hint: tx('Linked controls that have never been tested') },
+  { value: 'expired_evidence',      label: tx('Expired evidence items'),      unit: 'count', hint: tx('Evidence past its validity date — the control is now unverified') },
+  { value: 'kri_breaches',          label: tx('KRIs in breach'),              unit: 'count', hint: tx('Key risk indicators currently rated Red') },
+  { value: 'open_treatment_actions',label: tx('Overdue treatment actions'),   unit: 'count', hint: tx('Mitigation tasks past their target date') },
+  { value: 'days_since_review',     label: tx('Days since last review'),      unit: 'days',  hint: tx('Forces recertification cadence into the gate') },
 ]
 
 export const GATE_OPERATORS = [
-  { value: '<=', label: 'at or below' },
+  { value: '<=', label: tx('at or below') },
   { value: '<',  label: 'below' },
   { value: '==', label: 'equals' },
-  { value: '!=', label: 'does not equal' },
-  { value: '>=', label: 'at or above' },
+  { value: '!=', label: tx('does not equal') },
+  { value: '>=', label: tx('at or above') },
   { value: '>',  label: 'above' },
 ]
 
@@ -183,7 +184,7 @@ export function evaluateGate({ risk, tolerance, signals, matrix = DEFAULT_MATRIX
   // rather than defaulting to "pass".
   if (!tolerance || !Array.isArray(tolerance.rules) || tolerance.rules.length === 0) {
     return { ...base, evaluated: false, passed: null, status: 'not_evaluated',
-             reason: 'No tolerance rules are defined for this category.',
+             reason: tx('No tolerance rules are defined for this category.'),
              acceptBlocked: false, acceptBlockedReason: null, requiredAuthority: null, acceptanceType: null, requiredState: null, breachDelta: null }
   }
   // Draft and registered risks have not been measured yet. The gate is
@@ -194,13 +195,17 @@ export function evaluateGate({ risk, tolerance, signals, matrix = DEFAULT_MATRIX
   if (state === 'draft' || state === 'registered') {
     return { ...base, evaluated: false, passed: null, status: 'not_evaluated',
              reason: state === 'draft'
-               ? 'Not yet admitted to the register. The gate runs once the risk is admitted and scored.'
-               : 'Admitted but not yet assessed. The gate runs once residual risk is scored.',
+               ? tx(
+               'Not yet admitted to the register. The gate runs once the risk is admitted and scored.'
+             )
+               : tx(
+               'Admitted but not yet assessed. The gate runs once residual risk is scored.'
+             ),
              acceptBlocked: false, acceptBlockedReason: null, requiredAuthority: null, acceptanceType: null, requiredState: null, breachDelta: null }
   }
   if (score == null) {
     return { ...base, evaluated: false, passed: null, status: 'not_evaluated',
-             reason: 'Residual risk has not been scored yet.',
+             reason: tx('Residual risk has not been scored yet.'),
              acceptBlocked: false, acceptBlockedReason: null, requiredAuthority: null, acceptanceType: null, requiredState: null, breachDelta: null }
   }
 
@@ -243,7 +248,7 @@ export function evaluateGate({ risk, tolerance, signals, matrix = DEFAULT_MATRIX
     passed,
     status: passed ? 'within' : 'breached',
     reason: passed
-      ? 'Residual risk is within tolerance.'
+      ? tx('Residual risk is within tolerance.')
       : `${failedRules.length} of ${rules.length} tolerance rules fail.`,
     rules,
     failedRules,

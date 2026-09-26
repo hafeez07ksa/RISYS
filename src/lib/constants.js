@@ -1,9 +1,12 @@
+import { tx } from '@/lib/i18n'
 export const CONNECTORS = [
   {
     id: 'google',
     name: 'Google Workspace',
-    shortName: 'Google',
-    description: 'Sync users, groups, calendar events, and Drive activity into RISYS for identity and access risk tracking.',
+    shortName: tx('Google'),
+    description: tx(
+      'Sync users, groups, calendar events, and Drive activity into RISYS for identity and access risk tracking.'
+    ),
     category: 'Identity & Productivity',
     logoColor: '#4285F4',
     logoText: 'G',
@@ -21,8 +24,10 @@ export const CONNECTORS = [
   {
     id: 'entra',
     name: 'Microsoft Entra ID',
-    shortName: 'Entra ID',
-    description: 'Connect Azure AD identities, roles, sign-in logs, and conditional access policies for risk tracking.',
+    shortName: tx('Entra ID'),
+    description: tx(
+      'Connect Azure AD identities, roles, sign-in logs, and conditional access policies for risk tracking.'
+    ),
     category: 'Identity & Productivity',
     logoColor: '#0078D4',
     logoText: 'M',
@@ -42,7 +47,9 @@ export const CONNECTORS = [
     id: 'm365',
     name: 'Microsoft 365 Security',
     shortName: 'M365',
-    description: 'Detect email forwarding rules, SharePoint external sharing, guest access risks, and data exposure across Exchange and SharePoint. Maps to NCA ECC 2-7-2, 2-4-2, 2-2-3 and SDAIA PDPL.',
+    description: tx(
+      'Detect email forwarding rules, SharePoint external sharing, guest access risks, and data exposure across Exchange and SharePoint. Maps to NCA ECC 2-7-2, 2-4-2, 2-2-3 and SDAIA PDPL.'
+    ),
     category: 'Identity & Productivity',
     logoColor: '#0078D4',
     logoText: 'M',
@@ -54,8 +61,10 @@ export const CONNECTORS = [
   {
     id: 'defender',
     name: 'Microsoft Defender',
-    shortName: 'Defender',
-    description: 'Secure Score posture gaps, Defender XDR alerts, and Defender for Endpoint vulnerabilities and device health, mapped to NCA ECC-2:2024 controls. High-severity alerts become incidents automatically.',
+    shortName: tx('Defender'),
+    description: tx(
+      'Secure Score posture gaps, Defender XDR alerts, and Defender for Endpoint vulnerabilities and device health, mapped to NCA ECC-2:2024 controls. High-severity alerts become incidents automatically.'
+    ),
     category: 'Identity & Productivity',
     logoColor: '#00B4D8',
     logoText: 'D',
@@ -70,8 +79,10 @@ export const CONNECTORS = [
   {
     id: 'sharepoint',
     name: 'SharePoint Security',
-    shortName: 'SharePoint',
-    description: 'Tenant sharing policy, "Anyone" links and external shares on files and folders in every SharePoint site and OneDrive, and guests in Microsoft 365 groups. Scans are incremental and can run on a schedule. Maps to NCA ECC 2-7-2, 2-2-3, 2-2-2 and 2-6-3 and SDAIA PDPL-IR Articles 20 and 23.',
+    shortName: tx('SharePoint'),
+    description: tx(
+      'Tenant sharing policy, "Anyone" links and external shares on files and folders in every SharePoint site and OneDrive, and guests in Microsoft 365 groups. Scans are incremental and can run on a schedule. Maps to NCA ECC 2-7-2, 2-2-3, 2-2-2 and 2-6-3 and SDAIA PDPL-IR Articles 20 and 23.'
+    ),
     category: 'Identity & Productivity',
     logoColor: '#038387',
     logoText: 'SP',
@@ -86,8 +97,10 @@ export const CONNECTORS = [
   {
     id: 'jira',
     name: 'Jira',
-    shortName: 'Jira',
-    description: 'Pull issues, projects, and sprints to track compliance tasks, control gaps, and security incidents.',
+    shortName: tx('Jira'),
+    description: tx(
+      'Pull issues, projects, and sprints to track compliance tasks, control gaps, and security incidents.'
+    ),
     category: 'Project Management',
     logoColor: '#0052CC',
     logoText: 'J',
@@ -105,8 +118,10 @@ export const CONNECTORS = [
   {
     id: 'notion',
     name: 'Notion',
-    shortName: 'Notion',
-    description: 'Import pages and databases as evidence, policies, procedures, or documentation linked to controls.',
+    shortName: tx('Notion'),
+    description: tx(
+      'Import pages and databases as evidence, policies, procedures, or documentation linked to controls.'
+    ),
     category: 'Documentation',
     logoColor: '#000000',
     logoText: 'N',
@@ -122,8 +137,10 @@ export const CONNECTORS = [
   {
     id: 'slack',
     name: 'Slack',
-    shortName: 'Slack',
-    description: 'Receive RISYS alerts, risk notifications, and incident updates directly in your Slack channels.',
+    shortName: tx('Slack'),
+    description: tx(
+      'Receive RISYS alerts, risk notifications, and incident updates directly in your Slack channels.'
+    ),
     category: 'Communication',
     logoColor: '#4A154B',
     logoText: 'S',
@@ -140,21 +157,21 @@ export const CONNECTORS = [
 export const CONNECTOR_CATEGORIES = ['All', ...new Set(CONNECTORS.map(c => c.category))]
 
 export const NAV_ITEMS = [
-  { id: 'dashboard',  label: 'Dashboard',     icon: 'LayoutDashboard', section: 'workspace' },
-  { id: 'incidents',  label: 'Incidents',      icon: 'AlertTriangle',   section: 'workspace' },
-  { id: 'findings',   label: 'Findings',       icon: 'FileWarning',     section: 'workspace' },
-  { id: 'risks',      label: 'Risk Register',  icon: 'ShieldAlert',     section: 'workspace' },
-  { id: 'controls',   label: 'Controls',       icon: 'CheckSquare',     section: 'workspace' },
-  { id: 'compliance', label: 'Compliance',     icon: 'BookCheck',       section: 'workspace' },
-  { id: 'tasks',      label: 'Tasks',          icon: 'CheckSquare2',    section: 'workspace' },
-  { id: 'audits',     label: 'Audits',         icon: 'ClipboardCheck',  section: 'workspace' },
-  { id: 'reports',    label: 'Reports',        icon: 'FileText',        section: 'workspace' },
-  { id: 'people',     label: 'People',         icon: 'Users',           section: 'workspace' },
-  { id: 'audit',      label: 'Audit Log',      icon: 'ScrollText',      section: 'workspace' },
-  { id: 'settings',   label: 'Settings',       icon: 'Settings',        section: 'system'    },
+  { id: 'dashboard',  label: tx('Dashboard'),     icon: 'LayoutDashboard', section: 'workspace' },
+  { id: 'incidents',  label: tx('Incidents'),      icon: 'AlertTriangle',   section: 'workspace' },
+  { id: 'findings',   label: tx('Findings'),       icon: 'FileWarning',     section: 'workspace' },
+  { id: 'risks',      label: tx('Risk Register'),  icon: 'ShieldAlert',     section: 'workspace' },
+  { id: 'controls',   label: tx('Controls'),       icon: 'CheckSquare',     section: 'workspace' },
+  { id: 'compliance', label: tx('Compliance'),     icon: 'BookCheck',       section: 'workspace' },
+  { id: 'tasks',      label: tx('Tasks'),          icon: 'CheckSquare2',    section: 'workspace' },
+  { id: 'audits',     label: tx('Audits'),         icon: 'ClipboardCheck',  section: 'workspace' },
+  { id: 'reports',    label: tx('Reports'),        icon: 'FileText',        section: 'workspace' },
+  { id: 'people',     label: tx('People'),         icon: 'Users',           section: 'workspace' },
+  { id: 'audit',      label: tx('Audit Log'),      icon: 'ScrollText',      section: 'workspace' },
+  { id: 'settings',   label: tx('Settings'),       icon: 'Settings',        section: 'system'    },
   // Reference library — sits at the foot of the sidebar, below System.
   // Holds every loaded framework; only the in-scope one is assessed.
-  { id: 'frameworks', label: 'Frameworks',     icon: 'Library',         section: 'library'   },
+  { id: 'frameworks', label: tx('Frameworks'),     icon: 'Library',         section: 'library'   },
 ]
 
 // Roles live in lib/roles.js — the single definition shared by the invite

@@ -15,24 +15,24 @@ import {
   CONTROL_TYPES,
   TESTING_STATUSES,
 } from '@/hooks/useControls'
-import { ControlModal } from './ControlModal'
 import { Spinner } from '@/components/ui/Spinner'
 import { SelectField } from '@/components/ui/Combobox'
+import { tx, appLocale } from '@/lib/i18n'
 
 // ── Stat segment ──────────────────────────────────────────────────────────────
 function Segment({ label, value, color, barColor, sub, onClick, active, last }) {
   return (
     <button onClick={onClick} disabled={!onClick}
-      className="relative text-left px-4 pt-3.5 pb-4 transition-colors"
+      className='relative text-start px-4 pt-3.5 pb-4 transition-colors'
       style={{
         background: active ? '#F6EBE8' : 'transparent',
         border: 'none',
-        borderRight: last ? 'none' : '1px solid var(--border)',
+        borderInlineEnd: last ? 'none' : '1px solid var(--border)',
         cursor: onClick ? 'pointer' : 'default',
       }}
       onMouseEnter={e => { if (onClick && !active) e.currentTarget.style.background = '#FAF3F1' }}
       onMouseLeave={e => { e.currentTarget.style.background = active ? '#F6EBE8' : 'transparent' }}>
-      {active && <span style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: '#5D0F0F' }} />}
+      {active && <span style={{ position: 'absolute', top: 0, insetInlineStart: 0, insetInlineEnd: 0, height: 3, background: '#5D0F0F' }} />}
       <p className="eyebrow mb-1.5">{label}</p>
       <p className="text-3xl font-light" style={{ color: color || 'var(--text)' }}>{value}</p>
       <div className="flex items-center gap-1.5 mt-1.5">
@@ -47,7 +47,7 @@ function Segment({ label, value, color, barColor, sub, onClick, active, last }) 
 function SortTh({ label, sortKey, currentSort, sortAsc, onSort }) {
   const active = currentSort === sortKey
   return (
-    <th className="table-head px-4 py-2.5 text-left cursor-pointer select-none" onClick={() => onSort(sortKey)}>
+    <th className='table-head px-4 py-2.5 text-start cursor-pointer select-none' onClick={() => onSort(sortKey)}>
       <div className="flex items-center gap-1">
         {label}
         {active
@@ -83,9 +83,8 @@ export function ControlsPage() {
   const [sortAsc, setSortAsc]   = useState(true)
 
   // Create modal only
-  const [showCreate, setShowCreate] = useState(false)
 
-  const { controls, loading, createControl, refetch } = useControls({
+  const { controls, loading, refetch } = useControls({
     search:         search || undefined,
     control_type:   typeFilter || undefined,
     testing_status: statusFilter || undefined,
@@ -115,10 +114,7 @@ export function ControlsPage() {
     else { setSortKey(key); setSortAsc(true) }
   }
 
-  const handleSave = async (data) => {
-    await createControl(data)
-    setShowCreate(false)
-  }
+
 
   const memberName = (uid) => {
     if (!uid) return '—'
@@ -131,13 +127,12 @@ export function ControlsPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Topbar
-        title="Controls"
+        title={tx('Controls')}
         subtitle={organization?.name}
         actions={
           canManage && (
-            <button onClick={() => setShowCreate(true)} className="btn-primary">
-              <Plus size={14} /> Add Control
-            </button>
+            <button onClick={() => navigate('/app/controls/new')} className="btn-primary">
+              <Plus size={14} /> {tx('Add Control')}</button>
           )
         }
       />
@@ -146,41 +141,41 @@ export function ControlsPage() {
 
         {/* ── Stats bar ── */}
         <div className="card mb-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', overflow: 'hidden' }}>
-          <Segment label="Total"     value={total}     sub="controls in library"      barColor="var(--taupe)" />
-          <Segment label="Passing"   value={passing}   sub="last test passed"   color="#166534" barColor="#86efac"
+          <Segment label={tx('Total')}     value={total}     sub={tx('controls in library')}      barColor="var(--taupe)" />
+          <Segment label={tx('Passing')}   value={passing}   sub={tx('last test passed')}   color="#166534" barColor="#86efac"
             onClick={() => setQuickFilter(q => q === 'failing' ? '' : 'failing')} active={quickFilter === 'failing'} />
-          <Segment label="Failing"   value={failing}   sub="need attention"     color="#991b1b" barColor="#fca5a5"
+          <Segment label={tx('Failing')}   value={failing}   sub={tx('need attention')}     color="#991b1b" barColor="#fca5a5"
             onClick={() => setQuickFilter(q => q === 'failing' ? '' : 'failing')} active={quickFilter === 'failing'} />
-          <Segment label="Overdue"   value={overdue}   sub="test past due"      color={overdue > 0 ? '#92400e' : undefined} barColor="#fde68a"
+          <Segment label={tx('Overdue')}   value={overdue}   sub={tx('test past due')}      color={overdue > 0 ? '#92400e' : undefined} barColor="#fde68a"
             onClick={() => setQuickFilter(q => q === 'overdue' ? '' : 'overdue')} active={quickFilter === 'overdue'} />
-          <Segment label="Automated" value={automated} sub="no manual steps"          barColor="#c084fc"
+          <Segment label={tx('Automated')} value={automated} sub={tx('no manual steps')}          barColor="#c084fc"
             onClick={() => setQuickFilter(q => q === 'automated' ? '' : 'automated')} active={quickFilter === 'automated'} last />
         </div>
 
         {/* ── Filters ── */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 180 }}>
-            <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }} />
+            <Search size={13} style={{ position: 'absolute', insetInlineStart: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }} />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search controls…"
+              placeholder={tx('Search controls…')}
               className="risys-input"
-              style={{ paddingLeft: 30 }}
+              style={{ paddingInlineStart: 30 }}
             />
           </div>
 
           <SelectField value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={{ width: 160 }}>
-            <option value="">All Types</option>
+            <option value="">{tx('All Types')}</option>
             {CONTROL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
           </SelectField>
 
           <SelectField value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ width: 160 }}>
-            <option value="">All Statuses</option>
+            <option value="">{tx('All Statuses')}</option>
             {TESTING_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           </SelectField>
 
-          <button onClick={refetch} className="btn-ghost" title="Refresh">
+          <button onClick={refetch} className="btn-ghost" title={tx('Refresh')}>
             <RefreshCw size={14} />
           </button>
         </div>
@@ -194,17 +189,16 @@ export function ControlsPage() {
           <div className="card" style={{ padding: '60px 24px', textAlign: 'center' }}>
             <CheckSquare size={32} strokeWidth={1} style={{ color: 'var(--border-2)', margin: '0 auto 12px' }} />
             <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)', marginBottom: 4 }}>
-              {controls.length === 0 ? 'No controls yet' : 'No controls match your filters'}
+              {controls.length === 0 ? tx('No controls yet') : tx('No controls match your filters')}
             </p>
             <p style={{ fontSize: 12, color: 'var(--text-3)' }}>
               {controls.length === 0
-                ? 'Add your first control to start building your control library.'
-                : 'Try adjusting your search or filter criteria.'}
+                ? tx('Add your first control to start building your control library.')
+                : tx('Try adjusting your search or filter criteria.')}
             </p>
             {controls.length === 0 && canManage && (
-              <button onClick={() => setShowCreate(true)} className="btn-primary" style={{ marginTop: 16 }}>
-                <Plus size={14} /> Add Control
-              </button>
+              <button onClick={() => navigate('/app/controls/new')} className="btn-primary" style={{ marginTop: 16 }}>
+                <Plus size={14} /> {tx('Add Control')}</button>
             )}
           </div>
         ) : (
@@ -212,14 +206,14 @@ export function ControlsPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  <SortTh label="Control Name"    sortKey="name"           currentSort={sortKey} sortAsc={sortAsc} onSort={handleSort} />
-                  <SortTh label="Type"             sortKey="control_type"   currentSort={sortKey} sortAsc={sortAsc} onSort={handleSort} />
-                  <th className="table-head px-4 py-2.5 text-left">Owner</th>
-                  <th className="table-head px-4 py-2.5 text-left">Frequency</th>
-                  <SortTh label="Effectiveness"   sortKey="effectiveness"  currentSort={sortKey} sortAsc={sortAsc} onSort={handleSort} />
-                  <SortTh label="Testing Status"  sortKey="testing_status" currentSort={sortKey} sortAsc={sortAsc} onSort={handleSort} />
-                  <SortTh label="Next Test"        sortKey="next_test_date" currentSort={sortKey} sortAsc={sortAsc} onSort={handleSort} />
-                  <th className="table-head px-4 py-2.5 text-left">Flags</th>
+                  <SortTh label={tx('Control Name')}    sortKey="name"           currentSort={sortKey} sortAsc={sortAsc} onSort={handleSort} />
+                  <SortTh label={tx('Type')}             sortKey="control_type"   currentSort={sortKey} sortAsc={sortAsc} onSort={handleSort} />
+                  <th className='table-head px-4 py-2.5 text-start'>{tx('Owner')}</th>
+                  <th className='table-head px-4 py-2.5 text-start'>{tx('Frequency')}</th>
+                  <SortTh label={tx('Effectiveness')}   sortKey="effectiveness"  currentSort={sortKey} sortAsc={sortAsc} onSort={handleSort} />
+                  <SortTh label={tx('Testing Status')}  sortKey="testing_status" currentSort={sortKey} sortAsc={sortAsc} onSort={handleSort} />
+                  <SortTh label={tx('Next Test')}        sortKey="next_test_date" currentSort={sortKey} sortAsc={sortAsc} onSort={handleSort} />
+                  <th className='table-head px-4 py-2.5 text-start'>{tx('Flags')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -273,7 +267,7 @@ export function ControlsPage() {
                       {/* Testing Status */}
                       <td style={{ padding: '12px 16px' }}>
                         <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, fontWeight: 600, color: testStyle.color, background: testStyle.bg, border: `1px solid ${testStyle.border}` }}>
-                          {ctrl.testing_status || 'Not Tested'}
+                          {ctrl.testing_status || tx('Not Tested')}
                         </span>
                       </td>
 
@@ -281,7 +275,7 @@ export function ControlsPage() {
                       <td style={{ padding: '12px 16px' }}>
                         {ctrl.next_test_date ? (
                           <span style={{ fontSize: 12, color: isOverdue ? 'var(--danger)' : 'var(--text-3)', fontWeight: isOverdue ? 600 : 400 }}>
-                            {new Date(ctrl.next_test_date).toLocaleDateString('en-GB')}
+                            {new Date(ctrl.next_test_date).toLocaleDateString(appLocale())}
                             {isOverdue && ' ⚠'}
                           </span>
                         ) : (
@@ -293,13 +287,13 @@ export function ControlsPage() {
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', gap: 4 }}>
                           {ctrl.is_automated && (
-                            <span title="Automated" style={{ color: '#7c3aed' }}><Zap size={13} /></span>
+                            <span title={tx('Automated')} style={{ color: '#7c3aed' }}><Zap size={13} /></span>
                           )}
                           {ctrl.testing_status === 'Fail' && (
-                            <span title="Test failing" style={{ color: 'var(--danger)' }}><AlertTriangle size={13} /></span>
+                            <span title={tx('Test failing')} style={{ color: 'var(--danger)' }}><AlertTriangle size={13} /></span>
                           )}
                           {isOverdue && (
-                            <span title="Test overdue" style={{ color: '#92400e' }}><Calendar size={13} /></span>
+                            <span title={tx('Test overdue')} style={{ color: '#92400e' }}><Calendar size={13} /></span>
                           )}
                         </div>
                       </td>
@@ -310,20 +304,13 @@ export function ControlsPage() {
             </table>
             <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
               <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                {filtered.length} of {total} control{total !== 1 ? 's' : ''}
+                {filtered.length} {tx('of')} {total} {tx('control')}{total !== 1 ? 's' : ''}
               </span>
             </div>
           </div>
         )}
       </div>
 
-      {/* ── Create modal ── */}
-      <ControlModal
-        open={showCreate}
-        onClose={() => setShowCreate(false)}
-        onSave={handleSave}
-        editControl={null}
-      />
     </div>
   )
 }

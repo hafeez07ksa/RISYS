@@ -1,0 +1,113 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Check, AlertTriangle, UserPlus } from 'lucide-react'
+import { FormPage, FormSection } from '@/components/ui/FormPage'
+import { Spinner } from '@/components/ui/Spinner'
+import { usePeople, ROLES, inviteLink } from '@/hooks/usePeople'
+import { Field } from '@/features/audits/parts'
+import { CopyButton } from './PeoplePage'
+import { tx } from '@/lib/i18n'
+
+/* /app/people/invite — invite people by email. RISYS does not send email yet,
+ * so each invitation produces a single-use link to copy and send by hand. */
+export function InvitePage() {
+  const navigate = useNavigate()
+  const { inviteMany } = usePeople()
+  const [emailsRaw, setEmailsRaw] = useState('')
+  const [role, setRole] = useState('member')
+  const [sending, setSending] = useState(false)
+  const [results, setResults] = useState(null)
+  const [error, setError] = useState('')
+  const back = { label: tx('People'), onClick: () => navigate('/app/people') }
+
+  const emails = emailsRaw.split(/[\n,;]+/).map((e) => e.trim()).filter(Boolean)
+  const unique = [...new Set(emails.map((e) => e.toLowerCase()))]
+  const dupes = emails.length - unique.length
+
+  const send = async () => {
+    if (!unique.length) { setError(tx('Enter at least one email address.')); return }
+    setSending(true); setError('')
+    try { setResults(await inviteMany(unique, role)) } catch (e) { setError(e.message) } finally { setSending(false) }
+  }
+
+  if (results) {
+    const ok = results.filter((r) => r.ok)
+    const bad = results.filter((r) => !r.ok)
+    const all = ok.map((r) => `${r.email}: ${inviteLink(r.invitation)}`).join('\n')
+    return (
+      <FormPage title={tx('Invitations created')} description={tx('Copy each link and send it to the person. Links are single-use, valid for 7 days and locked to that email address.')}
+        back={back}
+        footer={<>
+          <button className="btn-secondary" onClick={() => { setResults(null); setEmailsRaw('') }}>{tx('Invite more people')}</button>
+          <button className="btn-primary" onClick={back.onClick}>{tx('Done')}</button>
+        </>}>
+        {ok.length > 0 && (
+          <FormSection title={`${ok.length} ${tx('invitation(s) created')}`} description={tx('RISYS does not send email yet — send these links yourself from your own mailbox.')}>
+            {ok.length > 1 && <div><CopyButton text={all} label={tx('Copy all links')} /></div>}
+            {ok.map((r) => (
+              <div key={r.email} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 'var(--r)', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                <Check size={13} style={{ color: 'var(--low)', flexShrink: 0 }} />
+                <span style={{ fontSize: 'var(--t-sm)', color: 'var(--text)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.email}</span>
+                <CopyButton text={inviteLink(r.invitation)} />
+              </div>
+            ))}
+          </FormSection>
+        )}
+        {bad.length > 0 && (
+          <FormSection title={`${bad.length} ${tx('could not be invited')}`} description={tx('Fix the address or the problem named, then invite them again.')}>
+            {bad.map((r) => (
+              <div key={r.email} style={{ padding: '8px 10px', borderRadius: 'var(--r)', background: 'var(--critical-bg)', border: '1px solid var(--critical-bd)' }}>
+                <p style={{ margin: 0, fontSize: 'var(--t-sm)', fontWeight: 500, color: 'var(--text)' }}><AlertTriangle size={12} style={{ display: 'inline', marginInlineEnd: 4 }} />{r.email}</p>
+                <p style={{ margin: '2px 0 0', fontSize: 'var(--t-sm)', color: 'var(--critical)' }}>{r.error}</p>
+              </div>
+            ))}
+          </FormSection>
+        )}
+      </FormPage>
+    )
+  }
+
+  return (
+    <FormPage
+      title={tx('Invite people')}
+      description={tx('Each person gets a single-use link, valid for 7 days and locked to their email address.')}
+      back={back}
+      onSubmit={send}
+      error={error}
+      footer={<>
+        <button className="btn-secondary" disabled={sending} onClick={back.onClick}>{tx('Cancel')}</button>
+        <button className="btn-primary" disabled={sending || !unique.length} onClick={send}>
+          {sending ? <Spinner size="sm" /> : <UserPlus size={13} />}
+          {unique.length > 1 ? `${tx('Invite')} ${unique.length} ${tx('people')}` : tx('Invite')}
+        </button>
+      </>}
+    >
+      <FormSection title={tx('Who')} description={tx('Paste one address or many, separated by commas or new lines. Duplicates are removed.')}>
+        <Field label={tx('Email addresses')} required
+          help={`${unique.length} ${tx('unique address(es)')}${dupes > 0 ? ` · ${dupes} ${tx('duplicate(s) removed')}` : ''}`}>
+          <textarea className="risys-input" rows={6} value={emailsRaw} onChange={(e) => setEmailsRaw(e.target.value)} autoFocus
+            placeholder={'sara@company.com\nahmed@company.com'} style={{ fontFamily: 'var(--font-mono)' }} />
+        </Field>
+      </FormSection>
+      <FormSection title={tx('Role')} description={tx('What they can do in this workspace. Everyone invited together gets the same role; it can be changed later on the People page.')}>
+        <div role="radiogroup" aria-label={tx('Role')} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {ROLES.map((r) => {
+            const on = role === r.value
+            return (
+              <label key={r.value} style={{
+                display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 'var(--r-md)', cursor: 'pointer',
+                background: on ? 'var(--crimson-wash)' : 'var(--bg-2)', border: `1px solid ${on ? 'var(--rose)' : 'var(--border)'}`,
+              }}>
+                <input type="radio" name="role" checked={on} onChange={() => setRole(r.value)} style={{ marginTop: 3, accentColor: 'var(--crimson)' }} />
+                <span>
+                  <span style={{ display: 'block', fontSize: 'var(--t-body)', fontWeight: 600, color: 'var(--text)' }}>{r.label}</span>
+                  <span style={{ display: 'block', fontSize: 'var(--t-sm)', color: 'var(--text-3)', marginTop: 1 }}>{r.desc}</span>
+                </span>
+              </label>
+            )
+          })}
+        </div>
+      </FormSection>
+    </FormPage>
+  )
+}

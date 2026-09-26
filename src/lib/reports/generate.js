@@ -20,7 +20,7 @@
 import { createElement } from 'react'
 import { supabase } from '@/lib/supabase'
 import { REPORT_TYPES } from './theme'
-import { buildBoardPackModel, buildEccModel, buildAuditModel, fmtDate, fmtDateTime } from './models'
+import { buildBoardPackModel, buildEccModel, buildAuditModel, fmtDate, fmtDateTime, quarterLabel } from './models'
 
 import fontRegular from '@/assets/fonts/IBMPlexSans-Regular.ttf?url'
 import fontItalic from '@/assets/fonts/IBMPlexSans-Italic.ttf?url'
@@ -28,8 +28,13 @@ import fontMedium from '@/assets/fonts/IBMPlexSans-Medium.ttf?url'
 import fontSemiBold from '@/assets/fonts/IBMPlexSans-SemiBold.ttf?url'
 import fontBold from '@/assets/fonts/IBMPlexSans-Bold.ttf?url'
 import fontDisplay from '@/assets/fonts/DMSerifDisplay-Regular.ttf?url'
+import fontArRegular from '@/assets/fonts/IBMPlexSansArabic-Regular.ttf?url'
+import fontArMedium from '@/assets/fonts/IBMPlexSansArabic-Medium.ttf?url'
+import fontArSemiBold from '@/assets/fonts/IBMPlexSansArabic-SemiBold.ttf?url'
+import fontArBold from '@/assets/fonts/IBMPlexSansArabic-Bold.ttf?url'
 import markLight from '@/assets/risys-mark-light.png'
 import markDark from '@/assets/risys-mark.png'
+import { tx, language, isRtl } from '@/lib/i18n'
 
 export const REPORTS_BUCKET = 'reports'
 
@@ -44,7 +49,8 @@ async function loadRenderer() {
   rendererPromise ??= (async () => {
     const [renderer, assets] = await Promise.all([import('@react-pdf/renderer'), import('./assets')])
     assets.registerReportAssets({
-      fonts: { regular: fontRegular, italic: fontItalic, medium: fontMedium, semibold: fontSemiBold, bold: fontBold, display: fontDisplay },
+      fonts: { regular: fontRegular, italic: fontItalic, medium: fontMedium, semibold: fontSemiBold, bold: fontBold, display: fontDisplay,
+               arRegular: fontArRegular, arMedium: fontArMedium, arSemiBold: fontArSemiBold, arBold: fontArBold },
       markLight: new URL(markLight, window.location.href).href,
       markDark: new URL(markDark, window.location.href).href,
     })
@@ -67,12 +73,23 @@ export function recentQuarters(count = 6, from = new Date()) {
     const start = new Date(y, q * 3, 1)
     const end = new Date(y, q * 3 + 3, 0)
     const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    out.push({ value: `${y}-Q${q + 1}`, label: `Q${q + 1} ${y}`, start: iso(start), end: iso(end),
-               long: `Q${q + 1} ${y} · ${fmtDate(iso(start))} – ${fmtDate(iso(end))}` })
+    out.push({ value: `${y}-Q${q + 1}`, label: quarterLabel(q, y), start: iso(start), end: iso(end),
+               long: `${quarterLabel(q, y)} · ${fmtDate(iso(start))} – ${fmtDate(iso(end))}` })
     q -= 1
     if (q < 0) { q = 3; y -= 1 }
   }
   return out
+}
+
+async function arabicEcc() {
+  if (!isRtl()) return null
+  const { data, error } = await supabase.from('nca_ecc')
+    .select('control_id, domain_id, domain_name_ar, subdomain_id, subdomain_name_ar, control_text_ar')
+  if (error || !data?.length || !data.some((r) => r.control_text_ar)) return null   // migration not applied
+  const byId = Object.fromEntries(data.map((r) => [r.control_id, r]))
+  const domain = {}
+  for (const r of data) if (r.domain_name_ar) domain[String(r.domain_id)] = r.domain_name_ar
+  return { byId, domain }
 }
 
 async function rpc(name, args) {
@@ -97,11 +114,13 @@ export async function generateReport({ type, organization, user, period, engagem
   const def = REPORT_TYPES[type]
   if (!def) throw new Error(`Unknown report type: ${type}`)
 
-  onStage('Reading data')
+  onStage(tx('Reading data'))
   let model, title, periodLabel = null, periodStart = null, periodEnd = null, engagementId = null
   if (type === 'board_pack') {
-    if (!period?.start || !period?.end) throw new Error('Choose a reporting period.')
+    if (!period?.start || !period?.end) throw new Error(tx('Choose a reporting period.'))
     const raw = await rpc('report_board_pack_data', { p_org: organization.id, p_start: period.start, p_end: period.end })
+    const ar = await arabicEcc()
+    if (ar && raw?.ecc?.domains) raw.ecc.domains = raw.ecc.domains.map((d) => ({ ...d, name: ar.domain[String(d.id)] ?? d.name }))
     model = buildBoardPackModel(raw)
     title = def.label
     periodLabel = period.label ?? `${fmtDate(period.start)} – ${fmtDate(period.end)}`
@@ -109,11 +128,19 @@ export async function generateReport({ type, organization, user, period, engagem
     periodEnd = period.end
   } else if (type === 'ecc_status') {
     const raw = await rpc('report_ecc_status_data', { p_org: organization.id })
+    const ar = await arabicEcc()
+    if (ar && raw?.requirements) {
+      raw.requirements = raw.requirements.map((r) => {
+        const a = ar.byId[r.req]
+        return a ? { ...r, text: a.control_text_ar ?? r.text, subdomain_name: a.subdomain_name_ar ?? r.subdomain_name,
+                     domain_name: ar.domain[String(r.domain)] ?? r.domain_name } : r
+      })
+    }
     model = buildEccModel(raw)
     title = def.label
-    periodLabel = `As at ${fmtDate(new Date())}`
+    periodLabel = `${tx('As at')} ${fmtDate(new Date())}`
   } else {
-    if (!engagement?.id) throw new Error('Choose an audit engagement.')
+    if (!engagement?.id) throw new Error(tx('Choose an audit engagement.'))
     const raw = await rpc('report_audit_data', { p_engagement: engagement.id })
     model = buildAuditModel(raw)
     const e = model.engagement
@@ -124,7 +151,7 @@ export async function generateReport({ type, organization, user, period, engagem
     engagementId = engagement.id
   }
 
-  onStage('Laying out pages')
+  onStage(tx('Laying out pages'))
   const [renderer, template] = await Promise.all([loadRenderer(), TEMPLATES[type]()])
   const id = crypto.randomUUID()
   const now = new Date()
@@ -135,7 +162,7 @@ export async function generateReport({ type, organization, user, period, engagem
   }
   const blob = await renderer.pdf(createElement(template.default, { model, meta })).toBlob()
 
-  onStage('Fingerprinting and filing')
+  onStage(tx('Fingerprinting and filing'))
   const buffer = await blob.arrayBuffer()
   const sha256 = await sha256Hex(buffer)
   const filePath = `${organization.id}/reports/${id}.pdf`
@@ -161,8 +188,8 @@ export async function generateReport({ type, organization, user, period, engagem
 
 /** A short-lived link to an archived report. */
 export async function reportSignedUrl(run, { download = false } = {}) {
-  if (!run?.file_path) throw new Error('This report has no file.')
-  const name = `${(run.title || 'report').replace(/[^\w\s.-]/g, '').trim().replace(/\s+/g, '-')}-${run.id.slice(0, 8)}.pdf`
+  if (!run?.file_path) throw new Error(tx('This report has no file.'))
+  const name = `${(run.title || 'report').replace(/[^\p{L}\p{N}\s.-]/gu, '').trim().replace(/\s+/g, '-')}-${run.id.slice(0, 8)}.pdf`
   const { data, error } = await supabase.storage.from(REPORTS_BUCKET)
     .createSignedUrl(run.file_path, 60, download ? { download: name } : undefined)
   if (error) throw new Error(`Could not open the report: ${error.message}`)

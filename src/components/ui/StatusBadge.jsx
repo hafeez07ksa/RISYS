@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { bandForScore } from '@/lib/matrix'
+import { tx } from '@/lib/i18n'
 
 /* ── Status system (§28) ──────────────────────────────────────────────────────
  *
@@ -76,10 +77,11 @@ export function toneFor(status) {
 /* Title-cases a raw status value for display: 'in_progress' → 'In Progress'.
  * Kept here so no page has to do it locally and get it subtly different. */
 export function labelFor(status) {
-  return String(status ?? '')
+  const s = String(status ?? '')
     .replace(/[_-]+/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase())
     .trim()
+  return tx(s)
 }
 
 /* Shape carries the same information as colour, for greyscale and for readers

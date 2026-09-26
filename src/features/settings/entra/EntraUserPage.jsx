@@ -9,9 +9,10 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { Spinner } from '@/components/ui/Spinner'
 import { getEntraFindings as getFindings, SEVERITY_CONFIG, mfaMethodLabel } from '@/lib/findings'
-import { CreateFindingIncidentModal } from '@/features/findings/FindingActionModals'
+import { RaiseIncidentInline } from '@/features/findings/RaiseIncidentInline'
 import { toTriageState } from '@/lib/triage'
 import { ControlReferences } from '@/components/ui/ControlReferences'
+import { tx, appLocale } from '@/lib/i18n'
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 function Avatar({ name, size = 56 }) {
@@ -32,14 +33,14 @@ function Avatar({ name, size = 56 }) {
 
 /*
  * Convert a raw finding (from getEntraFindings) into the normalised shape that
- * the shared FindingActionModals expect. This is the adapter layer so the user
+ * the shared RaiseIncidentInline panel expects. This is the adapter layer so the user
  * profile page can use the same modals as the Findings page.
  */
 function toNormalised(finding, user) {
   return {
     ...finding,
     connectorId:   'entra',
-    connectorName: 'Microsoft Entra ID',
+    connectorName: tx('Microsoft Entra ID'),
     accent:        '#0078D4',
     subject: {
       id:    user.entra_id,
@@ -60,7 +61,7 @@ export function EntraUserPage() {
 
   const [user, setUser]       = useState(null)
   const [loading, setLoading] = useState(true)
-  const [incidentModal, setIncidentModal] = useState(null)  // normalised finding
+  const [raisingFor, setRaisingFor] = useState(null)  // finding id with the raise-incident panel open
 
   useEffect(() => {
     if (!organization?.id || !entraId) return
@@ -73,18 +74,18 @@ export function EntraUserPage() {
 
   if (loading) return (
     <div className="h-full flex flex-col">
-      <Topbar title="Loading..." subtitle="" />
+      <Topbar title={tx('Loading...')} subtitle="" />
       <div className="flex-1 flex items-center justify-center"><Spinner /></div>
     </div>
   )
 
   if (!user) return (
     <div className="h-full flex flex-col">
-      <Topbar title="User not found" subtitle="" />
+      <Topbar title={tx('User not found')} subtitle="" />
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-sm mb-3" style={{ color: '#8a7070' }}>This user no longer exists in the synced directory.</p>
-          <button onClick={() => navigate('/app/findings/entra')} className="btn-secondary text-xs">← Back to Directory</button>
+          <p className="text-sm mb-3" style={{ color: '#8a7070' }}>{tx('This user no longer exists in the synced directory.')}</p>
+          <button onClick={() => navigate('/app/findings/entra')} className="btn-secondary text-xs">{tx('← Back to Directory')}</button>
         </div>
       </div>
     </div>
@@ -100,24 +101,14 @@ export function EntraUserPage() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Shared modals — receive a normalised finding object */}
-      {incidentModal && (
-        <CreateFindingIncidentModal
-          finding={incidentModal}
-          onClose={() => setIncidentModal(null)}
-          onCreated={() => {}}
-        />
-      )}
-
       <Topbar
         title={user.display_name || user.user_principal_name}
-        subtitle="Security Findings · Microsoft Entra ID · User Profile"
+        subtitle={tx('Security Findings · Microsoft Entra ID · User Profile')}
         actions={
           <button onClick={() => navigate('/app/findings/entra')}
             className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border hover:bg-[#f5f3f3]"
             style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
-            <ArrowLeft size={13} /> Back to Directory
-          </button>
+            <ArrowLeft size={13} className='rtl-flip' /> {tx('Back to Directory')}</button>
         }
       />
 
@@ -137,34 +128,32 @@ export function EntraUserPage() {
                     {riskScore}
                   </span>
                   {user.user_type === 'Guest' && (
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe' }}>
-                      GUEST
-                    </span>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe' }}>{tx('GUEST')}</span>
                   )}
                 </div>
                 <p style={{ fontSize: 13, color: '#8a7070' }}>
-                  {[user.job_title, user.department].filter(Boolean).join(' · ') || 'No job information'}
+                  {[user.job_title, user.department].filter(Boolean).join(' · ') || tx('No job information')}
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, background: user.account_enabled ? '#f0fdf4' : '#f9fafb', border: `1px solid ${user.account_enabled ? '#bbf7d0' : '#e5e7eb'}` }}>
                 <div style={{ width: 7, height: 7, borderRadius: '50%', background: user.account_enabled ? '#22c55e' : '#9ca3af' }} />
                 <span style={{ fontSize: 12, fontWeight: 600, color: user.account_enabled ? '#166534' : '#6b7280' }}>
-                  {user.account_enabled ? 'Active Account' : 'Disabled Account'}
+                  {user.account_enabled ? tx('Active Account') : tx('Disabled Account')}
                 </span>
               </div>
             </div>
 
             {/* Identity details grid */}
-            <div className="grid grid-cols-4 divide-x" style={{ divideColor: '#f0eded' }}>
+            <div className='grid grid-cols-4 divide-x rtl:divide-x-reverse' style={{ divideColor: '#f0eded' }}>
               {[
-                { icon: Mail,      label: 'Email',        value: user.mail || user.user_principal_name || '—' },
-                { icon: Building2, label: 'Department',   value: user.department || '—' },
-                { icon: Briefcase, label: 'Job Title',    value: user.job_title || '—' },
-                { icon: Calendar,  label: 'Last Sign-in', value: user.last_sign_in ? new Date(user.last_sign_in).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Never recorded' },
+                { icon: Mail,      label: tx('Email'),        value: user.mail || user.user_principal_name || '—' },
+                { icon: Building2, label: tx('Department'),   value: user.department || '—' },
+                { icon: Briefcase, label: tx('Job Title'),    value: user.job_title || '—' },
+                { icon: Calendar,  label: tx('Last Sign-in'), value: user.last_sign_in ? new Date(user.last_sign_in).toLocaleDateString(appLocale(), { day: 'numeric', month: 'long', year: 'numeric' }) : 'Never recorded' },
               ].map((item, i) => {
                 const Icon = item.icon
                 return (
-                  <div key={item.label} className="px-5 py-4" style={{ borderRight: i < 3 ? '1px solid #f0eded' : 'none' }}>
+                  <div key={item.label} className="px-5 py-4" style={{ borderInlineEnd: i < 3 ? '1px solid #f0eded' : 'none' }}>
                     <div className="flex items-center gap-1.5 mb-1">
                       <Icon size={11} style={{ color: '#8a7070' }} />
                       <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>{item.label}</p>
@@ -191,18 +180,18 @@ export function EntraUserPage() {
                 }
                 <p style={{ fontSize: 13, fontWeight: 600, color: findings.length > 0 ? riskColor : '#166634', flex: 1 }}>
                   {findings.length === 0
-                    ? 'No security findings — this user is clean'
+                    ? tx('No security findings — this user is clean')
                     : `${findings.length} security finding${findings.length !== 1 ? 's' : ''} detected`}
                 </p>
-                {criticalCount > 0 && <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, background: '#b91c1c', color: '#fff' }}>{criticalCount} Critical</span>}
-                {warningCount > 0  && <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, background: '#92400e', color: '#fff' }}>{warningCount} Warning</span>}
+                {criticalCount > 0 && <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, background: '#b91c1c', color: '#fff' }}>{criticalCount} {tx('Critical')}</span>}
+                {warningCount > 0  && <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, background: '#92400e', color: '#fff' }}>{warningCount} {tx('Warning')}</span>}
               </div>
 
               {findings.length === 0 ? (
                 <div className="rounded-xl py-12 text-center" style={{ background: '#fff', border: '1px dashed #e5e0e0' }}>
                   <CheckCircle size={36} strokeWidth={1} className="mx-auto mb-3" style={{ color: '#22c55e' }} />
-                  <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1314', marginBottom: 4 }}>All clear</p>
-                  <p style={{ fontSize: 12, color: '#8a7070', lineHeight: 1.6 }}>No security findings based on currently synced data.</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1314', marginBottom: 4 }}>{tx('All clear')}</p>
+                  <p style={{ fontSize: 12, color: '#8a7070', lineHeight: 1.6 }}>{tx('No security findings based on currently synced data.')}</p>
                 </div>
               ) : (
                 findings.map(finding => {
@@ -236,19 +225,18 @@ export function EntraUserPage() {
                           <ControlReferences control={finding.control} />
                         </div>
                         <div style={{ padding: '12px 14px', borderRadius: 8, background: '#f8f7f7', border: '1px solid #e5e0e0', marginBottom: 16 }}>
-                          <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#8a7070', marginBottom: 6 }}>Recommended Action</p>
+                          <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#8a7070', marginBottom: 6 }}>{tx('Recommended Action')}</p>
                           <p style={{ fontSize: 12.5, color: '#1a1314', lineHeight: 1.65 }}>{finding.recommendation}</p>
                         </div>
                         <div style={{ display: 'flex', gap: 8 }}>
                           <button onClick={() => navigate('/app/risks/triage', { state: { finding: toTriageState(normFinding) } })}
                             style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, padding: '10px 16px', borderRadius: 8, cursor: 'pointer', background: '#5D0F0F', color: '#fff', border: 'none' }}>
-                            <ShieldAlert size={14} /> Triage finding
-                          </button>
-                          <button onClick={() => setIncidentModal(normFinding)}
+                            <ShieldAlert size={14} /> {tx('Triage finding')}</button>
+                          <button onClick={() => setRaisingFor(raisingFor === normFinding.id ? null : normFinding.id)}
                             style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, padding: '10px 16px', borderRadius: 8, cursor: 'pointer', background: '#fff', color: '#4a3a3a', border: '1px solid #e5e0e0' }}>
-                            <AlertCircle size={14} /> Raise Incident
-                          </button>
+                            <AlertCircle size={14} /> {tx('Raise Incident')}</button>
                         </div>
+                        {raisingFor === normFinding.id && <RaiseIncidentInline finding={normFinding} onCancel={() => setRaisingFor(null)} />}
                       </div>
                     </div>
                   )
@@ -263,7 +251,7 @@ export function EntraUserPage() {
               <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0eded', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Shield size={13} style={{ color: '#8a7070' }} />
-                  <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>MFA Status</p>
+                  <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>{tx('MFA Status')}</p>
                 </div>
                 <div style={{ padding: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: user.methods_registered?.length > 0 ? 12 : 0 }}>
@@ -274,10 +262,10 @@ export function EntraUserPage() {
                     </div>
                     <div>
                       <p style={{ fontSize: 13, fontWeight: 600, color: user.is_mfa_registered ? '#166534' : '#b91c1c' }}>
-                        {user.is_mfa_registered ? 'MFA Registered' : 'No MFA'}
+                        {user.is_mfa_registered ? tx('MFA Registered') : tx('No MFA')}
                       </p>
                       <p style={{ fontSize: 11, color: '#8a7070' }}>
-                        {user.is_mfa_capable ? 'MFA enforced by policy' : 'Not enforced by policy'}
+                        {user.is_mfa_capable ? tx('MFA enforced by policy') : tx('Not enforced by policy')}
                       </p>
                     </div>
                   </div>
@@ -297,7 +285,7 @@ export function EntraUserPage() {
               <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0eded', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Crown size={13} style={{ color: '#8a7070' }} />
-                  <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>Directory Roles</p>
+                  <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>{tx('Directory Roles')}</p>
                 </div>
                 <div style={{ padding: '12px 16px' }}>
                   {user.directory_roles?.length > 0 ? (
@@ -310,7 +298,7 @@ export function EntraUserPage() {
                       ))}
                     </div>
                   ) : (
-                    <p style={{ fontSize: 12, color: '#d4cccc', textAlign: 'center', padding: '8px 0' }}>No directory roles assigned</p>
+                    <p style={{ fontSize: 12, color: '#d4cccc', textAlign: 'center', padding: '8px 0' }}>{tx('No directory roles assigned')}</p>
                   )}
                 </div>
               </div>
@@ -319,15 +307,15 @@ export function EntraUserPage() {
               <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e0e0' }}>
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0eded', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Building2 size={13} style={{ color: '#8a7070' }} />
-                  <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>Account Details</p>
+                  <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070' }}>{tx('Account Details')}</p>
                 </div>
                 <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {[
-                    { label: 'User Type', value: user.user_type || 'Member' },
+                    { label: tx('User Type'), value: user.user_type || 'Member' },
                     { label: 'UPN',       value: user.user_principal_name || '—' },
-                    { label: 'Office',    value: user.office_location || '—' },
-                    { label: 'Mobile',    value: user.mobile_phone || '—' },
-                    { label: 'Created',   value: user.created_datetime ? new Date(user.created_datetime).toLocaleDateString('en-GB') : '—' },
+                    { label: tx('Office'),    value: user.office_location || '—' },
+                    { label: tx('Mobile'),    value: user.mobile_phone || '—' },
+                    { label: tx('Created'),   value: user.created_datetime ? new Date(user.created_datetime).toLocaleDateString(appLocale()) : '—' },
                   ].map(item => (
                     <div key={item.label}>
                       <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8a7070', marginBottom: 2 }}>{item.label}</p>

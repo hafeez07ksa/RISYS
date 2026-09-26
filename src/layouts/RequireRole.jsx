@@ -3,6 +3,7 @@ import { ShieldAlert } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { roleLabel } from '@/lib/roles'
 import { Spinner } from '@/components/ui/Spinner'
+import { tx } from '@/lib/i18n'
 
 /**
  * Route guard — renders children only if the signed-in user holds one of
@@ -39,13 +40,11 @@ export function RequireRole({ roles, children, redirectTo = '/app/dashboard' }) 
         }}>
           <ShieldAlert size={22} style={{ color: '#5D0F0F' }} />
         </div>
-        <h2 style={{ fontSize: 15, fontWeight: 600, color: '#1a1314', marginBottom: 6 }}>
-          Access restricted
-        </h2>
+        <h2 style={{ fontSize: 15, fontWeight: 600, color: '#1a1314', marginBottom: 6 }}>{tx('Access restricted')}</h2>
         <p style={{ fontSize: 13, color: '#8a7070', maxWidth: 380, lineHeight: 1.6, marginBottom: 20 }}>
           {role
-            ? <>You are signed in as <strong style={{ color: '#5D0F0F' }}>{roleLabel(role)}</strong>. This section is open to {allowed}. Ask an admin in your organisation if you need it.</>
-            : <>You are not a member of an organisation yet.</>}
+            ? <>{tx('You are signed in as')} <strong style={{ color: '#5D0F0F' }}>{roleLabel(role)}</strong>{tx('. This section is open to')} {allowed}{tx('. Ask an admin in your organisation if you need it.')}</>
+            : <>{tx('You are not a member of an organisation yet.')}</>}
         </p>
         <a href="/app/dashboard"
           style={{
@@ -53,9 +52,7 @@ export function RequireRole({ roles, children, redirectTo = '/app/dashboard' }) 
             fontSize: 12.5, fontWeight: 500, padding: '8px 16px',
             borderRadius: 8, background: '#5D0F0F', color: '#fff',
             textDecoration: 'none',
-          }}>
-          Back to Dashboard
-        </a>
+          }}>{tx('Back to Dashboard')}</a>
       </div>
     )
   }

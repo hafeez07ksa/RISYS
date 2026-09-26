@@ -1,4 +1,5 @@
 import { Inbox } from 'lucide-react'
+import { tx } from '@/lib/i18n'
 
 /* Empty states (§32). Two distinct cases that must never be conflated:
  *
@@ -38,7 +39,7 @@ export function EmptyState({
       )}
       <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
         {filtered && onClearFilters && (
-          <button className="btn-secondary" onClick={onClearFilters}>Clear filters</button>
+          <button className="btn-secondary" onClick={onClearFilters}>{tx('Clear filters')}</button>
         )}
         {action}
       </div>

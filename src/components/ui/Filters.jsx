@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, Plus, X, Bookmark } from 'lucide-react'
 import { Combobox } from './Combobox'
+import { tx } from '@/lib/i18n'
 
 /* Unified filter system (§24). One behaviour across Risk Register, Incidents,
  * Findings, Controls, Compliance, Tasks, People and Audit Log.
@@ -59,7 +60,7 @@ export function FilterBar({
                 color: on ? 'var(--crimson)' : 'var(--text-3)',
                 fontWeight: on ? 500 : 400,
               }}>
-                {v.label}
+                {tx(v.label)}
                 {v.count != null && <span className="tnum" style={{ opacity: 0.7 }}>{v.count}</span>}
               </button>
             )
@@ -83,7 +84,7 @@ export function FilterBar({
               style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 'var(--t-body)', color: 'var(--text)', minWidth: 0 }}
             />
             {search && (
-              <button onClick={() => onSearchChange('')} aria-label="Clear search"
+              <button onClick={() => onSearchChange('')} aria-label={tx('Clear search')}
                 style={{ border: 'none', background: 'none', color: 'var(--text-3)', cursor: 'pointer', display: 'flex', padding: 0 }}>
                 <X size={12} />
               </button>
@@ -95,7 +96,7 @@ export function FilterBar({
           <Combobox
             key={d.key}
             size="sm"
-            placeholder={d.label}
+            placeholder={tx(d.label)}
             options={d.options}
             multiple={d.multiple}
             clearable
@@ -109,15 +110,15 @@ export function FilterBar({
         {addable.length > 0 && (
           <Combobox
             size="sm"
-            placeholder="＋ Filter"
-            options={addable.map((d) => ({ value: d.key, label: d.label }))}
+            placeholder={tx('＋ Filter')}
+            options={addable.map((d) => ({ value: d.key, label: tx(d.label) }))}
             value={null}
             onChange={(k) => k && setAdded((a) => [...a, k])}
             buttonClassName="min-w-[96px]"
           />
         )}
 
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 7 }}>{right}</div>
+        <div style={{ marginInlineStart: 'auto', display: 'flex', alignItems: 'center', gap: 7 }}>{right}</div>
       </div>
 
       {active.length > 0 && (
@@ -129,8 +130,8 @@ export function FilterBar({
             return vals.map((one) => (
               <Chip
                 key={`${k}-${one}`}
-                label={def.label}
-                value={labelOf(def, one)}
+                label={tx(def.label)}
+                value={tx(labelOf(def, one))}
                 onRemove={() => Array.isArray(v) ? set(k, v.filter((x) => x !== one)) : clear(k)}
               />
             ))
@@ -138,15 +139,14 @@ export function FilterBar({
           <button onClick={clearAll} style={{
             fontSize: 'var(--t-meta)', color: 'var(--text-3)', background: 'none',
             border: 'none', cursor: 'pointer', padding: '0 4px', textDecoration: 'underline',
-          }}>Clear all</button>
+          }}>{tx('Clear all')}</button>
           {onSaveView && (
             <button onClick={onSaveView} style={{
               display: 'flex', alignItems: 'center', gap: 4,
               fontSize: 'var(--t-meta)', color: 'var(--crimson)', background: 'none',
               border: 'none', cursor: 'pointer', padding: '0 4px',
             }}>
-              <Bookmark size={11} /> Save view
-            </button>
+              <Bookmark size={11} /> {tx('Save view')}</button>
           )}
         </div>
       )}
@@ -162,9 +162,9 @@ export function Chip({ label, value, onRemove }) {
       background: 'var(--surface)', border: '1px solid var(--border)',
       fontSize: 'var(--t-meta)', color: 'var(--text-2)', whiteSpace: 'nowrap',
     }}>
-      <span style={{ color: 'var(--text-3)' }}>{label}:</span>
+      <span style={{ color: 'var(--text-3)' }}>{tx(label)}:</span>
       <span style={{ fontWeight: 500 }}>{value}</span>
-      <button onClick={onRemove} aria-label={`Remove ${label} filter`} style={{
+      <button onClick={onRemove} aria-label={`${tx('Remove filter')}: ${tx(label)}`} style={{
         display: 'flex', width: 15, height: 15, alignItems: 'center', justifyContent: 'center',
         border: 'none', background: 'none', color: 'var(--text-3)', cursor: 'pointer', borderRadius: 999,
       }}>

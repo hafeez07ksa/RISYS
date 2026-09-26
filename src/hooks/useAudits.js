@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
+import { tx } from '@/lib/i18n'
 
 /* ── Audit management ─────────────────────────────────────────────────────────
  *
@@ -18,49 +19,49 @@ import { useAuth } from './useAuth'
 export const AUDIT_EVIDENCE_BUCKET = 'audit-evidence'
 
 export const AUDIT_TYPES = [
-  { value: 'internal', label: 'Internal audit' },
-  { value: 'external', label: 'External audit' },
-  { value: 'regulatory', label: 'Regulatory inspection' },
-  { value: 'self_assessment', label: 'Self-assessment' },
+  { value: 'internal', label: tx('Internal audit') },
+  { value: 'external', label: tx('External audit') },
+  { value: 'regulatory', label: tx('Regulatory inspection') },
+  { value: 'self_assessment', label: tx('Self-assessment') },
 ]
 export const ENGAGEMENT_STATUSES = [
-  { value: 'planned', label: 'Planned' },
-  { value: 'fieldwork', label: 'Fieldwork' },
-  { value: 'reporting', label: 'Reporting' },
-  { value: 'closed', label: 'Closed' },
-  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'planned', label: tx('Planned') },
+  { value: 'fieldwork', label: tx('Fieldwork') },
+  { value: 'reporting', label: tx('Reporting') },
+  { value: 'closed', label: tx('Closed') },
+  { value: 'cancelled', label: tx('Cancelled') },
 ]
 export const OPINIONS = [
-  { value: 'effective', label: 'Effective' },
-  { value: 'partially_effective', label: 'Partially effective' },
-  { value: 'ineffective', label: 'Ineffective' },
+  { value: 'effective', label: tx('Effective') },
+  { value: 'partially_effective', label: tx('Partially effective') },
+  { value: 'ineffective', label: tx('Ineffective') },
 ]
 export const TEST_RESULTS = [
-  { value: 'not_tested', label: 'Not tested' },
-  { value: 'effective', label: 'Effective' },
-  { value: 'partially_effective', label: 'Partially effective' },
-  { value: 'ineffective', label: 'Ineffective' },
-  { value: 'not_applicable', label: 'Not applicable' },
+  { value: 'not_tested', label: tx('Not tested') },
+  { value: 'effective', label: tx('Effective') },
+  { value: 'partially_effective', label: tx('Partially effective') },
+  { value: 'ineffective', label: tx('Ineffective') },
+  { value: 'not_applicable', label: tx('Not applicable') },
 ]
 export const FINDING_RATINGS = [
-  { value: 'high', label: 'High' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'low', label: 'Low' },
-  { value: 'observation', label: 'Observation' },
+  { value: 'high', label: tx('High') },
+  { value: 'medium', label: tx('Medium') },
+  { value: 'low', label: tx('Low') },
+  { value: 'observation', label: tx('Observation') },
 ]
 export const FINDING_STATUSES = [
-  { value: 'draft', label: 'Draft' },
-  { value: 'open', label: 'Open' },
-  { value: 'in_remediation', label: 'In remediation' },
-  { value: 'ready_for_validation', label: 'Awaiting validation' },
-  { value: 'closed', label: 'Closed' },
-  { value: 'risk_accepted', label: 'Risk accepted' },
+  { value: 'draft', label: tx('Draft') },
+  { value: 'open', label: tx('Open') },
+  { value: 'in_remediation', label: tx('In remediation') },
+  { value: 'ready_for_validation', label: tx('Awaiting validation') },
+  { value: 'closed', label: tx('Closed') },
+  { value: 'risk_accepted', label: tx('Risk accepted') },
 ]
 export const REQUEST_STATUSES = [
-  { value: 'open', label: 'Open' },
-  { value: 'submitted', label: 'Submitted' },
-  { value: 'accepted', label: 'Accepted' },
-  { value: 'rejected', label: 'Returned' },
+  { value: 'open', label: tx('Open') },
+  { value: 'submitted', label: tx('Submitted') },
+  { value: 'accepted', label: tx('Accepted') },
+  { value: 'rejected', label: tx('Returned') },
 ]
 export const labelOf = (list, v) => list.find((x) => x.value === v)?.label ?? v ?? '—'
 export const ACTIVE_FINDING = ['open', 'in_remediation', 'ready_for_validation']
@@ -69,7 +70,7 @@ export const ACTIVE_FINDING = ['open', 'in_remediation', 'ready_for_validation']
    PostgREST wrapper so the user reads the database's own sentence. */
 function fail(error) {
   if (!error) return
-  throw new Error(error.message?.replace(/^.*?ERROR:\s*/, '') || 'The change was refused.')
+  throw new Error(error.message?.replace(/^.*?ERROR:\s*/, '') || tx('The change was refused.'))
 }
 
 async function sha256Hex(file) {

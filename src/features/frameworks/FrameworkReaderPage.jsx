@@ -3,6 +3,7 @@ import { ArrowLeft, Search, X } from 'lucide-react'
 import { getFramework, useFrameworkRequirements, compareRequirementIds } from '@/hooks/useCompliance'
 import { Spinner } from '@/components/ui/Spinner'
 import { BackLink } from '@/components/ui/BackLink'
+import { tx } from '@/lib/i18n'
 
 /*
  * Framework reader — reference only.
@@ -87,7 +88,7 @@ function ControlRow({ control, textKey, idKey, last }) {
     }}>
       <div style={{
         padding: '13px 14px',
-        borderRight: '1px solid var(--border)',
+        borderInlineEnd: '1px solid var(--border)',
         alignSelf: 'stretch',
       }}>
         <span style={{
@@ -141,9 +142,9 @@ function GroupBlock({ group, fw, idKey, textKey }) {
         display: 'grid', gridTemplateColumns: '112px 1fr',
         background: 'var(--surface)',
         borderBottom: '1px solid var(--border)',
-        borderLeft: `3px solid ${fw.color}`,
+        borderInlineStart: `3px solid ${fw.color}`,
       }}>
-        <div style={{ padding: '11px 14px', borderRight: '1px solid var(--border)' }}>
+        <div style={{ padding: '11px 14px', borderInlineEnd: '1px solid var(--border)' }}>
           <span style={{
             fontSize: 12.5, fontWeight: 700, color: fw.color,
             fontFamily: 'var(--font-mono)',
@@ -161,11 +162,9 @@ function GroupBlock({ group, fw, idKey, textKey }) {
           background: '#fff', borderBottom: '1px solid var(--border)',
         }}>
           <div style={{
-            padding: '12px 14px', borderRight: '1px solid var(--border)',
+            padding: '12px 14px', borderInlineEnd: '1px solid var(--border)',
             fontSize: 12.5, color: 'var(--text-3)',
-          }}>
-            Objective
-          </div>
+          }}>{tx('Objective')}</div>
           <div style={{ padding: '12px 18px' }}>
             <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-2)' }}>
               {group.objective}
@@ -180,9 +179,7 @@ function GroupBlock({ group, fw, idKey, textKey }) {
         borderBottom: '1px solid var(--border)',
         fontSize: 11, fontWeight: 600, color: 'var(--text-3)',
         textTransform: 'uppercase', letterSpacing: '0.1em',
-      }}>
-        Controls
-      </div>
+      }}>{tx('Controls')}</div>
 
       {group.controls.map((c, i) => (
         <ControlRow
@@ -244,7 +241,7 @@ export function FrameworkReaderPage({ frameworkId, onBack }) {
         padding: '14px 28px', borderBottom: '1px solid var(--border)',
         background: '#fff', flexShrink: 0,
       }}>
-        <BackLink to={onBack} label="Frameworks" style={{ marginBottom: 8 }} />
+        <BackLink to={onBack} label={tx('Frameworks')} style={{ marginBottom: 8 }} />
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <div>
@@ -252,8 +249,7 @@ export function FrameworkReaderPage({ frameworkId, onBack }) {
               {fw.label} — {fw.fullName}
             </h1>
             <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 3 }}>
-              {fw.version} · {mainCount} main controls{subCount > 0 && ` · ${subCount} subcontrols`} · reference only
-            </p>
+              {fw.version} · {mainCount} {tx('main controls')}{subCount > 0 && ` · ${subCount} ${tx('subcontrols')}`} {tx('· reference only')}</p>
           </div>
           <span style={{
             fontSize: 10.5, padding: '3px 9px', borderRadius: 99, fontWeight: 600,
@@ -268,13 +264,13 @@ export function FrameworkReaderPage({ frameworkId, onBack }) {
 
         <div style={{ position: 'relative', marginBottom: 22, maxWidth: 460 }}>
           <Search size={14} style={{
-            position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)',
+            position: 'absolute', insetInlineStart: 11, top: '50%', transform: 'translateY(-50%)',
             color: 'var(--text-3)', pointerEvents: 'none',
           }} />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder={`Search ${fw.label} controls…`}
+            placeholder={tx('Search {{fw}} controls…', { fw: fw.label })}
             style={{
               width: '100%', padding: '9px 32px 9px 32px', fontSize: 13,
               border: '1px solid var(--border)', borderRadius: 8,
@@ -285,7 +281,7 @@ export function FrameworkReaderPage({ frameworkId, onBack }) {
             <button
               onClick={() => setSearch('')}
               style={{
-                position: 'absolute', right: 9, top: '50%', transform: 'translateY(-50%)',
+                position: 'absolute', insetInlineEnd: 9, top: '50%', transform: 'translateY(-50%)',
                 background: 'none', border: 'none', cursor: 'pointer',
                 color: 'var(--text-3)', padding: 2, display: 'flex',
               }}
@@ -298,9 +294,7 @@ export function FrameworkReaderPage({ frameworkId, onBack }) {
         {loading ? (
           <div style={{ padding: 60, display: 'flex', justifyContent: 'center' }}><Spinner /></div>
         ) : filtered.length === 0 ? (
-          <p style={{ fontSize: 13, color: 'var(--text-3)', padding: '32px 0' }}>
-            No controls match that search.
-          </p>
+          <p style={{ fontSize: 13, color: 'var(--text-3)', padding: '32px 0' }}>{tx('No controls match that search.')}</p>
         ) : (
           filtered.map(domain => (
             <div key={domain.id} style={{ marginBottom: 30 }}>
@@ -330,10 +324,9 @@ export function FrameworkReaderPage({ frameworkId, onBack }) {
         <p style={{
           fontSize: 11.5, color: 'var(--text-3)', lineHeight: 1.6,
           paddingTop: 6, paddingBottom: 12, maxWidth: 680,
-        }}>
-          Control text is reproduced from the published framework. Where the source
-          document is issued in Arabic and English, the Arabic version is binding.
-        </p>
+        }}>{tx(
+          'Control text is reproduced from the published framework. Where the source document is issued in Arabic and English, the Arabic version is binding.'
+        )}</p>
       </div>
     </div>
   )

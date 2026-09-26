@@ -6,12 +6,15 @@ import { useAuthStore } from '@/store/authStore'
 import { RisysLogo } from '@/components/ui/RisysLogo'
 import { Spinner } from '@/components/ui/Spinner'
 import { roleLabel } from '@/hooks/usePeople'
+import { tx } from '@/lib/i18n'
+import { LanguageSwitch } from '@/components/ui/LanguageSwitch'
 
 // Top-level component: defining this inside AcceptInvitePage caused a remount
 // on every keystroke (focus jumped from password back to the autoFocus field).
 function Shell({ children }) {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <LanguageSwitch variant="floating" />
       <div style={{ marginBottom: 26 }}><RisysLogo size="lg" tagline /></div>
       <div style={{ width: '100%', maxWidth: 420, background: '#fff', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', boxShadow: '0 8px 32px rgba(41,32,33,0.07)' }}>
         {children}
@@ -85,7 +88,7 @@ export function AcceptInvitePage() {
         } catch { /* fall through */ }
       }
       acceptingRef.current = false // allow a manual retry
-      setError(msg || 'Could not accept the invitation')
+      setError(msg || tx('Could not accept the invitation'))
     } finally { setBusy(false) }
   }
 
@@ -93,8 +96,8 @@ export function AcceptInvitePage() {
     setBusy(true); setError('')
     try {
       if (mode === 'signup') {
-        if (!form.fullName.trim()) throw new Error('Please enter your full name')
-        if (form.password.length < 8) throw new Error('Password must be at least 8 characters')
+        if (!form.fullName.trim()) throw new Error(tx('Please enter your full name'))
+        if (form.password.length < 8) throw new Error(tx('Password must be at least 8 characters'))
         // signUp returns the data object directly (not wrapped)
         const data = await signUp({
           email: invite.email,
@@ -106,7 +109,9 @@ export function AcceptInvitePage() {
         if (!data?.session) {
           const { error: siErr } = await supabase.auth.signInWithPassword({ email: invite.email, password: form.password })
           if (siErr) {
-            setError('Account created — check your inbox. We sent a confirmation link that will bring you straight back here to join automatically.')
+            setError(tx(
+              'Account created — check your inbox. We sent a confirmation link that will bring you straight back here to join automatically.'
+            ))
             setBusy(false)
             return
           }
@@ -116,7 +121,7 @@ export function AcceptInvitePage() {
       }
       // auth state change fires; the emailMatches effect will accept
     } catch (err) {
-      setError(err.message || 'Authentication failed')
+      setError(err.message || tx('Authentication failed'))
       setBusy(false)
     }
   }
@@ -126,10 +131,14 @@ export function AcceptInvitePage() {
   // ── Invalid states ──────────────────────────────────────────────
   if (!invite?.valid) {
     const messages = {
-      not_found: { title: 'Invitation not found', body: 'This link is not valid. Check that you copied the complete link, or ask your administrator for a new one.' },
-      expired:   { title: 'Invitation expired', body: `Your invitation to ${invite?.org_name || 'this organization'} has expired. Ask your administrator to issue a fresh link.` },
-      revoked:   { title: 'Invitation revoked', body: `This invitation to ${invite?.org_name || 'this organization'} was revoked by an administrator.` },
-      accepted:  { title: 'Already used', body: 'This invitation has already been accepted. If that was you, just sign in.' },
+      not_found: { title: tx('Invitation not found'), body: tx(
+        'This link is not valid. Check that you copied the complete link, or ask your administrator for a new one.'
+      ) },
+      expired:   { title: tx('Invitation expired'), body: `Your invitation to ${invite?.org_name || 'this organization'} has expired. Ask your administrator to issue a fresh link.` },
+      revoked:   { title: tx('Invitation revoked'), body: `This invitation to ${invite?.org_name || 'this organization'} was revoked by an administrator.` },
+      accepted:  { title: tx('Already used'), body: tx(
+        'This invitation has already been accepted. If that was you, just sign in.'
+      ) },
     }
     const m = messages[invite?.reason] || messages.not_found
     return (
@@ -141,7 +150,7 @@ export function AcceptInvitePage() {
           <h1 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>{m.title}</h1>
           <p style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.6 }}>{m.body}</p>
           {invite?.reason === 'accepted' && (
-            <button onClick={() => navigate('/login')} className="btn-primary" style={{ marginTop: 18, width: '100%' }}>Sign in</button>
+            <button onClick={() => navigate('/login')} className="btn-primary" style={{ marginTop: 18, width: '100%' }}>{tx('Sign in')}</button>
           )}
         </div>
       </Shell>
@@ -156,8 +165,8 @@ export function AcceptInvitePage() {
           <div style={{ width: 44, height: 44, borderRadius: 12, background: '#ECF4EE', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
             <Check size={20} style={{ color: '#2F6B3C' }} />
           </div>
-          <h1 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>Welcome to {joined.org_name}</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-3)' }}>Taking you to your workspace…</p>
+          <h1 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>{tx('Welcome to')} {joined.org_name}</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-3)' }}>{tx('Taking you to your workspace…')}</p>
         </div>
       </Shell>
     )
@@ -170,14 +179,10 @@ export function AcceptInvitePage() {
         <InviteHeader invite={invite} />
         <div style={{ padding: '20px 28px 28px' }}>
           <div style={{ padding: '12px 14px', borderRadius: 10, background: '#FAF3E2', border: '1px solid #EBDCB6', marginBottom: 16 }}>
-            <p style={{ fontSize: 12.5, color: '#9C6F0F', lineHeight: 1.6 }}>
-              This invitation was issued to <strong>{invite.email}</strong>, but you are signed in as <strong>{user.email}</strong>.
-              Sign out, then open the link again with the invited account.
-            </p>
+            <p style={{ fontSize: 12.5, color: '#9C6F0F', lineHeight: 1.6 }}>{tx('This invitation was issued to')} <strong>{invite.email}</strong>{tx(', but you are signed in as')} <strong>{user.email}</strong>{tx('. Sign out, then open the link again with the invited account.')}</p>
           </div>
           <button onClick={async () => { await signOut() }} className="btn-secondary" style={{ width: '100%' }}>
-            <LogOut size={13} /> Sign out and switch account
-          </button>
+            <LogOut size={13} className='rtl-flip' /> {tx('Sign out and switch account')}</button>
         </div>
       </Shell>
     )
@@ -192,11 +197,11 @@ export function AcceptInvitePage() {
           {error ? (
             <>
               <p style={{ fontSize: 12.5, color: '#8C1616', background: '#FBEAEA', padding: '10px 12px', borderRadius: 8, marginBottom: 14 }}>{error}</p>
-              <button onClick={acceptNow} disabled={busy} className="btn-primary" style={{ width: '100%' }}>Try again</button>
+              <button onClick={acceptNow} disabled={busy} className="btn-primary" style={{ width: '100%' }}>{tx('Try again')}</button>
             </>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '8px 0' }}>
-              <Spinner size="sm" /><span style={{ fontSize: 13, color: 'var(--text-2)' }}>Joining {invite.org_name}…</span>
+              <Spinner size="sm" /><span style={{ fontSize: 13, color: 'var(--text-2)' }}>{tx('Joining')} {invite.org_name}…</span>
             </div>
           )}
         </div>
@@ -222,22 +227,22 @@ export function AcceptInvitePage() {
 
       <div style={{ padding: '20px 28px 28px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
-          <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Email</label>
+          <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>{tx('Email')}</label>
           <input value={invite.email} disabled className="risys-input" style={{ opacity: 0.65, cursor: 'not-allowed' }} />
-          <p style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 3 }}>Locked to the invited address</p>
+          <p style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 3 }}>{tx('Locked to the invited address')}</p>
         </div>
         {mode === 'signup' && (
           <div>
-            <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Full name</label>
+            <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>{tx('Full name')}</label>
             <input value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))}
-              placeholder="e.g. Sara Al-Otaibi" className="risys-input" autoFocus />
+              placeholder={tx('e.g. Sara Al-Otaibi')} className="risys-input" autoFocus />
           </div>
         )}
         <div>
-          <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Password</label>
+          <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>{tx('Password')}</label>
           <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
             onKeyDown={e => e.key === 'Enter' && submitAuth()}
-            placeholder={mode === 'signup' ? 'At least 8 characters' : 'Your password'} className="risys-input" autoFocus={mode === 'login'} />
+            placeholder={mode === 'signup' ? tx('At least 8 characters') : tx('Your password')} className="risys-input" autoFocus={mode === 'login'} />
         </div>
 
         {error && <p style={{ fontSize: 12, color: '#8C1616', background: '#FBEAEA', padding: '9px 12px', borderRadius: 8 }}>{error}</p>}
@@ -255,12 +260,10 @@ export function AcceptInvitePage() {
 function InviteHeader({ invite }) {
   return (
     <div style={{ padding: '24px 28px 18px', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
-      <p className="eyebrow" style={{ marginBottom: 6 }}>You're invited</p>
-      <h1 style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', lineHeight: 1.35 }}>
-        Join <span style={{ color: 'var(--crimson)' }}>{invite.org_name}</span> on RISYS
-      </h1>
+      <p className="eyebrow" style={{ marginBottom: 6 }}>{tx('You\'re invited')}</p>
+      <h1 style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', lineHeight: 1.35 }}>{tx('Join')} <span style={{ color: 'var(--crimson)' }}>{invite.org_name}</span> {tx('on RISYS')}</h1>
       <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 5 }}>
-        {invite.inviter_name ? `Invited by ${invite.inviter_name} · ` : ''}Role: <strong style={{ color: 'var(--text-2)' }}>{roleLabel(invite.role)}</strong>
+        {invite.inviter_name ? `Invited by ${invite.inviter_name} · ` : ''}{tx('Role:')} <strong style={{ color: 'var(--text-2)' }}>{roleLabel(invite.role)}</strong>
       </p>
     </div>
   )

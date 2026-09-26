@@ -1,3 +1,4 @@
+import { tx } from '@/lib/i18n'
 // ============================================================
 // FINDING TRIAGE — step 2 of the risk process
 //
@@ -15,18 +16,18 @@
 // ============================================================
 
 export const CLOSE_REASON_CODES = [
-  { value: 'false_positive',       label: 'False positive',
-    desc: 'The finding is factually wrong for this asset.' },
-  { value: 'out_of_scope',         label: 'Out of scope',
-    desc: 'The asset or system is outside the assessed scope.' },
-  { value: 'compensating_control', label: 'Compensating control verified',
-    desc: 'An existing control already mitigates it, and that control is evidenced.' },
+  { value: 'false_positive',       label: tx('False positive'),
+    desc: tx('The finding is factually wrong for this asset.') },
+  { value: 'out_of_scope',         label: tx('Out of scope'),
+    desc: tx('The asset or system is outside the assessed scope.') },
+  { value: 'compensating_control', label: tx('Compensating control verified'),
+    desc: tx('An existing control already mitigates it, and that control is evidenced.') },
 ]
 
 export const TRIAGE_DISPOSITIONS = {
-  created:  { label: 'New risk created' },
-  attached: { label: 'Attached to an existing risk' },
-  closed:   { label: 'Closed — not a risk' },
+  created:  { label: tx('New risk created') },
+  attached: { label: tx('Attached to an existing risk') },
+  closed:   { label: tx('Closed — not a risk') },
 }
 
 export function closeReasonMeta(value) {

@@ -1,3 +1,5 @@
+// i18n first: modules below call tx() while they load.
+import '@/lib/i18n'
 import { useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'

@@ -13,6 +13,7 @@ import { bandForScore, bandMeta } from '@/lib/matrix'
 import { Spinner } from '@/components/ui/Spinner'
 import { ControlReferences } from '@/components/ui/ControlReferences'
 import { SelectField } from '@/components/ui/Combobox'
+import { tx, appLocale } from '@/lib/i18n'
 
 // ============================================================
 // TRIAGE — a page, not a dialog
@@ -67,7 +68,7 @@ export function TriagePage() {
 
   const run = async (fn) => {
     setBusy(true); setError('')
-    try { await fn() } catch (e) { setError(e.message || 'Something went wrong') } finally { setBusy(false) }
+    try { await fn() } catch (e) { setError(e.message || tx('Something went wrong')) } finally { setBusy(false) }
   }
 
   const attach = (r) => run(async () => {
@@ -84,7 +85,7 @@ export function TriagePage() {
   })
 
   const createNew = () => run(async () => {
-    if (!draft.title.trim()) throw new Error('A title is required.')
+    if (!draft.title.trim()) throw new Error(tx('A title is required.'))
     const risk = await createRisk(draftRiskFromFinding(finding, {
       title: draft.title.trim(), likelihood: draft.likelihood, impact: draft.impact,
       userId: user?.id, orgId: organization.id,
@@ -97,9 +98,9 @@ export function TriagePage() {
   })
 
   const close = () => run(async () => {
-    if (!closeForm.reason_code) throw new Error('A reason code is mandatory when closing a finding.')
+    if (!closeForm.reason_code) throw new Error(tx('A reason code is mandatory when closing a finding.'))
     if (closeForm.reason_code === 'compensating_control' && !closeForm.note.trim()) {
-      throw new Error('Name the compensating control and where its evidence is.')
+      throw new Error(tx('Name the compensating control and where its evidence is.'))
     }
     await recordTriage({ finding, disposition: 'closed', reasonCode: closeForm.reason_code, note: closeForm.note })
   })
@@ -109,11 +110,11 @@ export function TriagePage() {
     return (
       <div className="h-full flex flex-col items-center justify-center" style={{ padding: '60px var(--gutter)', textAlign: 'center' }}>
         <ShieldAlert size={28} strokeWidth={1.2} style={{ color: 'var(--border-2)', marginBottom: 12 }} />
-        <p style={{ fontSize: 'var(--t-body)', fontWeight: 500, color: 'var(--text)' }}>No finding selected</p>
-        <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-3)', marginTop: 4, maxWidth: 380 }}>
-          Triage starts from a finding. Open one from Findings and choose “Triage finding”.
-        </p>
-        <button className="btn-secondary" style={{ marginTop: 14 }} onClick={() => navigate('/app/findings')}>Go to Findings</button>
+        <p style={{ fontSize: 'var(--t-body)', fontWeight: 500, color: 'var(--text)' }}>{tx('No finding selected')}</p>
+        <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-3)', marginTop: 4, maxWidth: 380 }}>{tx(
+          'Triage starts from a finding. Open one from Findings and choose “Triage finding”.'
+        )}</p>
+        <button className="btn-secondary" style={{ marginTop: 14 }} onClick={() => navigate('/app/findings')}>{tx('Go to Findings')}</button>
       </div>
     )
   }
@@ -128,12 +129,11 @@ export function TriagePage() {
           display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--t-meta)', color: 'var(--text-3)',
           background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 7,
         }}>
-          <ArrowLeft size={13} /> Back to findings
-        </button>
-        <h1 style={{ fontSize: 'var(--t-page)', fontWeight: 600, color: 'var(--text)' }}>Triage finding</h1>
-        <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-3)', marginTop: 2 }}>
-          A finding is a fact, not a risk yet. Decide whether an existing risk covers it, whether it needs a new risk, or whether it is not a risk at all.
-        </p>
+          <ArrowLeft size={13} className='rtl-flip' /> {tx('Back to findings')}</button>
+        <h1 style={{ fontSize: 'var(--t-page)', fontWeight: 600, color: 'var(--text)' }}>{tx('Triage finding')}</h1>
+        <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-3)', marginTop: 2 }}>{tx(
+          'A finding is a fact, not a risk yet. Decide whether an existing risk covers it, whether it needs a new risk, or whether it is not a risk at all.'
+        )}</p>
       </header>
 
       <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--s-5) var(--gutter) var(--s-10)' }}>
@@ -156,17 +156,13 @@ export function TriagePage() {
               {finding.control && <div style={{ marginTop: 8 }}><ControlReferences control={finding.control} /></div>}
               {finding.sourceUrl && (
                 <a href={finding.sourceUrl} target="_blank" rel="noopener noreferrer"
-                  style={{ display: 'inline-block', fontSize: 'var(--t-meta)', color: 'var(--text-2)', marginTop: 8, textDecoration: 'underline' }}>
-                  View in source system
-                </a>
+                  style={{ display: 'inline-block', fontSize: 'var(--t-meta)', color: 'var(--text-2)', marginTop: 8, textDecoration: 'underline' }}>{tx('View in source system')}</a>
               )}
             </div>
 
             {!migrated && (
               <div style={{ padding: '11px 13px', borderRadius: 'var(--r-md)', background: 'var(--medium-bg)', border: '1px solid var(--medium-bd)' }}>
-                <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)' }}>
-                  Triage decisions need <span className="mono">supabase/migrations/003_treatment_acceptance_triage.sql</span>. Apply it in the Supabase SQL editor, then reload.
-                </p>
+                <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)' }}>{tx('Triage decisions need')} <span className="mono">{tx('supabase/migrations/003_treatment_acceptance_triage.sql')}</span>{tx('. Apply it in the Supabase SQL editor, then reload.')}</p>
               </div>
             )}
 
@@ -178,37 +174,36 @@ export function TriagePage() {
               }}>
                 <CheckCircle2 size={16} style={{ color: 'var(--low)', flexShrink: 0, marginTop: 1 }} />
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 'var(--t-sm)', fontWeight: 600, color: 'var(--text)' }}>
-                    Already triaged: {TRIAGE_DISPOSITIONS[existing.disposition]?.label}
+                  <p style={{ fontSize: 'var(--t-sm)', fontWeight: 600, color: 'var(--text)' }}>{tx('Already triaged:')} {TRIAGE_DISPOSITIONS[existing.disposition]?.label}
                   </p>
                   <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', marginTop: 2 }}>
                     {existing.reason_code && `${closeReasonMeta(existing.reason_code)?.label}. `}
                     {existing.note && `“${existing.note}” `}
-                    {new Date(existing.decided_at).toLocaleDateString('en-GB')}
+                    {new Date(existing.decided_at).toLocaleDateString(appLocale())}
                   </p>
                   {linkedRisk && (
                     <button className="btn-ghost" style={{ fontSize: 'var(--t-meta)', padding: '4px 0', marginTop: 4 }}
-                      onClick={() => navigate(`/app/risks/${linkedRisk.id}`)}>
-                      Open {linkedRisk.risk_id} — {linkedRisk.title}
+                      onClick={() => navigate(`/app/risks/${linkedRisk.id}`)}>{tx('Open')} {linkedRisk.risk_id} — {linkedRisk.title}
                     </button>
                   )}
                 </div>
                 {perms.isManager && (
                   <button className="btn-secondary" style={{ fontSize: 'var(--t-meta)' }} disabled={busy}
                     onClick={() => run(() => reopen(existing))}>
-                    <RotateCcw size={12} /> Re-open triage
-                  </button>
+                    <RotateCcw size={12} /> {tx('Re-open triage')}</button>
                 )}
               </div>
             )}
 
             {/* A. Existing risk */}
-            <Panel title="Does an existing risk already cover this?" icon={Link2}
-              hint="Matched on asset, requirement and wording. Nothing is merged automatically — attach only if the risk genuinely describes this weakness.">
+            <Panel title={tx('Does an existing risk already cover this?')} icon={Link2}
+              hint={tx(
+                'Matched on asset, requirement and wording. Nothing is merged automatically — attach only if the risk genuinely describes this weakness.'
+              )}>
               {(risksLoading || triageLoading) ? <Spinner /> : candidates.length === 0 ? (
-                <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-3)' }}>
-                  No open risk shares this finding’s asset, requirement or rule. That points to a new risk.
-                </p>
+                <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-3)' }}>{tx(
+                  'No open risk shares this finding’s asset, requirement or rule. That points to a new risk.'
+                )}</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {candidates.map(({ risk: r, reasons }) => {
@@ -231,9 +226,8 @@ export function TriagePage() {
                         {canAct && (
                           <div style={{ display: 'flex', gap: 8, marginTop: 9, alignItems: 'center' }}>
                             <input className="risys-input" style={{ flex: 1, fontSize: 'var(--t-sm)' }} value={attachNote}
-                              onChange={e => setAttachNote(e.target.value)} placeholder="Optional note — what this adds to the risk" />
-                            <button className="btn-primary" style={{ fontSize: 'var(--t-sm)' }} disabled={busy} onClick={() => attach(r)}>
-                              Attach to {r.risk_id}
+                              onChange={e => setAttachNote(e.target.value)} placeholder={tx('Optional note — what this adds to the risk')} />
+                            <button className="btn-primary" style={{ fontSize: 'var(--t-sm)' }} disabled={busy} onClick={() => attach(r)}>{tx('Attach to')} {r.risk_id}
                             </button>
                           </div>
                         )}
@@ -245,33 +239,35 @@ export function TriagePage() {
             </Panel>
 
             {/* B. New risk */}
-            <Panel title="No existing risk covers it — create a new risk" icon={FilePlus2}
-              hint="It enters the register as a draft. Write the cause, event and impact on the risk before a reviewer admits it.">
+            <Panel title={tx('No existing risk covers it — create a new risk')} icon={FilePlus2}
+              hint={tx(
+                'It enters the register as a draft. Write the cause, event and impact on the risk before a reviewer admits it.'
+              )}>
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 110px 110px', gap: 10, alignItems: 'end' }}>
                 <div>
-                  <p className="field-label">Title</p>
+                  <p className="field-label">{tx('Title')}</p>
                   <input className="risys-input" style={{ width: '100%' }} value={draft.title} disabled={!canAct}
                     onChange={e => setDraft(d => ({ ...d, title: e.target.value }))} />
                 </div>
-                <SelectField label="Likelihood" size="sm" value={draft.likelihood} disabled={!canAct}
+                <SelectField label={tx('Likelihood')} size="sm" value={draft.likelihood} disabled={!canAct}
                   onChange={e => setDraft(d => ({ ...d, likelihood: Number(e.target.value) }))}>
                   {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
                 </SelectField>
-                <SelectField label="Impact" size="sm" value={draft.impact} disabled={!canAct}
+                <SelectField label={tx('Impact')} size="sm" value={draft.impact} disabled={!canAct}
                   onChange={e => setDraft(d => ({ ...d, impact: Number(e.target.value) }))}>
                   {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
                 </SelectField>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-                <button className="btn-primary" style={{ fontSize: 'var(--t-sm)' }} disabled={!canAct || busy} onClick={createNew}>
-                  Create draft risk
-                </button>
+                <button className="btn-primary" style={{ fontSize: 'var(--t-sm)' }} disabled={!canAct || busy} onClick={createNew}>{tx('Create draft risk')}</button>
               </div>
             </Panel>
 
             {/* C. Not a risk */}
-            <Panel title="Not a risk — close it" icon={XCircle} tone="var(--text-3)"
-              hint="The reason code is mandatory and audited. A closed finding stays closed when the same rule fires again for the same subject.">
+            <Panel title={tx('Not a risk — close it')} icon={XCircle} tone="var(--text-3)"
+              hint={tx(
+                'The reason code is mandatory and audited. A closed finding stays closed when the same rule fires again for the same subject.'
+              )}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {CLOSE_REASON_CODES.map(r => {
                   const active = closeForm.reason_code === r.value
@@ -279,7 +275,7 @@ export function TriagePage() {
                     <button key={r.value} type="button" disabled={!canAct}
                       onClick={() => setCloseForm(f => ({ ...f, reason_code: r.value }))}
                       style={{
-                        textAlign: 'left', padding: '9px 11px', borderRadius: 'var(--r-md)', cursor: canAct ? 'pointer' : 'default',
+                        textAlign: 'start', padding: '9px 11px', borderRadius: 'var(--r-md)', cursor: canAct ? 'pointer' : 'default',
                         border: `1px solid ${active ? 'var(--crimson)' : 'var(--border)'}`,
                         background: active ? 'var(--crimson-wash)' : 'var(--bg-2)',
                       }}>
@@ -290,19 +286,18 @@ export function TriagePage() {
                 })}
               </div>
               <div style={{ marginTop: 10 }}>
-                <p className="field-label">
-                  Note{closeForm.reason_code === 'compensating_control' && <span className="field-req"> *</span>}
+                <p className="field-label">{tx('Note')}{closeForm.reason_code === 'compensating_control' && <span className="field-req"> *</span>}
                 </p>
                 <textarea className="risys-input" rows={2} style={{ width: '100%', resize: 'vertical' }} disabled={!canAct}
                   value={closeForm.note} onChange={e => setCloseForm(f => ({ ...f, note: e.target.value }))}
                   placeholder={closeForm.reason_code === 'compensating_control'
-                    ? 'Which control, and where is its evidence? e.g. CTL-033 account lockout, evidenced in EVD-0142'
-                    : 'Optional context for the audit trail'} />
+                    ? tx(
+                    'Which control, and where is its evidence? e.g. CTL-033 account lockout, evidenced in EVD-0142'
+                  )
+                    : tx('Optional context for the audit trail')} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-                <button className="btn-secondary" style={{ fontSize: 'var(--t-sm)' }} disabled={!canAct || busy} onClick={close}>
-                  Close finding
-                </button>
+                <button className="btn-secondary" style={{ fontSize: 'var(--t-sm)' }} disabled={!canAct || busy} onClick={close}>{tx('Close finding')}</button>
               </div>
             </Panel>
 
@@ -313,7 +308,7 @@ export function TriagePage() {
             <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '13px 14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                 <Info size={13} style={{ color: 'var(--rose)' }} />
-                <p className="eyebrow">Three outcomes</p>
+                <p className="eyebrow">{tx('Three outcomes')}</p>
               </div>
               {[
                 ['Attach', 'The weakness is already on the register. The finding becomes evidence that a control is failing — re-assess that risk.'],

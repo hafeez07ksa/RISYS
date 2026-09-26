@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { DEFAULT_MATRIX, bandFor, bandMeta, matrixAxes, scalePoint, BAND_ORDER } from '@/lib/matrix'
+import { tx } from '@/lib/i18n'
 
 /**
  * The 5x5 heatmap.
@@ -58,9 +59,8 @@ export function RiskMatrix({ risks = [], onRiskClick, onCellClick, matrix = DEFA
       <div className="px-4 py-3 flex items-center justify-between gap-3"
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
         <div>
-          <p style={{ fontSize: 'var(--t-sm)', fontWeight: 500, color: 'var(--text)' }}>Risk Matrix</p>
-          <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>
-            Likelihood × Impact · bands from matrix v{matrix?.version || 1}
+          <p style={{ fontSize: 'var(--t-sm)', fontWeight: 500, color: 'var(--text)' }}>{tx('Risk Matrix')}</p>
+          <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{tx('Likelihood × Impact · bands from matrix v')}{matrix?.version || 1}
             {unplotted > 0 && ` · ${unplotted} unscored`}
           </p>
         </div>
@@ -81,15 +81,13 @@ export function RiskMatrix({ risks = [], onRiskClick, onCellClick, matrix = DEFA
       <div className="p-4" style={{ background: 'var(--bg-2)' }}>
         <div className="flex gap-1">
           <div className="flex flex-col justify-center items-center" style={{ width: 20 }}>
-            <span className="eyebrow" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
-              Likelihood
-            </span>
+            <span className="eyebrow" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{tx('Likelihood')}</span>
           </div>
 
           <div className="flex flex-col gap-1 flex-1">
             {rows.map(l => (
               <div key={l} className="flex gap-1 items-center">
-                <span className="text-right pr-2 flex-shrink-0"
+                <span className='text-end pe-2 flex-shrink-0'
                   style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)', width: 76 }}>
                   {pointLabel(likelihoodScale, l)}
                 </span>
@@ -133,7 +131,7 @@ export function RiskMatrix({ risks = [], onRiskClick, onCellClick, matrix = DEFA
               ))}
             </div>
             <div className="text-center mt-1">
-              <span className="eyebrow">Impact →</span>
+              <span className="eyebrow">{tx('Impact →')}</span>
             </div>
           </div>
         </div>
@@ -156,7 +154,7 @@ export function RiskMatrix({ risks = [], onRiskClick, onCellClick, matrix = DEFA
             <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
               <span style={{ fontSize: 'var(--t-meta)', fontWeight: 500, color: 'var(--text)' }}>
                 {pointLabel(likelihoodScale, selectedCell.l)} × {pointLabel(impactScale, selectedCell.i)}
-                {' — '}{selectedCell.risks.length} risk{selectedCell.risks.length > 1 ? 's' : ''}
+                {' — '}{selectedCell.risks.length} {tx('risk')}{selectedCell.risks.length > 1 ? 's' : ''}
               </span>
               <button onClick={() => setSelectedCell(null)} style={{ color: 'var(--text-3)' }}><X size={13} /></button>
             </div>
@@ -165,7 +163,7 @@ export function RiskMatrix({ risks = [], onRiskClick, onCellClick, matrix = DEFA
               const score = selectedCell.l * selectedCell.i
               return (
                 <button key={r.id} onClick={() => onRiskClick?.(r)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-left row-hover"
+                  className='w-full flex items-center gap-2 px-3 py-2 text-start row-hover'
                   style={{ borderBottom: '1px solid var(--border-3)', background: 'transparent', border: 'none', cursor: onRiskClick ? 'pointer' : 'default' }}>
                   <span className="mono flex-shrink-0" style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)' }}>{r.risk_id}</span>
                   <span className="flex-1 truncate" style={{ fontSize: 'var(--t-sm)', color: 'var(--text)' }}>{r.title}</span>

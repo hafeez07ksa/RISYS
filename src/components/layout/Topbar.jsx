@@ -5,6 +5,8 @@ import { useNotifications } from '@/hooks/useRisks'
 import { useAuth } from '@/hooks/useAuth'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { tx, appLocale } from '@/lib/i18n'
+import { LanguageSwitch } from '@/components/ui/LanguageSwitch'
 
 /* ── Application top bar (§6) ─────────────────────────────────────────────────
  *
@@ -22,10 +24,11 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 function timeAgo(iso) {
   if (!iso) return ''
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
-  if (s < 60) return 'just now'
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`
-  return `${Math.floor(s / 86400)}d ago`
+  const rtf = new Intl.RelativeTimeFormat(appLocale(), { numeric: 'auto', style: 'narrow' })
+  if (s < 60) return tx('just now')
+  if (s < 3600) return rtf.format(-Math.floor(s / 60), 'minute')
+  if (s < 86400) return rtf.format(-Math.floor(s / 3600), 'hour')
+  return rtf.format(-Math.floor(s / 86400), 'day')
 }
 
 /* Route → breadcrumb. Derived centrally so every page gets a trail without
@@ -37,6 +40,8 @@ const SEGMENT_LABELS = {
   risks: 'Risk Register', controls: 'Controls', compliance: 'Compliance',
   tasks: 'Tasks', people: 'People', audit: 'Audit Log', audits: 'Audits', reports: 'Reports', settings: 'Settings',
   frameworks: 'Frameworks', new: 'New', tolerances: 'Tolerances', edit: 'Edit', assess: 'Assessment', triage: 'Triage',
+  scope: 'Scope & testing', requests: 'Evidence requests', opinion: 'Opinion', report: 'Audit report', record: 'Record presentation',
+  invite: 'Invite', escalate: 'Escalate', limits: 'Limits', activation: 'Activation link', companies: 'Companies',
 }
 
 /* A dotted requirement id encodes its own ancestry: 1-5-3-1 is a child of
@@ -85,8 +90,9 @@ function useRouteBreadcrumb() {
     // A record id is meaningless to a reader. Name the kind of record
     // instead; the page itself carries the human reference (e.g. RSK-0002).
     const isRecordId = label === undefined && /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(p)
-    const RECORD_KIND = { risks: 'Risk', controls: 'Control', incidents: 'Incident', tasks: 'Task' }
-    const recordLabel = isRecordId ? (RECORD_KIND[parts[i - 1]] || 'Details') : null
+    const RECORD_KIND = { risks: tx('Risk'), controls: tx('Control'), incidents: tx('Incident'), tasks: tx('Task'),
+      audits: tx('Engagement'), findings: tx('Finding'), requests: tx('Request'), scope: tx('Scope item'), reports: tx('Report') }
+    const recordLabel = isRecordId ? (RECORD_KIND[parts[i - 1]] || tx('Details')) : null
     items.push({ label: recordLabel ?? label ?? decodeURIComponent(p), to: acc })
   }
   return items
@@ -111,7 +117,7 @@ function IconButton({ children, title, onClick, badge }) {
       {children}
       {badge > 0 && (
         <span className="tnum" style={{
-          position: 'absolute', top: -3, right: -3, minWidth: 15, height: 15, padding: '0 4px',
+          position: 'absolute', top: -3, insetInlineEnd: -3, minWidth: 15, height: 15, padding: '0 4px',
           borderRadius: 999, background: 'var(--crimson)', color: '#fff',
           fontSize: 9.5, fontWeight: 700, display: 'flex', alignItems: 'center',
           justifyContent: 'center', lineHeight: 1,
@@ -149,13 +155,13 @@ function NotificationsBell() {
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <IconButton title="Notifications" badge={unread} onClick={() => setOpen((o) => !o)}>
+      <IconButton title={tx('Notifications')} badge={unread} onClick={() => setOpen((o) => !o)}>
         <Bell size={14} style={{ color: unread > 0 ? 'var(--crimson)' : 'var(--text-3)' }} />
       </IconButton>
 
       {open && (
         <div className="anim-pop" style={{
-          position: 'absolute', right: 0, top: 'calc(100% + 6px)', width: 350, maxHeight: 430,
+          position: 'absolute', insetInlineEnd: 0, top: 'calc(100% + 6px)', width: 350, maxHeight: 430,
           background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
           zIndex: 'var(--z-popover)', boxShadow: 'var(--e-3)',
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
@@ -164,29 +170,26 @@ function NotificationsBell() {
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '9px 12px', borderBottom: '1px solid var(--border)',
           }}>
-            <span style={{ fontSize: 'var(--t-sm)', fontWeight: 600, color: 'var(--text)' }}>Notifications</span>
+            <span style={{ fontSize: 'var(--t-sm)', fontWeight: 600, color: 'var(--text)' }}>{tx('Notifications')}</span>
             {unread > 0 && (
               <button onClick={markAllRead} style={{
                 display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--t-meta)',
                 color: 'var(--crimson)', background: 'none', border: 'none', cursor: 'pointer',
               }}>
-                <CheckCheck size={12} /> Mark all read
-              </button>
+                <CheckCheck size={12} /> {tx('Mark all read')}</button>
             )}
           </div>
 
           <div style={{ overflowY: 'auto' }}>
             {notifications.length === 0 && (
-              <div style={{ padding: '28px 12px', textAlign: 'center', fontSize: 'var(--t-sm)', color: 'var(--text-3)' }}>
-                Nothing needs your attention
-              </div>
+              <div style={{ padding: '28px 12px', textAlign: 'center', fontSize: 'var(--t-sm)', color: 'var(--text-3)' }}>{tx('Nothing needs your attention')}</div>
             )}
             {notifications.map((n) => (
               <button
                 key={n.id}
                 onClick={() => handleClick(n)}
                 style={{
-                  display: 'block', width: '100%', textAlign: 'left', padding: '9px 12px', cursor: 'pointer',
+                  display: 'block', width: '100%', textAlign: 'start', padding: '9px 12px', cursor: 'pointer',
                   background: n.read_at ? 'var(--bg-2)' : '#fdf7f7', border: 'none',
                   borderBottom: '1px solid var(--border-3)',
                 }}
@@ -238,7 +241,7 @@ function ProfileMenu() {
     <div ref={ref} style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen((o) => !o)}
-        aria-label="Account menu"
+        aria-label={tx('Account menu')}
         aria-expanded={open}
         style={{
           display: 'flex', alignItems: 'center', gap: 5, padding: '3px 5px 3px 3px',
@@ -256,7 +259,7 @@ function ProfileMenu() {
 
       {open && (
         <div className="anim-pop" style={{
-          position: 'absolute', right: 0, top: 'calc(100% + 6px)', width: 208,
+          position: 'absolute', insetInlineEnd: 0, top: 'calc(100% + 6px)', width: 208,
           background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
           boxShadow: 'var(--e-3)', zIndex: 'var(--z-popover)', padding: 5,
         }}>
@@ -266,17 +269,17 @@ function ProfileMenu() {
               {organization?.name}
             </p>
           </div>
-          <MenuLink icon={Settings} to="/app/settings" onClick={() => setOpen(false)}>Settings</MenuLink>
+          <LanguageSwitch variant="menu" />
+          <MenuLink icon={Settings} to="/app/settings" onClick={() => setOpen(false)}>{tx('Settings')}</MenuLink>
           <button
             onClick={async () => { await signOut(); navigate('/login') }}
             style={{
-              display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'start',
               padding: '6px 9px', borderRadius: 'var(--r)', border: 'none', background: 'transparent',
               fontSize: 'var(--t-sm)', color: 'var(--text-2)', cursor: 'pointer',
             }}
           >
-            <LogOut size={13} /> Sign out
-          </button>
+            <LogOut size={13} className='rtl-flip' /> {tx('Sign out')}</button>
         </div>
       )}
     </div>
@@ -331,14 +334,14 @@ export function AppTopbar({ onOpenSearch }) {
           onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
         >
           <Search size={13} />
-          <span style={{ flex: 1, textAlign: 'left' }}>Search anything…</span>
+          <span style={{ flex: 1, textAlign: 'start' }}>{tx('Search anything…')}</span>
           <kbd style={{
             fontSize: 'var(--t-micro)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)',
             padding: '1px 4px', background: 'var(--bg-2)', color: 'var(--text-3)',
-          }}>{isMac ? '⌘' : 'Ctrl'} K</kbd>
+          }}>{isMac ? '⌘' : tx('Ctrl')} K</kbd>
         </button>
 
-        <IconButton title="Help">
+        <IconButton title={tx('Help')}>
           <HelpCircle size={14} />
         </IconButton>
         <NotificationsBell />

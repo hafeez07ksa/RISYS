@@ -6,11 +6,10 @@ import { Spinner } from '@/components/ui/Spinner'
 import { MetricStrip } from '@/components/ui/Metric'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
-import { usePeople } from '@/hooks/usePeople'
 import { useAudits, useMyAuditItems, AUDIT_TYPES, labelOf, ACTIVE_FINDING } from '@/hooks/useAudits'
 import { fmtDate } from '@/lib/reports/models'
-import { EngagementForm } from './EngagementForm'
 import { StageBadge, OpinionBadge, RatingBadge, DueText, Th, Td, Empty, isOverdue } from './parts'
+import { tx } from '@/lib/i18n'
 
 /* ── Audits ───────────────────────────────────────────────────────────────────
  *
@@ -24,10 +23,8 @@ export function AuditsPage() {
   const navigate = useNavigate()
   const { organization } = useAuth()
   const perms = usePermissions()
-  const { members } = usePeople()
-  const { engagements, loading, createEngagement } = useAudits()
+  const { engagements, loading } = useAudits()
   const mine = useMyAuditItems()
-  const [showNew, setShowNew] = useState(false)
   const [showClosed, setShowClosed] = useState(false)
 
   const stats = useMemo(() => {
@@ -50,21 +47,21 @@ export function AuditsPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Topbar
-        title="Audits"
+        title={tx('Audits')}
         subtitle={organization?.name}
         actions={perms.canManageAudits && (
-          <button className="btn-primary" onClick={() => setShowNew(true)}><Plus size={14} /> New engagement</button>
+          <button className="btn-primary" onClick={() => navigate('/app/audits/new')}><Plus size={14} /> {tx('New engagement')}</button>
         )}
       />
 
       <div className="page-content" style={{ flex: 1, overflowY: 'auto' }}>
         <div style={{ marginBottom: 16 }}>
           <MetricStrip metrics={[
-            { label: 'Active engagements', value: stats.active },
-            { label: 'Open findings', value: stats.open },
-            { label: 'High-rated open', value: stats.high, tone: 'critical' },
-            { label: 'Past due date', value: stats.overdue, tone: 'critical' },
-            { label: 'Evidence outstanding', value: stats.outstanding, tone: 'medium' },
+            { label: tx('Active engagements'), value: stats.active },
+            { label: tx('Open findings'), value: stats.open },
+            { label: tx('High-rated open'), value: stats.high, tone: 'critical' },
+            { label: tx('Past due date'), value: stats.overdue, tone: 'critical' },
+            { label: tx('Evidence outstanding'), value: stats.outstanding, tone: 'medium' },
           ]} />
         </div>
 
@@ -72,23 +69,23 @@ export function AuditsPage() {
           <section className="section" style={{ marginBottom: 16, borderColor: 'var(--crimson-wash)' }}>
             <div className="flex items-center" style={{ gap: 8, padding: '11px 16px', borderBottom: '1px solid var(--border)' }}>
               <Inbox size={14} style={{ color: 'var(--crimson)' }} />
-              <h3 style={{ fontSize: 'var(--t-section)', fontWeight: 600, margin: 0 }}>Waiting on you</h3>
-              <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{waiting} item{waiting === 1 ? '' : 's'}</span>
+              <h3 style={{ fontSize: 'var(--t-section)', fontWeight: 600, margin: 0 }}>{tx('Waiting on you')}</h3>
+              <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{waiting} {tx('item')}{waiting === 1 ? '' : 's'}</span>
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
                 {mine.requests.map((r) => (
-                  <tr key={r.id} className="row-hover" style={{ cursor: 'pointer' }} onClick={() => navigate(`/app/audits/${r.engagement_id}?tab=requests`)}>
-                    <Td style={{ width: 150, color: 'var(--text-3)' }}>Evidence request</Td>
+                  <tr key={r.id} className="row-hover" style={{ cursor: 'pointer' }} onClick={() => navigate(`/app/audits/${r.engagement_id}/requests/${r.id}`)}>
+                    <Td style={{ width: 150, color: 'var(--text-3)' }}>{tx('Evidence request')}</Td>
                     <Td style={{ color: 'var(--text)' }}>{r.title}<span style={{ color: 'var(--text-3)' }}> · {r.engagement?.ref}</span>
-                      {r.status === 'rejected' && <span style={{ color: 'var(--critical)' }}> · returned for more</span>}</Td>
+                      {r.status === 'rejected' && <span style={{ color: 'var(--critical)' }}> {tx('· returned for more')}</span>}</Td>
                     <Td align="right"><DueText date={r.due_date} /></Td>
                   </tr>
                 ))}
                 {mine.findings.map((f) => (
-                  <tr key={f.id} className="row-hover" style={{ cursor: 'pointer' }} onClick={() => navigate(`/app/audits/${f.engagement_id}?tab=findings`)}>
-                    <Td style={{ width: 150, color: 'var(--text-3)' }}>Finding to address</Td>
-                    <Td style={{ color: 'var(--text)' }}>{f.ref} {f.title} <span style={{ marginLeft: 6 }}><RatingBadge v={f.rating} /></span></Td>
+                  <tr key={f.id} className="row-hover" style={{ cursor: 'pointer' }} onClick={() => navigate(`/app/audits/${f.engagement_id}/findings/${f.id}`)}>
+                    <Td style={{ width: 150, color: 'var(--text-3)' }}>{tx('Finding to address')}</Td>
+                    <Td style={{ color: 'var(--text)' }}>{f.ref} {f.title} <span style={{ marginInlineStart: 6 }}><RatingBadge v={f.rating} /></span></Td>
                     <Td align="right"><DueText date={f.due_date} /></Td>
                   </tr>
                 ))}
@@ -99,27 +96,28 @@ export function AuditsPage() {
 
         <section className="section">
           <div className="flex items-center justify-between" style={{ padding: '11px 16px', borderBottom: '1px solid var(--border)' }}>
-            <h3 style={{ fontSize: 'var(--t-section)', fontWeight: 600, margin: 0 }}>Engagements</h3>
+            <h3 style={{ fontSize: 'var(--t-section)', fontWeight: 600, margin: 0 }}>{tx('Engagements')}</h3>
             <label className="flex items-center" style={{ gap: 6, fontSize: 'var(--t-sm)', color: 'var(--text-3)', cursor: 'pointer' }}>
-              <input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Show closed
-            </label>
+              <input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> {tx('Show closed')}</label>
           </div>
           {loading ? (
             <div style={{ padding: 60, display: 'flex', justifyContent: 'center' }}><Spinner /></div>
           ) : list.length === 0 ? (
-            <Empty title={engagements.length ? 'No active engagements' : 'No audits yet'}
+            <Empty title={engagements.length ? tx('No active engagements') : tx('No audits yet')}
               action={perms.canManageAudits && !engagements.length &&
-                <button className="btn-primary" onClick={() => setShowNew(true)}><ClipboardCheck size={14} /> Plan the first engagement</button>}>
+                <button className="btn-primary" onClick={() => navigate('/app/audits/new')}><ClipboardCheck size={14} /> {tx('Plan the first engagement')}</button>}>
               {engagements.length
-                ? 'Tick “Show closed” to see past engagements.'
-                : 'An engagement holds what is being audited, the tests performed, the evidence requested from the business, the findings raised and the final report.'}
+                ? tx('Tick “Show closed” to see past engagements.')
+                : tx(
+                'An engagement holds what is being audited, the tests performed, the evidence requested from the business, the findings raised and the final report.'
+              )}
             </Empty>
           ) : (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead><tr>
-                  <Th width={110}>Ref</Th><Th>Engagement</Th><Th>Stage</Th><Th>Lead</Th>
-                  <Th>Fieldwork</Th><Th align="right">Tested</Th><Th align="right">Open findings</Th><Th>Opinion</Th>
+                  <Th width={110}>{tx('Ref')}</Th><Th>{tx('Engagement')}</Th><Th>{tx('Stage')}</Th><Th>{tx('Lead')}</Th>
+                  <Th>{tx('Fieldwork')}</Th><Th align="right">{tx('Tested')}</Th><Th align="right">{tx('Open findings')}</Th><Th>{tx('Opinion')}</Th>
                 </tr></thead>
                 <tbody>
                   {list.map((e) => {
@@ -138,7 +136,7 @@ export function AuditsPage() {
                         <Td>{e.planned_start ? `${fmtDate(e.planned_start)} – ${fmtDate(e.planned_end)}` : '—'}</Td>
                         <Td align="right" style={{ fontVariantNumeric: 'tabular-nums' }}>{tested} / {(e.scope ?? []).length}</Td>
                         <Td align="right" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                          {open.length}{high ? <span style={{ color: 'var(--critical)', fontWeight: 600 }}> · {high} high</span> : ''}
+                          {open.length}{high ? <span style={{ color: 'var(--critical)', fontWeight: 600 }}> · {high} {tx('high')}</span> : ''}
                         </Td>
                         <Td><OpinionBadge v={e.opinion} /></Td>
                       </tr>
@@ -151,10 +149,6 @@ export function AuditsPage() {
         </section>
       </div>
 
-      {showNew && (
-        <EngagementForm open onClose={() => setShowNew(false)} members={members}
-          onSave={async (v) => { const e = await createEngagement(v); navigate(`/app/audits/${e.id}`) }} />
-      )}
     </div>
   )
 }

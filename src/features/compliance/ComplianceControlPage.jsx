@@ -14,17 +14,18 @@ import {
   computeEffectiveStatus, isSubControl,
   isAutomated, hasAutomatedResult, isOverridingEvidence,
 } from '@/hooks/useCompliance'
-import { LinkControlModal } from './ComplianceFrameworkPage'
+import { ControlMapper } from './ComplianceFrameworkPage'
 import { EvidenceCompliancePanel } from './EvidenceCompliancePanel'
 import { AUTOMATION_META, automationClassFor, mainControlId } from '@/data/eccAutomation'
 import { evidenceRequirementFor } from '@/data/eccEvidenceRequirements'
+import { tx, appLocale } from '@/lib/i18n'
 
 const GUIDE_SECTIONS = [
-  { key: 'plain',     label: 'In plain terms' },
-  { key: 'how',       label: 'How to implement' },
-  { key: 'evidence',  label: 'Evidence to keep' },
-  { key: 'platforms', label: 'Platforms' },
-  { key: 'in_risys',  label: 'In RISYS' },
+  { key: 'plain',     label: tx('In plain terms') },
+  { key: 'how',       label: tx('How to implement') },
+  { key: 'evidence',  label: tx('Evidence to keep') },
+  { key: 'platforms', label: tx('Platforms') },
+  { key: 'in_risys',  label: tx('In RISYS') },
 ]
 
 /*
@@ -67,11 +68,11 @@ const MEASURE_MAX = 1040     // ~95ch at 14px; only engages above ~1500px viewpo
 const RAIL        = 340
 
 const SIGNAL_TONES = {
-  pass:           { color: 'var(--low)',      bg: 'var(--low-bg)',      label: 'Pass',         Icon: CheckCircle2 },
-  fail:           { color: 'var(--critical)', bg: 'var(--critical-bg)', label: 'Fail',         Icon: XCircle },
-  partial:        { color: 'var(--medium)',   bg: 'var(--medium-bg)',   label: 'Partial',      Icon: AlertTriangle },
+  pass:           { color: 'var(--low)',      bg: 'var(--low-bg)',      label: tx('Pass'),         Icon: CheckCircle2 },
+  fail:           { color: 'var(--critical)', bg: 'var(--critical-bg)', label: tx('Fail'),         Icon: XCircle },
+  partial:        { color: 'var(--medium)',   bg: 'var(--medium-bg)',   label: tx('Partial'),      Icon: AlertTriangle },
   not_applicable: { color: 'var(--text-3)',   bg: 'var(--surface)',     label: 'N/A',          Icon: MinusCircle },
-  unknown:        { color: 'var(--text-3)',   bg: 'var(--surface)',     label: 'Not measured', Icon: HelpCircle },
+  unknown:        { color: 'var(--text-3)',   bg: 'var(--surface)',     label: tx('Not measured'), Icon: HelpCircle },
 }
 
 /* ── Building blocks ─────────────────────────────────────────────────────── */
@@ -135,7 +136,7 @@ function BulletList({ items }) {
   return (
     <ul style={{ display: 'flex', flexDirection: 'column', gap: 8, listStyle: 'none', padding: 0, margin: 0 }}>
       {items.map((b, i) => (
-        <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', paddingLeft: b.level * 20 }}>
+        <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', paddingInlineStart: b.level * 20 }}>
           <span style={{
             width: b.level === 0 ? 4 : 3, height: b.level === 0 ? 4 : 3,
             borderRadius: '50%', flexShrink: 0, marginTop: b.level === 0 ? 8 : 8.5,
@@ -313,11 +314,9 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
   if (!fw || !req) {
     return (
       <div style={{ padding: 'var(--s-10) var(--gutter)' }}>
-        <p style={{ fontSize: 'var(--t-body)', color: 'var(--text-3)' }}>
-          No control {requirementId} in {frameworkId}.
-        </p>
-        <button onClick={onBack} className="btn-secondary" style={{ marginTop: 14 }}>
-          Back to {fw?.label || 'framework'}
+        <p style={{ fontSize: 'var(--t-body)', color: 'var(--text-3)' }}>{tx('No control')} {requirementId} {tx('in')} {frameworkId}.
+                  </p>
+        <button onClick={onBack} className="btn-secondary" style={{ marginTop: 14 }}>{tx('Back to')} {fw?.label || 'framework'}
         </button>
       </div>
     )
@@ -328,18 +327,6 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
 
   return (
     <>
-      {showMap && (
-        <LinkControlModal
-          open={showMap}
-          requirementId={requirementId}
-          requirementText={text.slice(0, 120)}
-          controls={controls}
-          mappingsFor={mappingsFor}
-          onLink={linkControl}
-          onUnlink={unlinkControl}
-          onClose={() => setShowMap(false)}
-        />
-      )}
 
       {/* ── Header ───────────────────────────────────────────────────────────
           Back steps up the tree by one level rather than running the browser
@@ -362,8 +349,8 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
           style={{ marginBottom: 10 }}
         >
           {parentId
-            ? <>Back to <span className="mono">{parentId}</span></>
-            : <>Back to {fw.label}</>}
+            ? <>{tx('Back to')} <span className="mono">{parentId}</span></>
+            : <>{tx('Back to')} {fw.label}</>}
         </BackLink>
 
         <div style={{
@@ -391,8 +378,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
               )}
 
               {isSubControl(req) && (
-                <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>
-                  Subcontrol of <span className="mono">{parentId}</span>
+                <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{tx('Subcontrol of')} <span className="mono">{parentId}</span>
                 </span>
               )}
             </div>
@@ -424,12 +410,12 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                 commentary on it. */}
             <Source
               icon={FileText}
-              title="Control"
+              title={tx('Control')}
               attribution={`${fw.fullName} ${fw.version} · reproduced without abridgement`}
             >
               <div style={{
                 background: 'var(--bg-2)', border: '1px solid var(--border)',
-                borderLeft: '3px solid var(--crimson)',
+                borderInlineStart: '3px solid var(--crimson)',
                 borderRadius: 'var(--r-md)', padding: '20px 22px',
               }}>
                 <p style={{ fontSize: 15, lineHeight: 1.78, color: 'var(--text)', margin: 0 }}>
@@ -438,7 +424,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
 
                 {children.length > 0 && (
                   <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-                    <SubHead>Subcontrols</SubHead>
+                    <SubHead>{tx('Subcontrols')}</SubHead>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                       {children.map(sub => {
                         const sid = sub[idKey]
@@ -449,7 +435,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                             onClick={() => onOpenControl(sid)}
                             className="row-hover"
                             style={{
-                              display: 'flex', gap: 12, alignItems: 'flex-start', textAlign: 'left',
+                              display: 'flex', gap: 12, alignItems: 'flex-start', textAlign: 'start',
                               background: 'none', border: 'none', width: '100%',
                               padding: '9px 10px', margin: '0 -10px', cursor: 'pointer',
                               borderRadius: 'var(--r)',
@@ -466,9 +452,12 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                             </span>
                             {isAutomated(sAuto) && (
                               <Zap size={11} style={{ color: 'var(--info)', flexShrink: 0, marginTop: 4 }}
-                                aria-label="Has a measured signal" />
+                                aria-label={tx('Has a measured signal')} />
                             )}
-                            <ChevronRight size={13} style={{ color: 'var(--taupe)', flexShrink: 0, marginTop: 2 }} />
+                            <ChevronRight
+                              size={13}
+                              style={{ color: 'var(--taupe)', flexShrink: 0, marginTop: 2 }}
+                              className='rtl-flip' />
                           </button>
                         )
                       })}
@@ -496,8 +485,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
               <Panel style={{ marginBottom: 30, background: 'var(--surface)' }}>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                   <ShieldCheck size={14} style={{ color: 'var(--taupe)', flexShrink: 0, marginTop: 2 }} />
-                  <p style={{ fontSize: 'var(--t-body)', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
-                    Evidence for this subcontrol is recorded once, against its main control{' '}
+                  <p style={{ fontSize: 'var(--t-body)', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>{tx('Evidence for this subcontrol is recorded once, against its main control')}{' '}
                     <button
                       onClick={() => onOpenControl(evidenceParent)}
                       className="mono"
@@ -515,7 +503,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
             {/* Guidance, by source, attributed */}
             {guidanceError && (
               <Panel style={{ marginBottom: 30 }}>
-                <RailEmpty>Reference guidance could not be loaded.</RailEmpty>
+                <RailEmpty>{tx('Reference guidance could not be loaded.')}</RailEmpty>
               </Panel>
             )}
 
@@ -542,7 +530,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                       background: regulatory ? 'var(--info-bg)' : 'var(--surface-2)',
                       border: `1px solid ${regulatory ? 'var(--info-bd)' : 'var(--border)'}`,
                     }}>
-                      {regulatory ? 'Regulatory' : 'Internal'}
+                      {regulatory ? tx('Regulatory') : tx('Internal')}
                     </span>
                   }
                 >
@@ -565,7 +553,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
 
             {guidance && !node?.nca_official && !node?.risys && !guideEntry && childrenWithGuidance.length === 0 && (
               <Panel style={{ marginBottom: 30 }}>
-                <RailEmpty>No implementation guidance loaded for this control.</RailEmpty>
+                <RailEmpty>{tx('No implementation guidance loaded for this control.')}</RailEmpty>
               </Panel>
             )}
 
@@ -576,12 +564,12 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
               <Panel style={{ marginBottom: 30, background: 'var(--surface)' }}>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                   <Info size={14} style={{ color: 'var(--taupe)', flexShrink: 0, marginTop: 2 }} />
-                  <p style={{ fontSize: 'var(--t-body)', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
-                    NCA publishes its guidance for this control against each of its
-                    subcontrols rather than the lead-in clause. Open{' '}
+                  <p style={{ fontSize: 'var(--t-body)', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>{tx(
+                    'NCA publishes its guidance for this control against each of its subcontrols rather than the lead-in clause. Open'
+                  )}{' '}
                     {childrenWithGuidance.map((sid, i) => (
                       <span key={sid}>
-                        {i > 0 && (i === childrenWithGuidance.length - 1 ? ' and ' : ', ')}
+                        {i > 0 && (i === childrenWithGuidance.length - 1 ? tx(' and ') : ', ')}
                         <button
                           onClick={() => onOpenControl(sid)}
                           className="mono"
@@ -593,8 +581,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                         </button>
                       </span>
                     ))}
-                    {' '}for it.
-                  </p>
+                    {' '}{tx('for it.')}</p>
                 </div>
               </Panel>
             )}
@@ -608,9 +595,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                     fontSize: 'var(--t-micro)', padding: '2px 8px', borderRadius: 'var(--r-full)',
                     fontWeight: 600, flexShrink: 0,
                     color: 'var(--text-3)', background: 'var(--surface-2)', border: '1px solid var(--border)',
-                  }}>
-                    Internal
-                  </span>
+                  }}>{tx('Internal')}</span>
                 }
               >
                 <Panel>
@@ -639,19 +624,16 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
           }}>
 
             {/* Measured */}
-            <RailCard icon={Zap} title="Measured">
+            <RailCard icon={Zap} title={tx('Measured')}>
               {!isAutomated(auto) && (
-                <RailEmpty>
-                  No connector signal covers this control, so its status is a human
-                  judgement recorded below.
-                </RailEmpty>
+                <RailEmpty>{tx(
+                  'No connector signal covers this control, so its status is a human judgement recorded below.'
+                )}</RailEmpty>
               )}
 
               {isAutomated(auto) && (
                 <>
-                  <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', margin: '0 0 10px', lineHeight: 1.55 }}>
-                    Read from connector data, not asserted.
-                  </p>
+                  <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', margin: '0 0 10px', lineHeight: 1.55 }}>{tx('Read from connector data, not asserted.')}</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {(auto.signals || []).map(sig => {
                       const tone = SIGNAL_TONES[sig.status] || SIGNAL_TONES.unknown
@@ -666,7 +648,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                             <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)', lineHeight: 1.45, margin: 0 }}>
                               {sig.name}
                               {!sig.direct && (
-                                <span title="Inherited from a subcontrol"
+                                <span title={tx('Inherited from a subcontrol')}
                                   style={{ color: 'var(--text-3)' }}> ↳</span>
                               )}
                             </p>
@@ -677,8 +659,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                               }}>{sig.summary}</p>
                             )}
                             {!sig.summary && sig.status === 'unknown' && sig.requires_license && (
-                              <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', margin: '2px 0 0' }}>
-                                Requires {String(sig.requires_license).replace(/_/g, ' ')}
+                              <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', margin: '2px 0 0' }}>{tx('Requires')} {String(sig.requires_license).replace(/_/g, ' ')}
                               </p>
                             )}
                           </div>
@@ -696,8 +677,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                       display: 'flex', alignItems: 'center', gap: 5,
                       fontSize: 'var(--t-micro)', color: 'var(--text-3)', margin: '10px 0 0',
                     }}>
-                      <Clock size={10} />
-                      Last measured {new Date(auto.last_computed_at).toLocaleString()}
+                      <Clock size={10} />{tx('Last measured')} {new Date(auto.last_computed_at).toLocaleString(appLocale())}
                     </p>
                   )}
                 </>
@@ -705,7 +685,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
             </RailCard>
 
             {/* Assessed position */}
-            <RailCard title="Assessed status">
+            <RailCard title={tx('Assessed status')}>
               <SelectField
                 value={statusRow?.status ?? ''}
                 disabled={!canManage}
@@ -713,7 +693,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                 className="w-full"
               >
                 <option value="">
-                  {hasAutomatedResult(auto) ? 'Use measured result' : 'Not set'}
+                  {hasAutomatedResult(auto) ? tx('Use measured result') : tx('Not set')}
                 </option>
                 {statusOptions.map(o => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -726,11 +706,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                   marginTop: 10, background: 'var(--medium-bg)', border: '1px solid var(--medium-bd)',
                 }}>
                   <AlertTriangle size={13} style={{ color: 'var(--medium)', flexShrink: 0, marginTop: 1 }} />
-                  <p style={{ fontSize: 'var(--t-meta)', color: 'var(--medium)', lineHeight: 1.55, margin: 0 }}>
-                    This differs from what the connectors measured
-                    ({STATUS_CONFIG[auto.automated_status]?.label}). An assessor may
-                    need to justify the difference.
-                  </p>
+                  <p style={{ fontSize: 'var(--t-meta)', color: 'var(--medium)', lineHeight: 1.55, margin: 0 }}>{tx('This differs from what the connectors measured (')}{STATUS_CONFIG[auto.automated_status]?.label}{tx('). An assessor may need to justify the difference.')}</p>
                 </div>
               )}
 
@@ -739,7 +715,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                 onChange={e => setNotes(e.target.value)}
                 disabled={!canManage}
                 rows={4}
-                placeholder="Assessor note — why this position, and what it rests on."
+                placeholder={tx('Assessor note — why this position, and what it rests on.')}
                 className="risys-input"
                 style={{ resize: 'vertical', lineHeight: 1.6, marginTop: 10 }}
               />
@@ -747,13 +723,12 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
               {canManage && notes !== (statusRow?.notes || '') && (
                 <button onClick={saveNotes} disabled={savingNotes}
                   className="btn-primary" style={{ marginTop: 9, width: '100%' }}>
-                  {savingNotes ? 'Saving…' : 'Save note'}
+                  {savingNotes ? tx('Saving…') : tx('Save note')}
                 </button>
               )}
 
               {statusRow?.updated_at && (
-                <p style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)', margin: '10px 0 0' }}>
-                  Set {new Date(statusRow.updated_at).toLocaleDateString()}
+                <p style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)', margin: '10px 0 0' }}>{tx('Set')} {new Date(statusRow.updated_at).toLocaleDateString(appLocale())}
                 </p>
               )}
             </RailCard>
@@ -761,16 +736,18 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
             {/* Mapped controls */}
             <RailCard
               icon={ShieldCheck}
-              title="Mapped controls"
-              action={canManage && (
+              title={tx('Mapped controls')}
+              action={canManage && !showMap && (
                 <button onClick={() => setShowMap(true)} className="btn-ghost"
                   style={{ fontSize: 'var(--t-meta)', padding: '3px 7px', gap: 4 }}>
-                  <Link2 size={11} /> Map
-                </button>
+                  <Link2 size={11} /> {tx('Map')}</button>
               )}
             >
-              {mapped.length === 0 ? (
-                <RailEmpty>No internal control mapped to this requirement.</RailEmpty>
+              {showMap ? (
+                <ControlMapper requirementId={requirementId} controls={controls} mappingsFor={mappingsFor}
+                  onLink={linkControl} onUnlink={unlinkControl} onDone={() => setShowMap(false)} />
+              ) : mapped.length === 0 ? (
+                <RailEmpty>{tx('No internal control mapped to this requirement.')}</RailEmpty>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                   {mapped.map(c => {
@@ -787,7 +764,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                           color: pass ? 'var(--low)' : fail ? 'var(--critical)' : 'var(--text-3)',
                           background: pass ? 'var(--low-bg)' : fail ? 'var(--critical-bg)' : 'var(--surface)',
                           border: `1px solid ${pass ? 'var(--low-bd)' : fail ? 'var(--critical-bd)' : 'var(--border)'}`,
-                        }}>{c.testing_status || 'Not tested'}</span>
+                        }}>{c.testing_status || tx('Not tested')}</span>
                       </div>
                     )
                   })}

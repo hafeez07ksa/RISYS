@@ -4,20 +4,20 @@ import { IntegrationsPage } from './integrations/IntegrationsPage'
 import { MembersSettings } from './MembersSettings'
 import { useAuth } from '@/hooks/useAuth'
 import clsx from 'clsx'
+import { tx } from '@/lib/i18n'
 
 // Settings is already behind RequireRole(admin) in routes,
 // but we also scope the tabs to what makes sense for admins.
 const TABS = [
-  { id: 'integrations', label: 'Integrations' },
-  { id: 'organization', label: 'Organization' },
-  { id: 'members',      label: 'Members' },
-  { id: 'notifications',label: 'Notifications' },
+  { id: 'integrations', label: tx('Integrations') },
+  { id: 'organization', label: tx('Organization') },
+  { id: 'members',      label: tx('Members') },
+  { id: 'notifications',label: tx('Notifications') },
 ]
 
 const Stub = ({ text }) => (
   <div className="py-16 text-center text-xs" style={{ color: '#8a7070' }}>
-    {text} — coming soon
-  </div>
+    {text} {tx('— coming soon')}</div>
 )
 
 export function SettingsPage() {
@@ -26,14 +26,14 @@ export function SettingsPage() {
 
   const content = {
     integrations:  <IntegrationsPage />,
-    organization:  <Stub text="Organization settings" />,
+    organization:  <Stub text={tx('Organization settings')} />,
     members:       <MembersSettings />,
-    notifications: <Stub text="Notification preferences" />,
+    notifications: <Stub text={tx('Notification preferences')} />,
   }
 
   return (
     <div>
-      <Topbar title="Settings" subtitle={organization?.name} />
+      <Topbar title={tx('Settings')} subtitle={organization?.name} />
       <div className="page-content">
         <div className="flex gap-0 mb-6" style={{ borderBottom: '1px solid #e5e0e0' }}>
           {TABS.map(tab => (

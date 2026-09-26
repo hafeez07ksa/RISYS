@@ -1,29 +1,30 @@
 import { CheckCircle2, AlertTriangle, MinusCircle, Loader2, CalendarClock } from 'lucide-react'
 import { SOURCE_STATE_META, formatRelative, isActiveRun, runStatus } from '@/hooks/useConnectorScans'
+import { tx } from '@/lib/i18n'
 
 // Human names for scan data sources, per connector.
 export const SOURCE_LABELS = {
   defender: {
-    posture:  { name: 'Secure Score',          what: 'configuration gaps' },
-    alerts:   { name: 'Alerts',                what: 'active threats' },
-    endpoint: { name: 'Defender for Endpoint', what: 'vulnerabilities and device health' },
+    posture:  { name: 'Secure Score',          what: tx('configuration gaps') },
+    alerts:   { name: 'Alerts',                what: tx('active threats') },
+    endpoint: { name: 'Defender for Endpoint', what: tx('vulnerabilities and device health') },
   },
   entra: {
-    directory: { name: 'Directory',       what: 'users, account status and guests' },
-    mfa:       { name: 'MFA registration', what: 'who has registered MFA' },
-    roles:     { name: 'Directory roles',  what: 'privileged accounts' },
-    signins:   { name: 'Sign-in logs',     what: 'last 7 days of sign-ins' },
+    directory: { name: 'Directory',       what: tx('users, account status and guests') },
+    mfa:       { name: 'MFA registration', what: tx('who has registered MFA') },
+    roles:     { name: 'Directory roles',  what: tx('privileged accounts') },
+    signins:   { name: 'Sign-in logs',     what: tx('last 7 days of sign-ins') },
   },
   m365: {
-    forwarding: { name: 'Mail forwarding',  what: 'mailbox forwarding and inbox rules' },
-    guests:     { name: 'Guest accounts',   what: 'guests nobody has reviewed' },
-    consent:    { name: 'App consent',      what: 'third-party apps holding tenant permissions' },
-    dns:        { name: 'Mail domain DNS',  what: 'SPF, DKIM and DMARC on your mail domains' },
+    forwarding: { name: 'Mail forwarding',  what: tx('mailbox forwarding and inbox rules') },
+    guests:     { name: 'Guest accounts',   what: tx('guests nobody has reviewed') },
+    consent:    { name: 'App consent',      what: tx('third-party apps holding tenant permissions') },
+    dns:        { name: 'Mail domain DNS',  what: tx('SPF, DKIM and DMARC on your mail domains') },
   },
   sharepoint: {
-    tenant:  { name: 'Tenant sharing policy', what: 'SharePoint and OneDrive sharing settings' },
-    groups:  { name: 'Microsoft 365 groups',  what: 'guests and public groups' },
-    sharing: { name: 'File sharing',          what: '"Anyone" links and external shares' },
+    tenant:  { name: 'Tenant sharing policy', what: tx('SharePoint and OneDrive sharing settings') },
+    groups:  { name: 'Microsoft 365 groups',  what: tx('guests and public groups') },
+    sharing: { name: 'File sharing',          what: tx('"Anyone" links and external shares') },
   },
 }
 
@@ -61,9 +62,9 @@ export function ScanHealthBanner({ connectorId, latestRun, lastCompletedRun, sch
 
   if (!run && !running) {
     return (
-      <Banner tone="muted" Icon={MinusCircle}>
-        This connector has not been scanned yet, so the list below may be incomplete.
-        {onOpenSettings && <LinkButton onClick={onOpenSettings}>Run a scan</LinkButton>}
+      <Banner tone="muted" Icon={MinusCircle}>{tx(
+          'This connector has not been scanned yet, so the list below may be incomplete.'
+        )}{onOpenSettings && <LinkButton onClick={onOpenSettings}>{tx('Run a scan')}</LinkButton>}
       </Banner>
     )
   }
@@ -84,35 +85,34 @@ export function ScanHealthBanner({ connectorId, latestRun, lastCompletedRun, sch
   return (
     <div className="flex flex-col gap-2 mb-4">
       {running && (
-        <Banner tone="muted" Icon={Loader2} spin>
-          A scan is running now. Results will appear when it finishes.
-        </Banner>
+        <Banner tone="muted" Icon={Loader2} spin>{tx('A scan is running now. Results will appear when it finishes.')}</Banner>
       )}
       {run && (status === 'failed' || blocking.length > 0) ? (
         <Banner tone="error" Icon={AlertTriangle}>
           <div className="flex flex-col gap-1">
             <span>
-              <strong>{status === 'failed' ? 'The last scan failed' : 'The last scan was incomplete'}</strong>
-              {' '}({formatRelative(run.finished_at || run.started_at)}). Findings from the sources below are missing or out of date, so a low count does not mean you are clean.
-            </span>
+              <strong>{status === 'failed' ? tx('The last scan failed') : tx('The last scan was incomplete')}</strong>
+              {' '}({formatRelative(run.finished_at || run.started_at)}{tx(
+              '). Findings from the sources below are missing or out of date, so a low count does not mean you are clean.'
+            )}</span>
             {run.error && <span>{run.error}</span>}
             {blocking.map(p => (
               <span key={p.key}>
                 <strong>{p.label}</strong>{p.what ? ` (${p.what})` : ''}: {p.detail}
               </span>
             ))}
-            {onOpenSettings && <LinkButton onClick={onOpenSettings}>Open scan settings</LinkButton>}
+            {onOpenSettings && <LinkButton onClick={onOpenSettings}>{tx('Open scan settings')}</LinkButton>}
           </div>
         </Banner>
       ) : run ? (
         <div className="flex items-center gap-2 text-xs flex-wrap" style={{ color: '#8a7070' }}>
           <CalendarClock size={12} />
-          <span>Last scanned {formatRelative(run.finished_at || run.started_at)} ({run.trigger}). {schedText}</span>
+          <span>{tx('Last scanned')} {formatRelative(run.finished_at || run.started_at)} ({run.trigger}). {schedText}</span>
           {problems.filter(p => p.state === 'not_licensed').map(p => (
-            <span key={p.key} title={p.detail}>· {p.label} not available in this tenant</span>
+            <span key={p.key} title={p.detail}>· {p.label} {tx('not available in this tenant')}</span>
           ))}
           {problems.filter(p => p.state === 'skipped').map(p => (
-            <span key={p.key} title={p.detail}>· {p.label} not checked</span>
+            <span key={p.key} title={p.detail}>· {p.label} {tx('not checked')}</span>
           ))}
           {inProgress.map(p => (
             <span key={p.key} style={{ color: '#92400e' }}>· {p.label}: {p.detail}</span>
@@ -136,7 +136,7 @@ function Banner({ tone, Icon, spin, children }) {
 
 function LinkButton({ onClick, children }) {
   return (
-    <button onClick={onClick} className="underline font-medium text-left"
+    <button onClick={onClick} className='underline font-medium text-start'
       style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', marginInlineStart: 4 }}>
       {children}
     </button>

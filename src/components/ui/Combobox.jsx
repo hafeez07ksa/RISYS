@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo, useId, Children, isValidElement }
 import { createPortal } from 'react-dom'
 import { Check, ChevronDown, Search, X, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
+import { tx } from '@/lib/i18n'
 
 /* ── Dropdown system (§23) ────────────────────────────────────────────────────
  *
@@ -33,7 +34,7 @@ function flatten(options) {
 const normalise = (o) =>
   typeof o === 'string' || typeof o === 'number'
     ? { value: o, label: String(o) }
-    : { ...o, label: o.label ?? String(o.value) }
+    : { ...o, label: o.label != null ? tx(o.label) : String(o.value) }
 
 export function Combobox({
   value,
@@ -205,7 +206,7 @@ export function Combobox({
         aria-haspopup="listbox"
         aria-controls={open ? listId : undefined}
         aria-invalid={error ? 'true' : undefined}
-        className={clsx('flex items-center justify-between gap-2 w-full rounded-md transition-colors text-left', buttonClassName)}
+        className={clsx('flex items-center justify-between gap-2 w-full rounded-md transition-colors text-start', buttonClassName)}
         style={{
           background: disabled ? 'var(--surface)' : 'var(--bg-2)',
           border: `1px solid ${error ? 'var(--critical)' : 'var(--border)'}`,
@@ -222,7 +223,7 @@ export function Combobox({
             <span
               role="button"
               tabIndex={-1}
-              aria-label="Clear selection"
+              aria-label={tx('Clear selection')}
               onClick={(e) => { e.stopPropagation(); onChange?.(multiple ? [] : null) }}
               style={{ color: 'var(--text-3)', display: 'flex' }}
             >
@@ -277,21 +278,16 @@ export function Combobox({
           {multiple && selectable.length > 1 && (
             <div style={{ display: 'flex', gap: 10, padding: '6px 10px', borderBottom: '1px solid var(--border-3)' }}>
               <button type="button" onClick={() => onChange?.(selectable.map((o) => o.value))}
-                style={{ fontSize: 'var(--t-meta)', color: 'var(--crimson)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                Select all
-              </button>
+                style={{ fontSize: 'var(--t-meta)', color: 'var(--crimson)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>{tx('Select all')}</button>
               <button type="button" onClick={() => onChange?.([])}
-                style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                Clear
-              </button>
+                style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>{tx('Clear')}</button>
             </div>
           )}
 
           <div style={{ overflowY: 'auto', padding: 4 }}>
             {loading && (
               <div style={{ padding: '18px 12px', textAlign: 'center', fontSize: 'var(--t-sm)', color: 'var(--text-3)' }}>
-                <Loader2 size={14} className="animate-spin" style={{ display: 'inline' }} /> Loading…
-              </div>
+                <Loader2 size={14} className="animate-spin" style={{ display: 'inline' }} /> {tx('Loading…')}</div>
             )}
 
             {!loading && navigable.length === 0 && (
@@ -384,7 +380,7 @@ function optionsFromChildren(children) {
       if (!isValidElement(child)) return
       if (child.type === 'option') out.push(readOption(child))
       else if (child.type === 'optgroup') {
-        const group = { group: child.props.label, options: [] }
+        const group = { group: tx(child.props.label), options: [] }
         Children.forEach(child.props.children, (o) => {
           if (isValidElement(o) && o.type === 'option') group.options.push(readOption(o))
         })
@@ -466,7 +462,7 @@ export function SelectField({
       size={size ?? 'sm'}
       className={layout}
       style={wantsFull ? undefined : { minWidth: 0 }}
-      placeholder={placeholder ?? 'Select…'}
+      placeholder={placeholder ?? tx('Select…')}
       {...rest}
     />
   )

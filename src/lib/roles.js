@@ -1,3 +1,4 @@
+import { tx } from '@/lib/i18n'
 /* ── Roles (B10) ──────────────────────────────────────────────────────────────
  *
  * THE single definition of who may do what. Before this file the role set was
@@ -60,18 +61,22 @@ const ALL = CAPABILITIES
  */
 export const ROLE_DEFS = [
   {
-    value: 'owner', label: 'Owner', rank: 100, assignable: false, readOnly: false,
-    desc: 'Created the organisation. Everything an Admin can do, and cannot be removed by one.',
+    value: 'owner', label: tx('Owner'), rank: 100, assignable: false, readOnly: false,
+    desc: tx(
+      'Created the organisation. Everything an Admin can do, and cannot be removed by one.'
+    ),
     caps: ALL,
   },
   {
-    value: 'admin', label: 'Admin', rank: 90, assignable: true, readOnly: false,
-    desc: 'Full access — manages people, settings, connectors and every record.',
+    value: 'admin', label: tx('Admin'), rank: 90, assignable: true, readOnly: false,
+    desc: tx('Full access — manages people, settings, connectors and every record.'),
     caps: ALL,
   },
   {
-    value: 'risk_manager', label: 'Risk Manager', rank: 60, assignable: true, readOnly: false,
-    desc: 'Second line — owns the register, approves risks, tests controls, decides acceptances.',
+    value: 'risk_manager', label: tx('Risk Manager'), rank: 60, assignable: true, readOnly: false,
+    desc: tx(
+      'Second line — owns the register, approves risks, tests controls, decides acceptances.'
+    ),
     caps: [
       'risk.create', 'risk.write.any', 'risk.delete', 'risk.approve', 'risk.test',
       'risk.review', 'risk.exception.request', 'risk.exception.decide',
@@ -80,8 +85,10 @@ export const ROLE_DEFS = [
     ],
   },
   {
-    value: 'compliance_officer', label: 'Compliance Officer', rank: 50, assignable: true, readOnly: false,
-    desc: 'Owns framework compliance and evidence. Works the risks assigned to them; does not approve the register.',
+    value: 'compliance_officer', label: tx('Compliance Officer'), rank: 50, assignable: true, readOnly: false,
+    desc: tx(
+      'Owns framework compliance and evidence. Works the risks assigned to them; does not approve the register.'
+    ),
     caps: [
       'risk.create', 'risk.write.own', 'risk.review', 'risk.exception.request',
       'controls.write', 'compliance.write', 'findings.triage', 'audit.view',
@@ -89,18 +96,22 @@ export const ROLE_DEFS = [
     ],
   },
   {
-    value: 'member', label: 'Member', rank: 30, assignable: true, readOnly: false,
-    desc: 'First line — raises risks and works the ones they own, with their controls, evidence and actions.',
+    value: 'member', label: tx('Member'), rank: 30, assignable: true, readOnly: false,
+    desc: tx(
+      'First line — raises risks and works the ones they own, with their controls, evidence and actions.'
+    ),
     caps: ['risk.create', 'risk.write.own', 'risk.exception.request', 'comment'],
   },
   {
-    value: 'auditor', label: 'Auditor', rank: 20, assignable: true, readOnly: true,
-    desc: 'Reads everything including evidence and the audit log. Runs audit engagements and issues audit reports; changes nothing else.',
+    value: 'auditor', label: tx('Auditor'), rank: 20, assignable: true, readOnly: true,
+    desc: tx(
+      'Reads everything including evidence and the audit log. Runs audit engagements and issues audit reports; changes nothing else.'
+    ),
     caps: ['audit.view', 'audit.manage', 'reports.generate', 'comment'],
   },
   {
-    value: 'viewer', label: 'Viewer', rank: 10, assignable: true, readOnly: true,
-    desc: 'Read-only across the workspace. No audit log, no changes.',
+    value: 'viewer', label: tx('Viewer'), rank: 10, assignable: true, readOnly: true,
+    desc: tx('Read-only across the workspace. No audit log, no changes.'),
     caps: ['comment'],
   },
 ]

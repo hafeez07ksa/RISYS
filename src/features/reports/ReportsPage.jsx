@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { FileText, Landmark, ShieldCheck, ClipboardCheck } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
@@ -6,8 +6,8 @@ import { usePermissions } from '@/hooks/usePermissions'
 import { useReports } from '@/hooks/useReports'
 import { useAudits } from '@/hooks/useAudits'
 import { REPORT_TYPES } from '@/lib/reports/theme'
-import { GenerateReportDialog } from './GenerateReportDialog'
 import { ReportArchive } from './ReportArchive'
+import { tx } from '@/lib/i18n'
 
 /* ── Reports ──────────────────────────────────────────────────────────────────
  *
@@ -18,23 +18,29 @@ import { ReportArchive } from './ReportArchive'
  * -------------------------------------------------------------------------- */
 
 const CARDS = [
-  { type: 'board_pack', icon: Landmark, blurb: 'Quarterly pack for the board or risk committee — what needs attention, risk before and after controls, accepted risks, ECC position, incidents and audit.' },
-  { type: 'ecc_status', icon: ShieldCheck, blurb: 'Requirement-by-requirement NCA ECC-2:2024 status with measurements, controls, evidence and gaps — for a regulator, assessor or management.' },
-  { type: 'audit_report', icon: ClipboardCheck, blurb: 'The formal report of an audit engagement — opinion, findings with management responses, and the testing behind them.' },
+  { type: 'board_pack', icon: Landmark, blurb: tx(
+    'Quarterly pack for the board or risk committee — what needs attention, risk before and after controls, accepted risks, ECC position, incidents and audit.'
+  ) },
+  { type: 'ecc_status', icon: ShieldCheck, blurb: tx(
+    'Requirement-by-requirement NCA ECC-2:2024 status with measurements, controls, evidence and gaps — for a regulator, assessor or management.'
+  ) },
+  { type: 'audit_report', icon: ClipboardCheck, blurb: tx(
+    'The formal report of an audit engagement — opinion, findings with management responses, and the testing behind them.'
+  ) },
 ]
 
 export function ReportsPage() {
   const { organization } = useAuth()
   const perms = usePermissions()
-  const { runs, loading, refetch, recordPresentation } = useReports()
+  const navigate = useNavigate()
+  const { runs, loading } = useReports()
   const { engagements } = useAudits()
-  const [dialog, setDialog] = useState(null)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title="Reports" subtitle={organization?.name}
+      <Topbar title={tx('Reports')} subtitle={organization?.name}
         actions={perms.canGenerateReports && (
-          <button className="btn-primary" onClick={() => setDialog('any')}><FileText size={14} /> Generate report</button>
+          <button className="btn-primary" onClick={() => navigate('/app/reports/new')}><FileText size={14} /> {tx('Generate report')}</button>
         )} />
 
       <div className="page-content" style={{ flex: 1, overflowY: 'auto' }}>
@@ -46,11 +52,11 @@ export function ReportsPage() {
                 <span style={{ fontSize: 'var(--t-section)', fontWeight: 600, color: 'var(--text)' }}>{REPORT_TYPES[type].label}</span>
               </div>
               <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-3)', margin: 0, lineHeight: 1.55, flex: 1 }}>{blurb}</p>
-              <div style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>For: {REPORT_TYPES[type].audience}</div>
+              <div style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{tx('For:')} {REPORT_TYPES[type].audience}</div>
               {perms.canGenerateReports && (
-                <div><button className="btn-secondary" onClick={() => setDialog(type)}
+                <div><button className="btn-secondary" onClick={() => navigate(`/app/reports/new?type=${type}`)}
                   disabled={type === 'audit_report' && !engagements.length}
-                  title={type === 'audit_report' && !engagements.length ? 'Create an audit engagement first' : undefined}>Generate</button></div>
+                  title={type === 'audit_report' && !engagements.length ? tx('Create an audit engagement first') : undefined}>{tx('Generate')}</button></div>
               )}
             </div>
           ))}
@@ -58,20 +64,18 @@ export function ReportsPage() {
 
         <section className="section">
           <div style={{ padding: '11px 16px', borderBottom: '1px solid var(--border)' }}>
-            <h3 style={{ fontSize: 'var(--t-section)', fontWeight: 600, margin: 0 }}>Archive</h3>
-            <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', margin: '3px 0 0' }}>
-              Every report ever generated, as it was generated. Reports cannot be edited or deleted; use Verify to confirm a file is unchanged.
-            </p>
+            <h3 style={{ fontSize: 'var(--t-section)', fontWeight: 600, margin: 0 }}>{tx('Archive')}</h3>
+            <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', margin: '3px 0 0' }}>{tx(
+              'Every report ever generated, as it was generated. Reports cannot be edited or deleted; use Verify to confirm a file is unchanged.'
+            )}</p>
           </div>
-          <ReportArchive runs={runs} loading={loading} canRecord={perms.canGenerateReports} onRecord={recordPresentation}
-            emptyText={perms.canGenerateReports ? 'Generate a board pack or an ECC status report to start the archive.' : 'Reports generated by your risk, compliance or audit team will appear here.'} />
+          <ReportArchive runs={runs} loading={loading} canRecord={perms.canGenerateReports}
+            emptyText={perms.canGenerateReports ? tx('Generate a board pack or an ECC status report to start the archive.') : tx(
+              'Reports generated by your risk, compliance or audit team will appear here.'
+            )} />
         </section>
       </div>
 
-      {dialog && (
-        <GenerateReportDialog open onClose={() => setDialog(null)} type={dialog === 'any' ? undefined : dialog}
-          engagements={engagements.filter((e) => e.status !== 'cancelled')} onGenerated={refetch} />
-      )}
     </div>
   )
 }

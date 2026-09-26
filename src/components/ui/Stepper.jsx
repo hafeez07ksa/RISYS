@@ -1,4 +1,5 @@
 import { Check } from 'lucide-react'
+import { tx } from '@/lib/i18n'
 
 /* Horizontal stepper for multi-step workflows (§9). Completed steps are
  * clickable, steps ahead are not: you can go back and revise, but you cannot
@@ -7,7 +8,7 @@ import { Check } from 'lucide-react'
  * anyone can sign off. */
 export function Stepper({ steps, current, onStepClick, completed = [] }) {
   return (
-    <nav aria-label="Progress" style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+    <nav aria-label={tx('Progress')} style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
       {steps.map((s, i) => {
         const active = i === current
         const done = completed.includes(i) || i < current

@@ -11,6 +11,7 @@ import { levelFor, scalePoint, DEFAULT_MATRIX } from '@/lib/matrix'
 import { residualDropWarning, coverageGaps } from '@/lib/gate'
 import { COVERAGE_OPTIONS, REDUCES_OPTIONS } from '@/lib/risks'
 import { GatePanel, CoverageGapNotice } from './GatePanel'
+import { tx } from '@/lib/i18n'
 
 // ============================================================
 // THE ASSESSMENT, AS A SEQUENCE
@@ -29,11 +30,11 @@ import { GatePanel, CoverageGapNotice } from './GatePanel'
 // ============================================================
 
 const STEPS = [
-  { value: 'statement', label: 'Statement' },
-  { value: 'inherent',  label: 'Inherent' },
-  { value: 'controls',  label: 'Controls' },
-  { value: 'residual',  label: 'Residual' },
-  { value: 'verdict',   label: 'Gate' },
+  { value: 'statement', label: tx('Statement') },
+  { value: 'inherent',  label: tx('Inherent') },
+  { value: 'controls',  label: tx('Controls') },
+  { value: 'residual',  label: tx('Residual') },
+  { value: 'verdict',   label: tx('Gate') },
 ]
 
 /**
@@ -72,7 +73,7 @@ export function ScorePicker({ label, scale, value, onChange, accent = 'var(--cri
         fontSize: 'var(--t-meta)', color: 'var(--text-2)', marginTop: 7, minHeight: 30,
         padding: '6px 9px', background: 'var(--surface)', borderRadius: 'var(--r)',
       }}>
-        {point ? point.definition : 'Choose a rating to see its definition.'}
+        {point ? point.definition : tx('Choose a rating to see its definition.')}
       </p>
     </div>
   )
@@ -92,8 +93,7 @@ function ScoreReadout({ l, i, matrix, caption }) {
       </p>
       <p style={{ fontSize: 'var(--t-meta)', fontWeight: 600, color: level.color, marginTop: 2 }}>{level.label}</p>
       {level.score != null && (
-        <p className="tnum" style={{ fontSize: 'var(--t-micro)', color: level.color, opacity: 0.75, marginTop: 3 }}>
-          L{l} × I{i}
+        <p className="tnum" style={{ fontSize: 'var(--t-micro)', color: level.color, opacity: 0.75, marginTop: 3 }}>L{l} × I{i}
         </p>
       )}
     </div>
@@ -200,7 +200,7 @@ export function AssessmentFlow({ risk, onClose, onSaved }) {
       }
       setStep(s => Math.min(s + 1, STEPS.length - 1))
     } catch (e) {
-      setError(e.message || 'Could not save this step')
+      setError(e.message || tx('Could not save this step'))
     } finally { setSaving(false) }
   }
 
@@ -226,11 +226,10 @@ export function AssessmentFlow({ risk, onClose, onSaved }) {
               display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--t-meta)', color: 'var(--text-3)',
               background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 7,
             }}>
-            <ArrowLeft size={13} /> Back to risk
-          </button>
+            <ArrowLeft size={13} className='rtl-flip' /> {tx('Back to risk')}</button>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
             <div style={{ minWidth: 0 }}>
-              <p className="eyebrow">Risk assessment · {risk.risk_id}</p>
+              <p className="eyebrow">{tx('Risk assessment ·')} {risk.risk_id}</p>
               <h1 style={{ fontSize: 'var(--t-page)', fontWeight: 600, color: 'var(--text)', marginTop: 2 }}>{risk.title}</h1>
             </div>
           </div>
@@ -247,31 +246,39 @@ export function AssessmentFlow({ risk, onClose, onSaved }) {
           {step === 0 && (
             <>
               <Section
-                title="Write it as Cause → Event → Impact"
-                hint="“Weak passwords” is not a risk. A risk is testable: the cause is what you fix, the event is what you prevent, the impact is what you size. If any of the three cannot be pointed at, the risk is written badly.">
+                title={tx('Write it as Cause → Event → Impact')}
+                hint={tx(
+                  '“Weak passwords” is not a risk. A risk is testable: the cause is what you fix, the event is what you prevent, the impact is what you size. If any of the three cannot be pointed at, the risk is written badly.'
+                )}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <div>
-                    <p className="field-label">Cause <span className="field-req">*</span></p>
-                    <p className="field-help" style={{ marginBottom: 5 }}>What is wrong today. This is what the mitigation fixes.</p>
+                    <p className="field-label">{tx('Cause')} <span className="field-req">*</span></p>
+                    <p className="field-help" style={{ marginBottom: 5 }}>{tx('What is wrong today. This is what the mitigation fixes.')}</p>
                     <textarea className="risys-input" rows={2} value={statement.cause}
                       onChange={e => setStatement(s => ({ ...s, cause: e.target.value }))}
-                      placeholder="e.g. the legacy VPN concentrator does not support SAML or RADIUS-based MFA, and no proxy sits in front of it"
+                      placeholder={tx(
+                        'e.g. the legacy VPN concentrator does not support SAML or RADIUS-based MFA, and no proxy sits in front of it'
+                      )}
                       style={{ width: '100%', resize: 'vertical' }} />
                   </div>
                   <div>
-                    <p className="field-label">Event <span className="field-req">*</span></p>
-                    <p className="field-help" style={{ marginBottom: 5 }}>What happens as a result. This is what the control prevents.</p>
+                    <p className="field-label">{tx('Event')} <span className="field-req">*</span></p>
+                    <p className="field-help" style={{ marginBottom: 5 }}>{tx('What happens as a result. This is what the control prevents.')}</p>
                     <textarea className="risys-input" rows={2} value={statement.event}
                       onChange={e => setStatement(s => ({ ...s, event: e.target.value }))}
-                      placeholder="e.g. an attacker using stolen credentials authenticates as a legitimate privileged user and gains network-level access"
+                      placeholder={tx(
+                        'e.g. an attacker using stolen credentials authenticates as a legitimate privileged user and gains network-level access'
+                      )}
                       style={{ width: '100%', resize: 'vertical' }} />
                   </div>
                   <div>
-                    <p className="field-label">Impact <span className="field-req">*</span></p>
-                    <p className="field-help" style={{ marginBottom: 5 }}>What it costs. This is what you score.</p>
+                    <p className="field-label">{tx('Impact')} <span className="field-req">*</span></p>
+                    <p className="field-help" style={{ marginBottom: 5 }}>{tx('What it costs. This is what you score.')}</p>
                     <textarea className="risys-input" rows={2} value={statement.impact_statement}
                       onChange={e => setStatement(s => ({ ...s, impact_statement: e.target.value }))}
-                      placeholder="e.g. lateral movement to customer PII, ransomware deployment, ECC non-compliance and PDPL breach notification to SDAIA"
+                      placeholder={tx(
+                        'e.g. lateral movement to customer PII, ransomware deployment, ECC non-compliance and PDPL breach notification to SDAIA'
+                      )}
                       style={{ width: '100%', resize: 'vertical' }} />
                   </div>
                 </div>
@@ -279,11 +286,9 @@ export function AssessmentFlow({ risk, onClose, onSaved }) {
 
               {statementComplete && (
                 <div style={{ padding: '11px 13px', borderRadius: 'var(--r-md)', background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                  <p className="eyebrow" style={{ marginBottom: 4 }}>Reads as</p>
-                  <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text)', lineHeight: 1.5 }}>
-                    There is a risk that <strong>{statement.event.trim()}</strong> because {statement.cause.trim()},
-                    resulting in {statement.impact_statement.trim()}.
-                  </p>
+                  <p className="eyebrow" style={{ marginBottom: 4 }}>{tx('Reads as')}</p>
+                  <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text)', lineHeight: 1.5 }}>{tx('There is a risk that')} <strong>{statement.event.trim()}</strong> {tx('because')} {statement.cause.trim()}{tx(', resulting in')} {statement.impact_statement.trim()}.
+                                      </p>
                 </div>
               )}
             </>
@@ -293,27 +298,31 @@ export function AssessmentFlow({ risk, onClose, onSaved }) {
           {step === 1 && (
             <>
               <Section
-                title="Score as if no controls existed"
-                hint="The question is not “how bad is it today” but “how bad is this class of exposure by nature”. Controls get credited in the residual score, not here.">
+                title={tx('Score as if no controls existed')}
+                hint={tx(
+                  'The question is not “how bad is it today” but “how bad is this class of exposure by nature”. Controls get credited in the residual score, not here.'
+                )}>
                 <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <ScorePicker label="Likelihood" scale={lScale} value={inherent.l}
+                    <ScorePicker label={tx('Likelihood')} scale={lScale} value={inherent.l}
                       onChange={v => setInherent(s => ({ ...s, l: v }))} />
-                    <ScorePicker label="Impact" scale={iScale} value={inherent.i}
+                    <ScorePicker label={tx('Impact')} scale={iScale} value={inherent.i}
                       onChange={v => setInherent(s => ({ ...s, i: v }))} />
                   </div>
-                  <ScoreReadout l={inherent.l} i={inherent.i} matrix={cfg} caption="Inherent" />
+                  <ScoreReadout l={inherent.l} i={inherent.i} matrix={cfg} caption={tx('Inherent')} />
                 </div>
               </Section>
 
               <div>
-                <p className="field-label">Justification <span className="field-req">*</span></p>
-                <p className="field-help" style={{ marginBottom: 5 }}>
-                  Recorded permanently against this score. An auditor reads this before the number.
-                </p>
+                <p className="field-label">{tx('Justification')} <span className="field-req">*</span></p>
+                <p className="field-help" style={{ marginBottom: 5 }}>{tx(
+                  'Recorded permanently against this score. An auditor reads this before the number.'
+                )}</p>
                 <textarea className="risys-input" rows={3} value={inherent.justification}
                   onChange={e => setInherent(s => ({ ...s, justification: e.target.value }))}
-                  placeholder="e.g. Credential stuffing runs continuously against any internet-facing VPN and corporate credentials appear in public breach dumps. Privileged accounts are in scope, so the event leads to domain-level access."
+                  placeholder={tx(
+                    'e.g. Credential stuffing runs continuously against any internet-facing VPN and corporate credentials appear in public breach dumps. Privileged accounts are in scope, so the event leads to domain-level access.'
+                  )}
                   style={{ width: '100%', resize: 'vertical' }} />
               </div>
             </>
@@ -323,14 +332,16 @@ export function AssessmentFlow({ risk, onClose, onSaved }) {
           {step === 2 && (
             <>
               <Section
-                title="Map the controls, and say what each one covers"
-                hint="A control can be well designed, operating effectively, and completely irrelevant to this risk because its scope excludes the asset. Coverage is recorded on the link, not on the control, because the same control may fully cover one risk and miss another.">
+                title={tx('Map the controls, and say what each one covers')}
+                hint={tx(
+                  'A control can be well designed, operating effectively, and completely irrelevant to this risk because its scope excludes the asset. Coverage is recorded on the link, not on the control, because the same control may fully cover one risk and miss another.'
+                )}>
                 {gaps.length > 0 && <CoverageGapNotice gaps={gaps} />}
 
                 {mappings.length === 0 && (
-                  <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-3)', padding: '14px 0' }}>
-                    No controls linked yet. A risk with no controls mapped keeps its inherent score as its residual score.
-                  </p>
+                  <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-3)', padding: '14px 0' }}>{tx(
+                    'No controls linked yet. A risk with no controls mapped keeps its inherent score as its residual score.'
+                  )}</p>
                 )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -344,17 +355,17 @@ export function AssessmentFlow({ risk, onClose, onSaved }) {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                           <span className="mono" style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)' }}>{c.control_id}</span>
                           <span style={{ fontSize: 'var(--t-sm)', fontWeight: 500, color: 'var(--text)', flex: 1 }}>{c.name}</span>
-                          <span className="badge badge-neutral">{c.testing_status || 'Not Tested'}</span>
-                          <button onClick={() => unlinkControl(m.control_id)} className="btn-ghost" style={{ padding: 4 }} title="Unlink">
+                          <span className="badge badge-neutral">{c.testing_status || tx('Not Tested')}</span>
+                          <button onClick={() => unlinkControl(m.control_id)} className="btn-ghost" style={{ padding: 4 }} title={tx('Unlink')}>
                             <Trash2 size={12} />
                           </button>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                          <SelectField label="Coverage of this risk" size="sm" value={m.coverage || 'full'}
+                          <SelectField label={tx('Coverage of this risk')} size="sm" value={m.coverage || 'full'}
                             onChange={e => updateMapping(m.control_id, { coverage: e.target.value })}>
                             {COVERAGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                           </SelectField>
-                          <SelectField label="Reduces" size="sm" value={m.reduces || 'both'}
+                          <SelectField label={tx('Reduces')} size="sm" value={m.reduces || 'both'}
                             onChange={e => updateMapping(m.control_id, { reduces: e.target.value })}>
                             {REDUCES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                           </SelectField>
@@ -363,7 +374,7 @@ export function AssessmentFlow({ risk, onClose, onSaved }) {
                           <input className="risys-input" style={{ width: '100%', marginTop: 8 }}
                             defaultValue={m.coverage_note || ''}
                             onBlur={e => updateMapping(m.control_id, { coverage_note: e.target.value })}
-                            placeholder="What does it exclude? e.g. SaaS apps only — excludes the VPN" />
+                            placeholder={tx('What does it exclude? e.g. SaaS apps only — excludes the VPN')} />
                         )}
                       </div>
                     )
@@ -373,9 +384,9 @@ export function AssessmentFlow({ risk, onClose, onSaved }) {
                 {unlinked.length > 0 && (
                   <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'flex-end' }}>
                     <div style={{ flex: 1 }}>
-                      <SelectField label="Link an existing control" size="sm" value=""
+                      <SelectField label={tx('Link an existing control')} size="sm" value=""
                         onChange={e => e.target.value && linkControl(e.target.value)}>
-                        <option value="">Select a control…</option>
+                        <option value="">{tx('Select a control…')}</option>
                         {unlinked.map(c => <option key={c.id} value={c.id}>{c.control_id} — {c.name}</option>)}
                       </SelectField>
                     </div>
@@ -390,25 +401,27 @@ export function AssessmentFlow({ risk, onClose, onSaved }) {
           {step === 3 && (
             <>
               <Section
-                title="Score again, crediting only the controls that actually apply"
-                hint="Credit a control for the part of the scope it covers and no more. A control rated effective but covering none of this risk earns nothing.">
+                title={tx('Score again, crediting only the controls that actually apply')}
+                hint={tx(
+                  'Credit a control for the part of the scope it covers and no more. A control rated effective but covering none of this risk earns nothing.'
+                )}>
                 <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <ScorePicker label="Likelihood" scale={lScale} value={residual.l}
+                    <ScorePicker label={tx('Likelihood')} scale={lScale} value={residual.l}
                       onChange={v => setResidual(s => ({ ...s, l: v }))} />
-                    <ScorePicker label="Impact" scale={iScale} value={residual.i}
+                    <ScorePicker label={tx('Impact')} scale={iScale} value={residual.i}
                       onChange={v => setResidual(s => ({ ...s, i: v }))} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <ScoreReadout l={inherent.l} i={inherent.i} matrix={cfg} caption="Inherent" />
+                    <ScoreReadout l={inherent.l} i={inherent.i} matrix={cfg} caption={tx('Inherent')} />
                     <div style={{ textAlign: 'center', fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>↓</div>
-                    <ScoreReadout l={residual.l} i={residual.i} matrix={cfg} caption="Residual" />
+                    <ScoreReadout l={residual.l} i={residual.i} matrix={cfg} caption={tx('Residual')} />
                   </div>
                 </div>
 
                 <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', marginTop: 10 }}>
                   {creditedControls === 0
-                    ? 'No controls are currently earning credit against this risk.'
+                    ? tx('No controls are currently earning credit against this risk.')
                     : `${creditedControls} control${creditedControls === 1 ? '' : 's'} covering this risk and not failing its last test.`}
                 </p>
 
@@ -424,13 +437,13 @@ export function AssessmentFlow({ risk, onClose, onSaved }) {
               </Section>
 
               <div>
-                <p className="field-label">Justification <span className="field-req">*</span></p>
-                <p className="field-help" style={{ marginBottom: 5 }}>
-                  Name the controls carrying the reduction and what they leave uncovered.
-                </p>
+                <p className="field-label">{tx('Justification')} <span className="field-req">*</span></p>
+                <p className="field-help" style={{ marginBottom: 5 }}>{tx('Name the controls carrying the reduction and what they leave uncovered.')}</p>
                 <textarea className="risys-input" rows={3} value={residual.justification}
                   onChange={e => setResidual(s => ({ ...s, justification: e.target.value }))}
-                  placeholder="e.g. Lockout and password policy stop naive brute force, but neither stops a valid stolen password and 47 accounts remain exposed. Logging gives post-hoc detection only — no alert rule is configured."
+                  placeholder={tx(
+                    'e.g. Lockout and password policy stop naive brute force, but neither stops a valid stolen password and 47 accounts remain exposed. Logging gives post-hoc detection only — no alert rule is configured.'
+                  )}
                   style={{ width: '100%', resize: 'vertical' }} />
               </div>
             </>
@@ -440,8 +453,10 @@ export function AssessmentFlow({ risk, onClose, onSaved }) {
           {step === 4 && (
             <div>
               <Section
-                title="The gate"
-                hint="Everything above was data entry. Everything below is the consequence, and none of it needed a human to decide it.">
+                title={tx('The gate')}
+                hint={tx(
+                  'Everything above was data entry. Everything below is the consequence, and none of it needed a human to decide it.'
+                )}>
                 <div style={{ margin: '0 calc(var(--gutter) * -1)' }}>
                   <GatePanel verdict={verdict || liveVerdict} risk={risk} />
                 </div>
@@ -456,8 +471,12 @@ export function AssessmentFlow({ risk, onClose, onSaved }) {
                   : <ShieldAlert size={15} style={{ color: 'var(--critical)', flexShrink: 0 }} />}
                 <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)' }}>
                   {(verdict || liveVerdict)?.passed
-                    ? 'The risk has moved to Monitored. It will reopen automatically if a KRI breaches, a control test fails, or its evidence expires.'
-                    : 'The risk has moved to Treatment Required, the SLA clock has started, and the owner and reviewer have been notified.'}
+                    ? tx(
+                    'The risk has moved to Monitored. It will reopen automatically if a KRI breaches, a control test fails, or its evidence expires.'
+                  )
+                    : tx(
+                    'The risk has moved to Treatment Required, the SLA clock has started, and the owner and reviewer have been notified.'
+                  )}
                 </p>
               </div>
             </div>
@@ -476,21 +495,17 @@ export function AssessmentFlow({ risk, onClose, onSaved }) {
         }}>
           <button className="btn-ghost" style={{ fontSize: 'var(--t-sm)', visibility: step === 0 ? 'hidden' : 'visible' }}
             onClick={() => setStep(s => Math.max(0, s - 1))} disabled={saving}>
-            <ArrowLeft size={13} /> Back
-          </button>
+            <ArrowLeft size={13} className='rtl-flip' /> {tx('Back')}</button>
 
-          <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>
-            Step {step + 1} of {STEPS.length}
+          <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{tx('Step')} {step + 1} {tx('of')} {STEPS.length}
           </span>
 
           {step === STEPS.length - 1 ? (
-            <button className="btn-primary" style={{ fontSize: 'var(--t-sm)' }} onClick={() => { onSaved?.(); onClose() }}>
-              Done
-            </button>
+            <button className="btn-primary" style={{ fontSize: 'var(--t-sm)' }} onClick={() => { onSaved?.(); onClose() }}>{tx('Done')}</button>
           ) : (
             <button className="btn-primary" style={{ fontSize: 'var(--t-sm)', opacity: canAdvance() && !saving ? 1 : 0.5 }}
               onClick={next} disabled={!canAdvance() || saving}>
-              {saving ? <Spinner size="sm" /> : <>{step === 3 ? 'Run the gate' : 'Continue'} <ArrowRight size={13} /></>}
+              {saving ? <Spinner size="sm" /> : <>{step === 3 ? tx('Run the gate') : tx('Continue')} <ArrowRight size={13} className='rtl-flip' /></>}
             </button>
           )}
         </div>
@@ -524,10 +539,8 @@ export function AssessmentPage() {
   if (!risk) {
     return (
       <div style={{ padding: '60px var(--gutter)', textAlign: 'center' }}>
-        <p style={{ fontSize: 'var(--t-body)', color: 'var(--text-2)' }}>That risk could not be found.</p>
-        <button className="btn-secondary" style={{ marginTop: 12 }} onClick={() => navigate('/app/risks')}>
-          Back to Risk Register
-        </button>
+        <p style={{ fontSize: 'var(--t-body)', color: 'var(--text-2)' }}>{tx('That risk could not be found.')}</p>
+        <button className="btn-secondary" style={{ marginTop: 12 }} onClick={() => navigate('/app/risks')}>{tx('Back to Risk Register')}</button>
       </div>
     )
   }

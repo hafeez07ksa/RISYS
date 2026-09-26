@@ -1,12 +1,39 @@
-import { useEffect } from 'react'
-import { X } from 'lucide-react'
+import { useCallback } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { usePermissions } from '@/hooks/usePermissions'
+import { usePeople } from '@/hooks/usePeople'
 import { Spinner } from '@/components/ui/Spinner'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { fmtDate } from '@/lib/reports/models'
-import { labelOf, TEST_RESULTS, FINDING_RATINGS, FINDING_STATUSES, REQUEST_STATUSES, ENGAGEMENT_STATUSES, OPINIONS } from '@/hooks/useAudits'
+import { useAudit, labelOf, TEST_RESULTS, FINDING_RATINGS, FINDING_STATUSES, REQUEST_STATUSES, ENGAGEMENT_STATUSES, OPINIONS } from '@/hooks/useAudits'
+import { tx } from '@/lib/i18n'
 
 /* Small shared pieces for the audit screens. Kept together so the engagement
- * list, the detail tabs and the dialogs read as one module. */
+ * list, the detail tabs and the full-page forms read as one module. */
+
+/* Everything an audit sub-page needs: the engagement from the URL, the people
+ * who can be assigned, the viewer's rights, and a way back to the right tab.
+ * Each form and record page (add scope item, record test, request, finding…)
+ * is its own route under /app/audits/:id, so a reload or a shared link lands
+ * on the same screen. */
+export function useAuditPage() {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const perms = usePermissions()
+  const { members } = usePeople()
+  const audit = useAudit(id)
+  const e = audit.engagement
+  const locked = e?.status === 'closed' || e?.status === 'cancelled'
+  const toTab = useCallback((tab) => navigate(`/app/audits/${id}${tab && tab !== 'overview' ? `?tab=${tab}` : ''}`), [navigate, id])
+  return { id, navigate, perms, members, audit, e, locked, canManage: perms.canManageAudits, toTab }
+}
+
+/* People who can be asked for evidence or own a finding: everyone except
+ * read-only viewers. */
+export const assignable = (members) => members
+  .filter((m) => m.role !== 'viewer')
+  .map((m) => ({ value: m.user_id, label: m.full_name || m.email, description: m.full_name ? m.email : undefined }))
+
 
 export const personName = (members, id) => {
   if (!id) return null
@@ -15,36 +42,6 @@ export const personName = (members, id) => {
 }
 
 export const isOverdue = (d, done) => !!d && !done && new Date(`${d}T23:59:59`) < new Date()
-
-export function Dialog({ open, onClose, title, subtitle, children, footer, width = 640 }) {
-  useEffect(() => {
-    if (!open) return
-    const h = (e) => e.key === 'Escape' && onClose?.()
-    document.addEventListener('keydown', h)
-    return () => document.removeEventListener('keydown', h)
-  }, [open, onClose])
-  if (!open) return null
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-         style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(2px)' }}
-         onClick={(e) => e.target === e.currentTarget && onClose?.()}>
-      <div className="w-full rounded-xl shadow-xl flex flex-col"
-           style={{ maxWidth: width, maxHeight: '90vh', background: 'var(--bg-2)', border: '1px solid var(--border)' }}>
-        <div className="flex items-start justify-between" style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
-          <div>
-            <h2 style={{ fontSize: 'var(--t-section)', fontWeight: 600, color: 'var(--text)', margin: 0 }}>{title}</h2>
-            {subtitle && <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', margin: '3px 0 0' }}>{subtitle}</p>}
-          </div>
-          <button onClick={onClose} className="btn-ghost" style={{ padding: 4 }} aria-label="Close"><X size={16} /></button>
-        </div>
-        <div style={{ padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>{children}</div>
-        {footer && (
-          <div className="flex justify-end" style={{ gap: 8, padding: '12px 20px', borderTop: '1px solid var(--border)' }}>{footer}</div>
-        )}
-      </div>
-    </div>
-  )
-}
 
 export function Field({ label, required, help, children }) {
   return (
@@ -90,7 +87,7 @@ export function Facts({ rows }) {
     <dl style={{ display: 'grid', gridTemplateColumns: '150px 1fr', rowGap: 8, columnGap: 12, margin: 0 }}>
       {rows.filter(Boolean).map(([k, v]) => (
         <div key={k} style={{ display: 'contents' }}>
-          <dt style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{k}</dt>
+          <dt style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{tx(k)}</dt>
           <dd style={{ fontSize: 'var(--t-body)', color: 'var(--text)', margin: 0, whiteSpace: 'pre-wrap' }}>{v || '—'}</dd>
         </div>
       ))}
@@ -112,19 +109,20 @@ export const RequestBadge = ({ v }) => <StatusBadge tone={REQ_TONE[v]} label={la
 export const StageBadge = ({ v }) => <StatusBadge tone={STAGE_TONE[v]} label={labelOf(ENGAGEMENT_STATUSES, v)} />
 export const OpinionBadge = ({ v }) => v
   ? <StatusBadge tone={OPINION_TONE[v]} label={labelOf(OPINIONS, v)} />
-  : <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>Not given</span>
+  : <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{tx('Not given')}</span>
 
 export function DueText({ date, done }) {
   if (!date) return <span style={{ color: 'var(--text-3)' }}>—</span>
   const late = isOverdue(date, done)
-  return <span style={{ color: late ? 'var(--critical)' : 'var(--text-2)', fontWeight: late ? 600 : 400 }}>{fmtDate(date)}{late ? ' · overdue' : ''}</span>
+  return <span style={{ color: late ? 'var(--critical)' : 'var(--text-2)', fontWeight: late ? 600 : 400 }}>{fmtDate(date)}{late ? tx(' · overdue') : ''}</span>
 }
 
+const logical = (a) => (a === 'right' ? 'end' : a === 'left' ? 'start' : a ?? 'start')
 export function Th({ children, align, width }) {
-  return <th className="table-head" style={{ textAlign: align ?? 'left', padding: '8px 12px', width }}>{children}</th>
+  return <th className="table-head" style={{ textAlign: logical(align), padding: '8px 12px', width }}>{children}</th>
 }
 export function Td({ children, align, style }) {
-  return <td style={{ padding: '9px 12px', fontSize: 'var(--t-sm)', color: 'var(--text-2)', verticalAlign: 'top', textAlign: align ?? 'left', borderTop: '1px solid var(--border)', ...style }}>{children}</td>
+  return <td style={{ padding: '9px 12px', fontSize: 'var(--t-sm)', color: 'var(--text-2)', verticalAlign: 'top', textAlign: logical(align), borderTop: '1px solid var(--border)', ...style }}>{children}</td>
 }
 
 export function Empty({ title, children, action }) {

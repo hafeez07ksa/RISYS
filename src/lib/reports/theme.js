@@ -1,3 +1,4 @@
+import { tx } from '@/lib/i18n'
 /* ── Report theme ─────────────────────────────────────────────────────────────
  *
  * The RISYS palette for printed reports, lifted from src/styles/tokens.css so a
@@ -29,88 +30,94 @@ export const C = {
 
 /* Risk bands — identical to BAND_META in lib/matrix.js. */
 export const BAND = {
-  critical: { label: 'Critical', color: '#8C1616', bg: '#FBEAEA', border: '#F0CECE' },
-  high:     { label: 'High',     color: '#B5491B', bg: '#FBEFE7', border: '#F0D4C2' },
-  medium:   { label: 'Medium',   color: '#9C6F0F', bg: '#FAF3E2', border: '#EBDCB6' },
-  low:      { label: 'Low',      color: '#2F6B3C', bg: '#ECF4EE', border: '#C8DECD' },
-  none:     { label: 'Not scored', color: '#97817D', bg: '#F6EEEC', border: '#E9DAD7' },
+  critical: { label: tx('Critical'), color: '#8C1616', bg: '#FBEAEA', border: '#F0CECE' },
+  high:     { label: tx('High'),     color: '#B5491B', bg: '#FBEFE7', border: '#F0D4C2' },
+  medium:   { label: tx('Medium'),   color: '#9C6F0F', bg: '#FAF3E2', border: '#EBDCB6' },
+  low:      { label: tx('Low'),      color: '#2F6B3C', bg: '#ECF4EE', border: '#C8DECD' },
+  none:     { label: tx('Not scored'), color: '#97817D', bg: '#F6EEEC', border: '#E9DAD7' },
 }
 
 /* Compliance statuses as the app records them. */
 export const COMPLIANCE = {
-  compliant:      { label: 'Compliant',      color: '#166534', bg: '#F0FDF4', border: '#BBF7D0' },
-  partial:        { label: 'Partial',        color: '#92400E', bg: '#FFFBEB', border: '#FDE68A' },
-  in_progress:    { label: 'In progress',    color: '#1E40AF', bg: '#EFF6FF', border: '#BFDBFE' },
-  not_compliant:  { label: 'Not compliant',  color: '#B91C1C', bg: '#FEF2F2', border: '#FECACA' },
+  compliant:      { label: tx('Compliant'),      color: '#166534', bg: '#F0FDF4', border: '#BBF7D0' },
+  partial:        { label: tx('Partial'),        color: '#92400E', bg: '#FFFBEB', border: '#FDE68A' },
+  in_progress:    { label: tx('In progress'),    color: '#1E40AF', bg: '#EFF6FF', border: '#BFDBFE' },
+  not_compliant:  { label: tx('Not compliant'),  color: '#B91C1C', bg: '#FEF2F2', border: '#FECACA' },
   not_applicable: { label: 'N/A',            color: '#6B5A5A', bg: '#F6EEEC', border: '#E9DAD7' },
-  not_started:    { label: 'Not assessed',   color: '#97817D', bg: '#FFFFFF', border: '#E9DAD7' },
+  not_started:    { label: tx('Not assessed'),   color: '#97817D', bg: '#FFFFFF', border: '#E9DAD7' },
 }
 
 /* Automated status from v_requirement_automation. */
 export const AUTOMATED = {
-  compliant:      { label: 'Pass',        color: '#166534', bg: '#F0FDF4', border: '#BBF7D0' },
-  partial:        { label: 'Partial',     color: '#92400E', bg: '#FFFBEB', border: '#FDE68A' },
-  not_compliant:  { label: 'Fail',        color: '#B91C1C', bg: '#FEF2F2', border: '#FECACA' },
-  not_started:    { label: 'Not measured',color: '#97817D', bg: '#FFFFFF', border: '#E9DAD7' },
+  compliant:      { label: tx('Pass'),        color: '#166534', bg: '#F0FDF4', border: '#BBF7D0' },
+  partial:        { label: tx('Partial'),     color: '#92400E', bg: '#FFFBEB', border: '#FDE68A' },
+  not_compliant:  { label: tx('Fail'),        color: '#B91C1C', bg: '#FEF2F2', border: '#FECACA' },
+  not_started:    { label: tx('Not measured'),color: '#97817D', bg: '#FFFFFF', border: '#E9DAD7' },
   not_applicable: { label: 'N/A',         color: '#6B5A5A', bg: '#F6EEEC', border: '#E9DAD7' },
 }
 
 export const SIGNAL = {
-  pass:           { label: 'Pass',    color: '#166534', bg: '#F0FDF4', border: '#BBF7D0' },
-  partial:        { label: 'Partial', color: '#92400E', bg: '#FFFBEB', border: '#FDE68A' },
-  fail:           { label: 'Fail',    color: '#B91C1C', bg: '#FEF2F2', border: '#FECACA' },
-  unknown:        { label: 'Unknown', color: '#97817D', bg: '#FFFFFF', border: '#E9DAD7' },
+  pass:           { label: tx('Pass'),    color: '#166534', bg: '#F0FDF4', border: '#BBF7D0' },
+  partial:        { label: tx('Partial'), color: '#92400E', bg: '#FFFBEB', border: '#FDE68A' },
+  fail:           { label: tx('Fail'),    color: '#B91C1C', bg: '#FEF2F2', border: '#FECACA' },
+  unknown:        { label: tx('Unknown'), color: '#97817D', bg: '#FFFFFF', border: '#E9DAD7' },
   not_applicable: { label: 'N/A',     color: '#6B5A5A', bg: '#F6EEEC', border: '#E9DAD7' },
 }
 
 export const TEST_RESULT = {
-  effective:           { label: 'Effective',           color: '#166534', bg: '#F0FDF4', border: '#BBF7D0' },
-  partially_effective: { label: 'Partially effective', color: '#92400E', bg: '#FFFBEB', border: '#FDE68A' },
-  ineffective:         { label: 'Ineffective',         color: '#B91C1C', bg: '#FEF2F2', border: '#FECACA' },
+  effective:           { label: tx('Effective'),           color: '#166534', bg: '#F0FDF4', border: '#BBF7D0' },
+  partially_effective: { label: tx('Partially effective'), color: '#92400E', bg: '#FFFBEB', border: '#FDE68A' },
+  ineffective:         { label: tx('Ineffective'),         color: '#B91C1C', bg: '#FEF2F2', border: '#FECACA' },
   not_applicable:      { label: 'N/A',                 color: '#6B5A5A', bg: '#F6EEEC', border: '#E9DAD7' },
-  not_tested:          { label: 'Not tested',          color: '#97817D', bg: '#FFFFFF', border: '#E9DAD7' },
+  not_tested:          { label: tx('Not tested'),          color: '#97817D', bg: '#FFFFFF', border: '#E9DAD7' },
 }
 
 export const FINDING_RATING = {
-  high:        { label: 'High',        color: '#8C1616', bg: '#FBEAEA', border: '#F0CECE' },
-  medium:      { label: 'Medium',      color: '#9C6F0F', bg: '#FAF3E2', border: '#EBDCB6' },
-  low:         { label: 'Low',         color: '#2F6B3C', bg: '#ECF4EE', border: '#C8DECD' },
-  observation: { label: 'Observation', color: '#1E40AF', bg: '#EFF6FF', border: '#BFDBFE' },
+  high:        { label: tx('High'),        color: '#8C1616', bg: '#FBEAEA', border: '#F0CECE' },
+  medium:      { label: tx('Medium'),      color: '#9C6F0F', bg: '#FAF3E2', border: '#EBDCB6' },
+  low:         { label: tx('Low'),         color: '#2F6B3C', bg: '#ECF4EE', border: '#C8DECD' },
+  observation: { label: tx('Observation'), color: '#1E40AF', bg: '#EFF6FF', border: '#BFDBFE' },
 }
 
 export const FINDING_STATUS = {
-  draft:                { label: 'Draft' },
-  open:                 { label: 'Open' },
-  in_remediation:       { label: 'In remediation' },
-  ready_for_validation: { label: 'Awaiting validation' },
-  closed:               { label: 'Closed' },
-  risk_accepted:        { label: 'Risk accepted' },
+  draft:                { label: tx('Draft') },
+  open:                 { label: tx('Open') },
+  in_remediation:       { label: tx('In remediation') },
+  ready_for_validation: { label: tx('Awaiting validation') },
+  closed:               { label: tx('Closed') },
+  risk_accepted:        { label: tx('Risk accepted') },
 }
 
 export const OPINION = {
-  effective:           { label: 'Effective',           color: '#166534', bg: '#F0FDF4', border: '#BBF7D0',
-                         text: 'The controls tested are designed appropriately and operated effectively throughout the period.' },
-  partially_effective: { label: 'Partially effective', color: '#92400E', bg: '#FFFBEB', border: '#FDE68A',
-                         text: 'The controls tested are largely in place, but the weaknesses reported need management action to fully meet the requirement.' },
-  ineffective:         { label: 'Ineffective',         color: '#B91C1C', bg: '#FEF2F2', border: '#FECACA',
-                         text: 'Significant weaknesses were found. The controls tested cannot be relied on until the findings reported are remediated.' },
+  effective:           { label: tx('Effective'),           color: '#166534', bg: '#F0FDF4', border: '#BBF7D0',
+                         text: tx(
+                           'The controls tested are designed appropriately and operated effectively throughout the period.'
+                         ) },
+  partially_effective: { label: tx('Partially effective'), color: '#92400E', bg: '#FFFBEB', border: '#FDE68A',
+                         text: tx(
+                           'The controls tested are largely in place, but the weaknesses reported need management action to fully meet the requirement.'
+                         ) },
+  ineffective:         { label: tx('Ineffective'),         color: '#B91C1C', bg: '#FEF2F2', border: '#FECACA',
+                         text: tx(
+                           'Significant weaknesses were found. The controls tested cannot be relied on until the findings reported are remediated.'
+                         ) },
 }
 
 export const SEVERITY = {
-  critical: { label: 'Critical', color: '#B91C1C', bg: '#FEF2F2', border: '#FECACA' },
-  high:     { label: 'High',     color: '#C0392B', bg: '#FEF3F0', border: '#FBD5CC' },
-  warning:  { label: 'Warning',  color: '#92400E', bg: '#FFFBEB', border: '#FDE68A' },
-  medium:   { label: 'Medium',   color: '#92400E', bg: '#FFFBEB', border: '#FDE68A' },
-  low:      { label: 'Low',      color: '#166534', bg: '#F0FDF4', border: '#BBF7D0' },
-  info:     { label: 'Info',     color: '#1E40AF', bg: '#EFF6FF', border: '#BFDBFE' },
-  informational: { label: 'Info', color: '#1E40AF', bg: '#EFF6FF', border: '#BFDBFE' },
+  critical: { label: tx('Critical'), color: '#B91C1C', bg: '#FEF2F2', border: '#FECACA' },
+  high:     { label: tx('High'),     color: '#C0392B', bg: '#FEF3F0', border: '#FBD5CC' },
+  warning:  { label: tx('Warning'),  color: '#92400E', bg: '#FFFBEB', border: '#FDE68A' },
+  medium:   { label: tx('Medium'),   color: '#92400E', bg: '#FFFBEB', border: '#FDE68A' },
+  low:      { label: tx('Low'),      color: '#166534', bg: '#F0FDF4', border: '#BBF7D0' },
+  info:     { label: tx('Info'),     color: '#1E40AF', bg: '#EFF6FF', border: '#BFDBFE' },
+  informational: { label: tx('Info'), color: '#1E40AF', bg: '#EFF6FF', border: '#BFDBFE' },
 }
 
 export const REPORT_TYPES = {
-  board_pack:   { label: 'Board risk & compliance report', short: 'Board pack',
-                  audience: 'Board of Directors', classification: 'Confidential — Board' },
-  ecc_status:   { label: 'NCA ECC compliance status report', short: 'ECC status',
-                  audience: 'Regulator and management', classification: 'Confidential' },
-  audit_report: { label: 'Audit report', short: 'Audit report',
-                  audience: 'Audit committee and management', classification: 'Confidential — Audit' },
+  board_pack:   { label: tx('Board risk & compliance report'), short: tx('Board pack'),
+                  audience: tx('Board of Directors'), classification: tx('Confidential — Board') },
+  ecc_status:   { label: tx('NCA ECC compliance status report'), short: tx('ECC status'),
+                  audience: tx('Regulator and management'), classification: tx('Confidential') },
+  audit_report: { label: tx('Audit report'), short: tx('Audit report'),
+                  audience: tx('Audit committee and management'), classification: tx('Confidential — Audit') },
 }

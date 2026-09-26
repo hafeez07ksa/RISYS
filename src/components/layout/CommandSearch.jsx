@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { tx } from '@/lib/i18n'
 
 /* ── Global search (§46) ──────────────────────────────────────────────────────
  *
@@ -24,25 +25,25 @@ import { useAuth } from '@/hooks/useAuth'
  * -------------------------------------------------------------------------- */
 
 const PAGES = [
-  { label: 'Dashboard',     to: '/app/dashboard',   icon: CheckSquare2, keywords: 'home overview' },
-  { label: 'Incidents',     to: '/app/incidents',   icon: AlertTriangle, keywords: 'incident breach' },
-  { label: 'Findings',      to: '/app/findings',    icon: FileWarning,  keywords: 'finding detection' },
-  { label: 'Risk Register', to: '/app/risks',       icon: ShieldAlert,  keywords: 'risk register' },
-  { label: 'Controls',      to: '/app/controls',    icon: CheckSquare,  keywords: 'control library' },
-  { label: 'Compliance',    to: '/app/compliance',  icon: BookCheck,    keywords: 'compliance ecc nca' },
-  { label: 'Tasks',         to: '/app/tasks',       icon: CheckSquare2, keywords: 'task todo' },
-  { label: 'People',        to: '/app/people',      icon: Users,        keywords: 'people users identity' },
-  { label: 'Audit Log',     to: '/app/audit',       icon: ScrollText,   keywords: 'audit trail history' },
-  { label: 'Frameworks',    to: '/app/frameworks',  icon: Library,      keywords: 'framework iso soc ecc' },
+  { label: tx('Dashboard'),     to: '/app/dashboard',   icon: CheckSquare2, keywords: 'home overview' },
+  { label: tx('Incidents'),     to: '/app/incidents',   icon: AlertTriangle, keywords: 'incident breach' },
+  { label: tx('Findings'),      to: '/app/findings',    icon: FileWarning,  keywords: 'finding detection' },
+  { label: tx('Risk Register'), to: '/app/risks',       icon: ShieldAlert,  keywords: 'risk register' },
+  { label: tx('Controls'),      to: '/app/controls',    icon: CheckSquare,  keywords: 'control library' },
+  { label: tx('Compliance'),    to: '/app/compliance',  icon: BookCheck,    keywords: 'compliance ecc nca' },
+  { label: tx('Tasks'),         to: '/app/tasks',       icon: CheckSquare2, keywords: 'task todo' },
+  { label: tx('People'),        to: '/app/people',      icon: Users,        keywords: 'people users identity' },
+  { label: tx('Audit Log'),     to: '/app/audit',       icon: ScrollText,   keywords: 'audit trail history' },
+  { label: tx('Frameworks'),    to: '/app/frameworks',  icon: Library,      keywords: 'framework iso soc ecc' },
 ]
 
 const TYPE_META = {
-  page:       { label: 'Go to',      icon: ArrowRight },
-  risk:       { label: 'Risks',      icon: ShieldAlert },
-  incident:   { label: 'Incidents',  icon: AlertTriangle },
-  control:    { label: 'Controls',   icon: CheckSquare },
-  task:       { label: 'Tasks',      icon: CheckSquare2 },
-  person:     { label: 'People',     icon: Users },
+  page:       { label: tx('Go to'),      icon: ArrowRight },
+  risk:       { label: tx('Risks'),      icon: ShieldAlert },
+  incident:   { label: tx('Incidents'),  icon: AlertTriangle },
+  control:    { label: tx('Controls'),   icon: CheckSquare },
+  task:       { label: tx('Tasks'),      icon: CheckSquare2 },
+  person:     { label: tx('People'),     icon: Users },
 }
 
 export function CommandSearch({ open, onClose }) {
@@ -145,7 +146,7 @@ export function CommandSearch({ open, onClose }) {
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Search"
+        aria-label={tx('Search')}
         className="anim-pop"
         style={{
           position: 'relative', width: 580, maxWidth: '92vw', maxHeight: '66vh',
@@ -161,8 +162,8 @@ export function CommandSearch({ open, onClose }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Search risks, findings, controls, people…"
-            aria-label="Search"
+            placeholder={tx('Search risks, findings, controls, people…')}
+            aria-label={tx('Search')}
             style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 14, color: 'var(--text)', minWidth: 0 }}
           />
           <kbd style={{
@@ -174,7 +175,7 @@ export function CommandSearch({ open, onClose }) {
         <div style={{ overflowY: 'auto', padding: 6 }}>
           {all.length === 0 && !loading && (
             <div style={{ padding: '30px 16px', textAlign: 'center', fontSize: 'var(--t-sm)', color: 'var(--text-3)' }}>
-              {q.trim().length < 2 ? 'Type to search across your workspace' : `No matches for "${q}"`}
+              {q.trim().length < 2 ? tx('Type to search across your workspace') : `No matches for "${q}"`}
             </div>
           )}
 
@@ -210,7 +211,10 @@ export function CommandSearch({ open, onClose }) {
                           {item.hint}
                         </span>
                       )}
-                      {active && <CornerDownLeft size={12} style={{ color: 'var(--text-3)', flexShrink: 0 }} />}
+                      {active && <CornerDownLeft
+                        size={12}
+                        style={{ color: 'var(--text-3)', flexShrink: 0 }}
+                        className='rtl-flip' />}
                     </div>
                   )
                 })}
@@ -219,7 +223,7 @@ export function CommandSearch({ open, onClose }) {
           })}
 
           {loading && (
-            <div style={{ padding: '10px 12px', fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>Searching…</div>
+            <div style={{ padding: '10px 12px', fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{tx('Searching…')}</div>
           )}
         </div>
 
@@ -228,7 +232,7 @@ export function CommandSearch({ open, onClose }) {
           borderTop: '1px solid var(--border)', background: 'var(--surface)',
           fontSize: 'var(--t-micro)', color: 'var(--text-3)',
         }}>
-          <span>↑↓ navigate</span><span>↵ open</span><span>esc close</span>
+          <span>{tx('↑↓ navigate')}</span><span>{tx('↵ open')}</span><span>{tx('esc close')}</span>
         </div>
       </div>
     </div>,

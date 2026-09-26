@@ -2,16 +2,15 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Navigate } from 'react-router-dom'
 import {
   ArrowLeft, Building2, Users, ShieldAlert, ClipboardList, FileText,
-  Pause, Play, Trash2, Pencil, RotateCw, Link2, Ban, AlertTriangle, X, Check
+  Pencil, RotateCw, Link2, Ban, AlertTriangle, X
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
 import { usePlatform, activationLink } from '@/hooks/usePlatform'
 import { Spinner } from '@/components/ui/Spinner'
 import {
-  CopyBtn, PlatformHeader, EditLimitsModal, ReissueModal, SuspendModal, DeleteCompanyModal
+  CopyBtn, PlatformHeader, SuspendControl, DeleteCompanyControl
 } from './shared'
-import { isAdminRole } from '@/lib/roles'
 
 const ROLE_PILL = {
   admin:        { bg: '#F6EBE8', color: '#5D0F0F', border: '#E6CFC9', label: 'Admin' },
@@ -54,10 +53,6 @@ export function PlatformCompanyPage() {
   const [detail, setDetail] = useState(null)
   const [loadError, setLoadError] = useState('')
   const [error, setError] = useState('')
-  const [showEdit, setShowEdit] = useState(false)
-  const [showReissue, setShowReissue] = useState(false)
-  const [showSuspend, setShowSuspend] = useState(false)
-  const [showDelete, setShowDelete] = useState(false)
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.rpc('platform_get_organization', { p_org: id })
@@ -66,6 +61,11 @@ export function PlatformCompanyPage() {
   }, [id])
 
   useEffect(() => { if (isPlatformAdmin) load() }, [isPlatformAdmin, load])
+
+  // The console list's delete action links here with #danger.
+  useEffect(() => {
+    if (detail && window.location.hash === '#danger') document.getElementById('danger')?.scrollIntoView({ behavior: 'smooth' })
+  }, [detail])
 
   if (!user) return <Navigate to="/platform/login" replace />
   if (isPlatformAdmin === false) return <Navigate to="/platform/login" replace />
@@ -85,8 +85,8 @@ export function PlatformCompanyPage() {
         <div style={{ maxWidth: 600, margin: '60px auto', textAlign: 'center' }}>
           <p style={{ fontSize: 13, color: '#8C1616' }}>{loadError}</p>
           <button onClick={() => navigate('/platform')} className="btn-secondary" style={{ marginTop: 14 }}>
-            <ArrowLeft size={13} /> Back to console
-          </button>
+            <ArrowLeft size={13} className='rtl-flip' /> Back to console
+                      </button>
         </div>
       </div>
     )
@@ -99,8 +99,6 @@ export function PlatformCompanyPage() {
   const pendingAdminInvite = invitations.find(i => i.role === 'admin' && invState(i) === 'pending')
   const seatsFull = detail.member_count >= org.max_members
 
-  // For the shared modals, shape the org like the console list rows expect
-  const orgForModals = { ...org, member_count: detail.member_count, risk_count: detail.risk_count, admins: members.filter(m => isAdminRole(m.role)) }
 
   const stats = [
     { icon: Users, label: 'Seats', value: `${detail.member_count}/${org.max_members}`, warn: seatsFull },
@@ -117,12 +115,12 @@ export function PlatformCompanyPage() {
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '24px 28px 70px' }}>
         <button onClick={() => navigate('/platform')}
           style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 14 }}>
-          <ArrowLeft size={13} /> All companies
-        </button>
+          <ArrowLeft size={13} className='rtl-flip' /> All companies
+                  </button>
 
         {/* Company header card */}
         <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 14, position: 'relative', overflow: 'hidden', marginBottom: 22 }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 4, background: suspended ? '#8C1616' : 'linear-gradient(180deg, var(--crimson) 0%, var(--rose) 100%)' }} />
+          <div style={{ position: 'absolute', top: 0, insetInlineStart: 0, bottom: 0, width: 4, background: suspended ? '#8C1616' : 'linear-gradient(180deg, var(--crimson) 0%, var(--rose) 100%)' }} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, padding: '20px 24px 20px 26px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ width: 44, height: 44, borderRadius: 11, background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -138,18 +136,18 @@ export function PlatformCompanyPage() {
                 </div>
                 <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 3 }}>
                   <span style={{ textTransform: 'capitalize' }}>{org.plan}</span> plan
-                  {org.industry ? ` · ${org.industry}` : ''} · provisioned {new Date(org.created_at).toLocaleDateString('en-GB')}
+                                    {org.industry ? ` · ${org.industry}` : ''} · provisioned {new Date(org.created_at).toLocaleDateString('en-GB')}
                   {detail.last_risk_activity && ` · last activity ${new Date(detail.last_risk_activity).toLocaleDateString('en-GB')}`}
                 </p>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setShowReissue(true)} className="btn-secondary" style={{ padding: '8px 13px' }}>
+              <button onClick={() => navigate(`/platform/companies/${id}/activation`)} className="btn-secondary" style={{ padding: '8px 13px' }}>
                 <Link2 size={13} /> Activation link
-              </button>
-              <button onClick={() => setShowEdit(true)} className="btn-secondary" style={{ padding: '8px 13px' }}>
+                              </button>
+              <button onClick={() => navigate(`/platform/companies/${id}/limits`)} className="btn-secondary" style={{ padding: '8px 13px' }}>
                 <Pencil size={13} /> Plan & limits
-              </button>
+                              </button>
             </div>
           </div>
         </div>
@@ -165,7 +163,7 @@ export function PlatformCompanyPage() {
         {/* Usage strip */}
         <div className="grid grid-cols-5 mb-7 rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid var(--border)' }}>
           {stats.map((s, i) => (
-            <div key={s.label} style={{ padding: '13px 16px', borderRight: i < stats.length - 1 ? '1px solid var(--border)' : 'none' }}>
+            <div key={s.label} style={{ padding: '13px 16px', borderInlineEnd: i < stats.length - 1 ? '1px solid var(--border)' : 'none' }}>
               <p className="eyebrow" style={{ marginBottom: 4 }}>{s.label}</p>
               <p style={{ fontSize: 21, fontWeight: 300, color: s.warn ? '#9C6F0F' : 'var(--text)', lineHeight: 1.1 }}>{s.value}</p>
             </div>
@@ -177,9 +175,9 @@ export function PlatformCompanyPage() {
           title="Access & Activation"
           desc="Open invitation links for this company — copy and send to the recipient"
           action={
-            <button onClick={() => setShowReissue(true)} className="btn-primary" style={{ padding: '7px 13px' }}>
+            <button onClick={() => navigate(`/platform/companies/${id}/activation`)} className="btn-primary" style={{ padding: '7px 13px' }}>
               <RotateCw size={12} /> Issue new link
-            </button>
+                          </button>
           }>
           {members.length === 0 && !pendingAdminInvite && (
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '11px 14px', borderRadius: 10, background: '#FAF3E2', border: '1px solid #EBDCB6', marginBottom: 10 }}>
@@ -197,7 +195,7 @@ export function PlatformCompanyPage() {
           ) : (
             <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
               <div className="grid items-center px-4 py-2.5 table-head" style={{ gridTemplateColumns: '2fr 1fr 0.9fr 1fr auto' }}>
-                <span>Email</span><span>Role</span><span>Status</span><span>Expires</span><span style={{ textAlign: 'right' }}>Link</span>
+                <span>Email</span><span>Role</span><span>Status</span><span>Expires</span><span style={{ textAlign: 'end' }}>Link</span>
               </div>
               <div style={{ background: '#fff' }}>
                 {invitations.map((inv, i) => {
@@ -214,7 +212,7 @@ export function PlatformCompanyPage() {
                       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                         {st === 'pending'
                           ? <CopyBtn text={activationLink(inv.token)} />
-                          : <span style={{ fontSize: 11, color: 'var(--text-3)' }}><Ban size={11} style={{ display: 'inline', marginRight: 4 }} />link dead</span>}
+                          : <span style={{ fontSize: 11, color: 'var(--text-3)' }}><Ban size={11} style={{ display: 'inline', marginInlineEnd: 4 }} />link dead</span>}
                       </div>
                     </div>
                   )
@@ -265,8 +263,8 @@ export function PlatformCompanyPage() {
 
         {/* Danger zone */}
         <Section title="Danger Zone" desc="Suspension is reversible and keeps all data — deletion is forever">
-          <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #F0CECE', background: '#fff' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
+          <div id="danger" className="rounded-xl overflow-hidden" style={{ border: '1px solid #F0CECE', background: '#fff', scrollMarginTop: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
               <div style={{ flex: 1 }}>
                 <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{suspended ? 'Reactivate company' : 'Suspend company'}</p>
                 <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>
@@ -275,53 +273,21 @@ export function PlatformCompanyPage() {
                     : `All ${detail.member_count} member${detail.member_count === 1 ? '' : 's'} lose access within a minute; no data is touched (use for non-payment)`}
                 </p>
               </div>
-              <button onClick={() => setShowSuspend(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 500, padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
-                  background: suspended ? '#ECF4EE' : '#FAF3E2', color: suspended ? '#2F6B3C' : '#9C6F0F',
-                  border: `1px solid ${suspended ? '#C8DECD' : '#EBDCB6'}` }}>
-                {suspended ? <Play size={13} /> : <Pause size={13} />} {suspended ? 'Reactivate' : 'Suspend'}
-              </button>
+              <SuspendControl org={org} memberCount={detail.member_count} platform={platform} onDone={load} />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px' }}>
-              <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 260 }}>
                 <p style={{ fontSize: 13, fontWeight: 600, color: '#8C1616' }}>Delete company permanently</p>
                 <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>
                   Erases every trace — all risks, evidence, history, members and their accounts. No recovery.
                 </p>
               </div>
-              <button onClick={() => setShowDelete(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
-                  background: '#8C1616', color: '#fff', border: 'none' }}>
-                <Trash2 size={13} /> Delete everything
-              </button>
+              <DeleteCompanyControl org={org} memberCount={detail.member_count} riskCount={detail.risk_count} platform={platform} onDeleted={() => navigate('/platform')} />
             </div>
           </div>
         </Section>
       </div>
 
-      {/* Modals — shared with the console list */}
-      {showEdit && (
-        <EditLimitsModal org={orgForModals} platform={platform}
-          onClose={() => { setShowEdit(false); load() }} onError={setError} />
-      )}
-      {showReissue && (
-        <ReissueModal org={orgForModals} platform={platform}
-          onClose={() => { setShowReissue(false); load() }} />
-      )}
-      {showSuspend && (
-        <SuspendModal org={orgForModals}
-          onClose={() => setShowSuspend(false)}
-          onConfirm={async () => {
-            try { await platform.setStatus(org.id, suspended ? 'active' : 'suspended') }
-            catch (err) { setError(err.message) }
-            setShowSuspend(false); load()
-          }} />
-      )}
-      {showDelete && (
-        <DeleteCompanyModal org={orgForModals} platform={platform}
-          onClose={() => setShowDelete(false)}
-          onDeleted={() => navigate('/platform')} />
-      )}
     </div>
   )
 }

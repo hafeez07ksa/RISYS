@@ -12,6 +12,7 @@ import { logAudit, AUDIT } from '@/lib/audit'
 import { Spinner } from '@/components/ui/Spinner'
 import { CheckCircle, XCircle } from 'lucide-react'
 import { callEdgeFunction } from '@/lib/functions'
+import { tx } from '@/lib/i18n'
 
 // ── Tenant resolution (mirrors useConnectors logic) ───────────────────────────
 
@@ -100,7 +101,7 @@ export function OAuthCallbackPage() {
 
     if (!code) {
       clearPendingOAuth()
-      setErrorMsg('No authorization code received from provider.')
+      setErrorMsg(tx('No authorization code received from provider.'))
       setPhase(PHASE.ERROR)
       return
     }
@@ -108,7 +109,9 @@ export function OAuthCallbackPage() {
     // ── Read pending state written by startOAuthRedirect ──────────────────
     const pending = getPendingOAuth()
     if (!pending) {
-      setErrorMsg('OAuth session expired or was opened in an unexpected way. Please try connecting again.')
+      setErrorMsg(tx(
+        'OAuth session expired or was opened in an unexpected way. Please try connecting again.'
+      ))
       setPhase(PHASE.ERROR)
       return
     }
@@ -203,7 +206,7 @@ export function OAuthCallbackPage() {
 
     } catch (err) {
       console.error('[RISYS] OAuthCallbackPage error:', err)
-      setErrorMsg(err.message || 'Connection failed')
+      setErrorMsg(err.message || tx('Connection failed'))
       setPhase(PHASE.ERROR)
     }
   }
@@ -217,9 +220,9 @@ export function OAuthCallbackPage() {
         <>
           <Spinner size="md" />
           <p className="text-sm font-medium" style={{ color: '#1a1314' }}>
-            {connectorName ? `Connecting ${connectorName}…` : 'Completing authorization…'}
+            {connectorName ? `Connecting ${connectorName}…` : tx('Completing authorization…')}
           </p>
-          <p className="text-xs" style={{ color: '#8a7070' }}>This will only take a moment</p>
+          <p className="text-xs" style={{ color: '#8a7070' }}>{tx('This will only take a moment')}</p>
         </>
       )}
 
@@ -232,9 +235,8 @@ export function OAuthCallbackPage() {
             <CheckCircle size={24} style={{ color: '#16a34a' }} />
           </div>
           <p className="text-sm font-medium" style={{ color: '#1a1314' }}>
-            {connectorName} connected!
-          </p>
-          <p className="text-xs" style={{ color: '#8a7070' }}>Redirecting to settings…</p>
+            {connectorName} {tx('connected!')}</p>
+          <p className="text-xs" style={{ color: '#8a7070' }}>{tx('Redirecting to settings…')}</p>
         </>
       )}
 
@@ -246,14 +248,12 @@ export function OAuthCallbackPage() {
           >
             <XCircle size={24} style={{ color: '#dc2626' }} />
           </div>
-          <p className="text-sm font-medium mb-2" style={{ color: '#1a1314' }}>Connection failed</p>
+          <p className="text-sm font-medium mb-2" style={{ color: '#1a1314' }}>{tx('Connection failed')}</p>
           <p className="text-xs mb-5 leading-relaxed" style={{ color: '#8a7070' }}>{errorMsg}</p>
           <button
             onClick={() => navigate('/app/settings', { replace: true })}
             className="btn-primary w-full"
-          >
-            Back to Settings
-          </button>
+          >{tx('Back to Settings')}</button>
         </div>
       )}
     </div>

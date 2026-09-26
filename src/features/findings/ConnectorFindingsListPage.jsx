@@ -11,10 +11,11 @@ import { useFindingTriage } from '@/hooks/useTriage'
 import { useConnectorScans } from '@/hooks/useConnectorScans'
 import { Spinner } from '@/components/ui/Spinner'
 import { FINDING_PROVIDERS, SEVERITY_CONFIG, SEVERITY_RANK, findingDisplayTitle } from '@/lib/findings'
-import { CreateFindingIncidentModal } from '@/features/findings/FindingActionModals'
+import { RaiseIncidentInline } from '@/features/findings/RaiseIncidentInline'
 import { ScanHealthBanner } from '@/features/findings/ScanHealth'
 import { toTriageState, closeReasonMeta } from '@/lib/triage'
 import { ControlReferences } from '@/components/ui/ControlReferences'
+import { tx, appLocale } from '@/lib/i18n'
 
 // Findings list for connectors whose findings are not about individual users
 // (M365, Defender, SharePoint). Entra keeps its per-user view in FindingsPlatformPage.
@@ -25,64 +26,64 @@ import { ControlReferences } from '@/components/ui/ControlReferences'
 
 const CONNECTOR_VIEWS = {
   m365: {
-    title:        'Microsoft 365 Security',
-    subtitle:     'Security Findings · Mail, Guests, App Consent & DNS',
+    title:        tx('Microsoft 365 Security'),
+    subtitle:     tx('Security Findings · Mail, Guests, App Consent & DNS'),
     settingsPath: '/app/settings/m365',
-    settingsName: 'M365 Security',
-    portalName:   'Microsoft 365',
+    settingsName: tx('M365 Security'),
+    portalName:   tx('Microsoft 365'),
     scans:        true,
     // Mail leaving the organisation and an app that can rewrite the directory
     // are happening now; guest review and ordinary consent go to triage.
     canRaiseIncident: f => f.source === 'forwarding' || f.raw?.category === 'app_privilege',
     categories: {
-      external_forwarding: { label: 'External Forwarding', Icon: Mail,        color: '#b91c1c' },
-      guest_access:        { label: 'Guest Access',        Icon: Users,       color: '#6264A7' },
-      app_privilege:       { label: 'App Privilege',       Icon: ShieldAlert, color: '#5D0F0F' },
-      app_consent:         { label: 'App Consent',         Icon: ShieldAlert, color: '#b45309' },
-      mail_dns:            { label: 'Mail Domain DNS',     Icon: Globe,       color: '#0F5A8A' },
+      external_forwarding: { label: tx('External Forwarding'), Icon: Mail,        color: '#b91c1c' },
+      guest_access:        { label: tx('Guest Access'),        Icon: Users,       color: '#6264A7' },
+      app_privilege:       { label: tx('App Privilege'),       Icon: ShieldAlert, color: '#5D0F0F' },
+      app_consent:         { label: tx('App Consent'),         Icon: ShieldAlert, color: '#b45309' },
+      mail_dns:            { label: tx('Mail Domain DNS'),     Icon: Globe,       color: '#0F5A8A' },
       // pre-2026-09 categories, on resolved rows only
-      exchange:            { label: 'Exchange Online',     Icon: Mail,        color: '#0078D4' },
-      sharepoint:          { label: 'SharePoint',          Icon: Globe,       color: '#038387' },
-      guests:              { label: 'Guest Access',        Icon: Users,       color: '#6264A7' },
+      exchange:            { label: tx('Exchange Online'),     Icon: Mail,        color: '#0078D4' },
+      sharepoint:          { label: tx('SharePoint'),          Icon: Globe,       color: '#038387' },
+      guests:              { label: tx('Guest Access'),        Icon: Users,       color: '#6264A7' },
     },
   },
   defender: {
-    title:        'Microsoft Defender',
-    subtitle:     'Security Findings · Alerts, Posture, Vulnerabilities',
+    title:        tx('Microsoft Defender'),
+    subtitle:     tx('Security Findings · Alerts, Posture, Vulnerabilities'),
     settingsPath: '/app/settings/defender',
-    settingsName: 'Defender',
-    portalName:   'Defender portal',
+    settingsName: tx('Defender'),
+    portalName:   tx('Defender portal'),
     scans:        true,
     canRaiseIncident: f => f.source === 'alert' || (f.source === 'device' && f.severity === 'critical'),
     categories: {
-      posture:       { label: 'Secure Score',  Icon: Shield,            color: '#00B4D8' },
-      vulnerability: { label: 'Vulnerability', Icon: Bug,               color: '#b45309' },
-      device:        { label: 'Device Health', Icon: MonitorSmartphone, color: '#0F5A8A' },
-      endpoint:      { label: 'Endpoint Alert', Icon: MonitorSmartphone, color: '#b91c1c' },
-      identity:      { label: 'Identity Alert', Icon: Fingerprint,      color: '#6264A7' },
-      office:        { label: 'Email Alert',    Icon: Mail,             color: '#0078D4' },
-      cloud:         { label: 'Cloud Alert',    Icon: Cloud,            color: '#2B5797' },
-      threat:        { label: 'Threat Alert',   Icon: AlertTriangle,    color: '#b91c1c' },
+      posture:       { label: tx('Secure Score'),  Icon: Shield,            color: '#00B4D8' },
+      vulnerability: { label: tx('Vulnerability'), Icon: Bug,               color: '#b45309' },
+      device:        { label: tx('Device Health'), Icon: MonitorSmartphone, color: '#0F5A8A' },
+      endpoint:      { label: tx('Endpoint Alert'), Icon: MonitorSmartphone, color: '#b91c1c' },
+      identity:      { label: tx('Identity Alert'), Icon: Fingerprint,      color: '#6264A7' },
+      office:        { label: tx('Email Alert'),    Icon: Mail,             color: '#0078D4' },
+      cloud:         { label: tx('Cloud Alert'),    Icon: Cloud,            color: '#2B5797' },
+      threat:        { label: tx('Threat Alert'),   Icon: AlertTriangle,    color: '#b91c1c' },
     },
   },
   sharepoint: {
-    title:        'SharePoint Security',
-    subtitle:     'Security Findings · Sharing & Access',
+    title:        tx('SharePoint Security'),
+    subtitle:     tx('Security Findings · Sharing & Access'),
     settingsPath: '/app/settings/sharepoint',
-    settingsName: 'SharePoint',
-    portalName:   'SharePoint',
+    settingsName: tx('SharePoint'),
+    portalName:   tx('SharePoint'),
     scans:        true,
     // An "Anyone" link or an external share is data exposed now; policy and group findings go to triage.
     canRaiseIncident: f => f.subject.meta === 'public_file' || f.subject.meta === 'external_share',
     categories: {
-      public_file:       { label: '"Anyone" Links',   Icon: FileX,  color: '#b91c1c' },
-      external_share:    { label: 'External Shares',  Icon: Share2, color: '#b45309' },
-      tenant_policy:     { label: 'Sharing Policy',   Icon: Shield, color: '#5D0F0F' },
-      guest_access:      { label: 'Guest Access',     Icon: Users,  color: '#6264A7' },
-      public_group:      { label: 'Public Groups',    Icon: Users,  color: '#0F5A8A' },
-      org_wide_link:     { label: 'Org-wide Links',   Icon: Globe,  color: '#038387' },
-      external_sharing:  { label: 'External Sharing', Icon: Share2, color: '#b45309' },
-      internal_exposure: { label: 'Exposure',         Icon: Globe,  color: '#038387' },
+      public_file:       { label: tx('"Anyone" Links'),   Icon: FileX,  color: '#b91c1c' },
+      external_share:    { label: tx('External Shares'),  Icon: Share2, color: '#b45309' },
+      tenant_policy:     { label: tx('Sharing Policy'),   Icon: Shield, color: '#5D0F0F' },
+      guest_access:      { label: tx('Guest Access'),     Icon: Users,  color: '#6264A7' },
+      public_group:      { label: tx('Public Groups'),    Icon: Users,  color: '#0F5A8A' },
+      org_wide_link:     { label: tx('Org-wide Links'),   Icon: Globe,  color: '#038387' },
+      external_sharing:  { label: tx('External Sharing'), Icon: Share2, color: '#b45309' },
+      internal_exposure: { label: tx('Exposure'),         Icon: Globe,  color: '#038387' },
     },
   },
 }
@@ -93,9 +94,9 @@ const FALLBACK_CATEGORY = { Icon: ShieldAlert, color: '#5D0F0F' }
 const PAGE_SIZE = 50
 
 const TRIAGE_BADGE = {
-  created:  { label: 'Risk created',       color: '#5D0F0F', bg: '#F6EBE8', bd: '#e8cfc9' },
-  attached: { label: 'Attached to a risk', color: '#5D0F0F', bg: '#F6EBE8', bd: '#e8cfc9' },
-  closed:   { label: 'Closed',             color: '#6b5555', bg: '#f5f3f3', bd: '#e5e0e0' },
+  created:  { label: tx('Risk created'),       color: '#5D0F0F', bg: '#F6EBE8', bd: '#e8cfc9' },
+  attached: { label: tx('Attached to a risk'), color: '#5D0F0F', bg: '#F6EBE8', bd: '#e8cfc9' },
+  closed:   { label: tx('Closed'),             color: '#6b5555', bg: '#f5f3f3', bd: '#e5e0e0' },
 }
 
 function StatCard({ label, value, icon: Icon, tone, active, onClick }) {
@@ -107,7 +108,7 @@ function StatCard({ label, value, icon: Icon, tone, active, onClick }) {
   }[tone]
   return (
     <button type="button" onClick={onClick}
-      className="rounded-xl p-4 flex flex-col gap-2 transition-all text-left"
+      className='rounded-xl p-4 flex flex-col gap-2 transition-all text-start'
       style={{
         background: map.bg, border: `1px solid ${active ? map.color : map.bd}`, cursor: 'pointer',
         boxShadow: active ? `0 0 0 1px ${map.color}` : 'none',
@@ -169,13 +170,13 @@ function Segmented({ options, value, onChange }) {
             color:      value === val ? (color || '#1a1314') : '#8a7070',
             border:     value === val ? '1px solid #e5e0e0' : '1px solid transparent',
             fontWeight: value === val ? 500 : 400,
-          }}>{lbl}</button>
+          }}>{tx(lbl)}</button>
       ))}
     </div>
   )
 }
 
-const fmtDate = iso => iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
+const fmtDate = iso => iso ? new Date(iso).toLocaleDateString(appLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) : ''
 
 export function ConnectorFindingsListPage({ connectorId }) {
   const navigate = useNavigate()
@@ -195,10 +196,9 @@ export function ConnectorFindingsListPage({ connectorId }) {
   const [triageFilter, setTriageFilter] = useState('all')
   const [search, setSearch]           = useState('')
   const [limit, setLimit]             = useState(PAGE_SIZE)
-  const [modal, setModal]             = useState(null)
 
   const categoryMeta = useCallback(
-    (cat) => view?.categories[cat] || { ...FALLBACK_CATEGORY, label: cat || 'Other' },
+    (cat) => view?.categories[cat] || { ...FALLBACK_CATEGORY, label: cat || tx('Other') },
     [view],
   )
 
@@ -217,7 +217,7 @@ export function ConnectorFindingsListPage({ connectorId }) {
       setFindings(list)
     } catch (e) {
       console.error(`[${connectorId}Findings] load error`, e)
-      setError('Could not load findings. Try refreshing.')
+      setError(tx('Could not load findings. Try refreshing.'))
     } finally {
       setLoading(false)
     }
@@ -258,9 +258,9 @@ export function ConnectorFindingsListPage({ connectorId }) {
   if (!view || !provider) {
     return (
       <div className="h-full flex flex-col">
-        <Topbar title="Findings" />
+        <Topbar title={tx('Findings')} />
         <div className="page-content">
-          <p className="text-sm" style={{ color: '#8a7070' }}>Unknown connector.</p>
+          <p className="text-sm" style={{ color: '#8a7070' }}>{tx('Unknown connector.')}</p>
         </div>
       </div>
     )
@@ -275,7 +275,7 @@ export function ConnectorFindingsListPage({ connectorId }) {
         subtitle={view.subtitle}
         actions={
           <div className="flex items-center gap-2">
-            <button onClick={refreshAll} title="Refresh"
+            <button onClick={refreshAll} title={tx('Refresh')}
               className="w-8 h-8 flex items-center justify-center rounded-md border hover:bg-[#f5f3f3]"
               style={{ borderColor: '#e5e0e0', color: '#8a7070' }}>
               <RefreshCw size={13} />
@@ -283,13 +283,11 @@ export function ConnectorFindingsListPage({ connectorId }) {
             <button onClick={() => navigate(view.settingsPath)}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border hover:bg-[#f5f3f3]"
               style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
-              <Settings size={13} /> Scan settings
-            </button>
+              <Settings size={13} /> {tx('Scan settings')}</button>
             <button onClick={() => navigate('/app/findings')}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border hover:bg-[#f5f3f3]"
               style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
-              <ArrowLeft size={13} /> Back to Findings
-            </button>
+              <ArrowLeft size={13} className='rtl-flip' /> {tx('Back to Findings')}</button>
           </div>
         }
       />
@@ -307,13 +305,13 @@ export function ConnectorFindingsListPage({ connectorId }) {
         )}
 
         <div className="grid grid-cols-4 gap-3 mb-5">
-          <StatCard label={resolvedView ? 'Resolved' : 'Open findings'} value={counts.total} icon={FileWarning} tone="total"
+          <StatCard label={resolvedView ? tx('Resolved') : tx('Open findings')} value={counts.total} icon={FileWarning} tone="total"
             active={sevFilter === 'all'} onClick={() => setSevFilter('all')} />
-          <StatCard label="Critical"      value={counts.critical} icon={AlertTriangle} tone="critical"
+          <StatCard label={tx('Critical')}      value={counts.critical} icon={AlertTriangle} tone="critical"
             active={sevFilter === 'critical'} onClick={() => setSevFilter(sevFilter === 'critical' ? 'all' : 'critical')} />
-          <StatCard label="Warning"       value={counts.warning}  icon={ShieldAlert}   tone="warning"
+          <StatCard label={tx('Warning')}       value={counts.warning}  icon={ShieldAlert}   tone="warning"
             active={sevFilter === 'warning'} onClick={() => setSevFilter(sevFilter === 'warning' ? 'all' : 'warning')} />
-          <StatCard label="Informational" value={counts.info}     icon={AlertCircle}   tone="info"
+          <StatCard label={tx('Informational')} value={counts.info}     icon={AlertCircle}   tone="info"
             active={sevFilter === 'info'} onClick={() => setSevFilter(sevFilter === 'info' ? 'all' : 'info')} />
         </div>
 
@@ -327,15 +325,15 @@ export function ConnectorFindingsListPage({ connectorId }) {
           {!resolvedView && (
             <Segmented value={triageFilter} onChange={setTriageFilter} options={[
               ['all', 'All'],
-              ['untriaged', `Needs triage (${counts.untriaged})`, '#b91c1c'],
-              ['triaged', `Triaged (${counts.total - counts.untriaged})`],
+              ['untriaged', `${tx('Needs triage')} (${counts.untriaged})`, '#b91c1c'],
+              ['triaged', `${tx('Triaged')} (${counts.total - counts.untriaged})`],
             ]} />
           )}
           <div className="flex-1 relative" style={{ minWidth: 200 }}>
             <Search size={12} className="absolute top-1/2 -translate-y-1/2" style={{ color: '#8a7070', insetInlineStart: 12 }} />
             <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search title, affected item or control (e.g. 2-4-3-1)…"
-              className="w-full text-xs pr-3 py-2 rounded-lg outline-none"
+              placeholder={tx('Search title, affected item or control (e.g. 2-4-3-1)…')}
+              className='w-full text-xs pe-3 py-2 rounded-lg outline-none'
               style={{ background: '#fff', border: '1px solid #e5e0e0', color: '#1a1314', paddingInlineStart: 32 }} />
           </div>
         </div>
@@ -360,27 +358,24 @@ export function ConnectorFindingsListPage({ connectorId }) {
           <div className="rounded-xl py-14 text-center" style={{ background: '#fff', border: '1px dashed #e5e0e0' }}>
             <CheckCircle size={28} strokeWidth={1} className="mx-auto mb-3" style={{ color: '#bbf7d0' }} />
             <p className="text-sm font-medium mb-1" style={{ color: '#4a3a3a' }}>
-              {findings.length > 0 ? 'No findings match these filters'
-                : resolvedView ? 'Nothing resolved yet'
+              {findings.length > 0 ? tx('No findings match these filters')
+                : resolvedView ? tx('Nothing resolved yet')
                 : `No open ${view.settingsName} findings`}
             </p>
             <p className="text-xs" style={{ color: '#8a7070' }}>
-              {findings.length > 0 ? 'Try a different severity, category, triage state or search term.'
-                : resolvedView ? 'Findings move here automatically when a scan no longer reports them.'
+              {findings.length > 0 ? tx('Try a different severity, category, triage state or search term.')
+                : resolvedView ? tx('Findings move here automatically when a scan no longer reports them.')
                 : `Run a scan from ${view.settingsName} settings to pull findings.`}
             </p>
             {findings.length === 0 && !resolvedView && (
               <button onClick={() => navigate(view.settingsPath)}
                 className="mt-4 text-xs px-4 py-2 rounded-lg"
-                style={{ background: '#5D0F0F', color: '#fff', border: 'none' }}>
-                Go to {view.settingsName} settings
-              </button>
+                style={{ background: '#5D0F0F', color: '#fff', border: 'none' }}>{tx('Go to')} {view.settingsName} {tx('settings')}</button>
             )}
           </div>
         ) : (
           <>
-            <p className="text-xs mb-2" style={{ color: '#8a7070' }}>
-              Showing {Math.min(limit, visible.length)} of {visible.length}
+            <p className="text-xs mb-2" style={{ color: '#8a7070' }}>{tx('Showing')} {Math.min(limit, visible.length)} {tx('of')} {visible.length}
             </p>
             <div className="flex flex-col gap-3">
               {visible.slice(0, limit).map(finding => (
@@ -391,7 +386,6 @@ export function ConnectorFindingsListPage({ connectorId }) {
                   catMeta={categoryMeta(finding.subject.meta)}
                   triage={triageByKey.get(finding.key)}
                   onTriage={() => navigate('/app/risks/triage', { state: { finding: toTriageState(finding) } })}
-                  onRaiseIncident={() => setModal({ type: 'incident', finding })}
                   onOpenIncident={() => navigate(`/app/incidents/${finding.incidentId}`)}
                   onOpenRisk={id => navigate(`/app/risks/${id}`)}
                 />
@@ -401,27 +395,19 @@ export function ConnectorFindingsListPage({ connectorId }) {
               <div className="flex justify-center mt-4">
                 <button onClick={() => setLimit(l => l + PAGE_SIZE)}
                   className="text-xs px-4 py-2 rounded-lg border hover:bg-[#f5f3f3]"
-                  style={{ borderColor: '#e5e0e0', color: '#4a3a3a', background: '#fff' }}>
-                  Show {Math.min(PAGE_SIZE, visible.length - limit)} more
-                </button>
+                  style={{ borderColor: '#e5e0e0', color: '#4a3a3a', background: '#fff' }}>{tx('Show')} {Math.min(PAGE_SIZE, visible.length - limit)} {tx('more')}</button>
               </div>
             )}
           </>
         )}
       </div>
 
-      {modal?.type === 'incident' && (
-        <CreateFindingIncidentModal
-          finding={modal.finding}
-          onClose={() => setModal(null)}
-          onCreated={() => setModal(null)}
-        />
-      )}
     </div>
   )
 }
 
-function FindingCard({ finding, view, catMeta, triage, onTriage, onRaiseIncident, onOpenIncident, onOpenRisk }) {
+function FindingCard({ finding, view, catMeta, triage, onTriage, onOpenIncident, onOpenRisk }) {
+  const [raising, setRaising] = useState(false)
   const resolved = finding.status === 'resolved'
   const showSubject = finding.subject.name && findingDisplayTitle(finding.title, finding.subject.name) !== finding.title
   const triageMeta = triage ? TRIAGE_BADGE[triage.disposition] : null
@@ -440,7 +426,7 @@ function FindingCard({ finding, view, catMeta, triage, onTriage, onRaiseIncident
             <SeverityBadge severity={finding.severity} />
             <Pill color={catMeta.color} bg={`${catMeta.color}12`} bd={`${catMeta.color}30`}>{catMeta.label}</Pill>
             {resolved && (
-              <Pill color="#166534" bg="#f0fdf4" bd="#bbf7d0">Resolved {fmtDate(finding.resolvedAt)}</Pill>
+              <Pill color="#166534" bg="#f0fdf4" bd="#bbf7d0">{tx('Resolved')} {fmtDate(finding.resolvedAt)}</Pill>
             )}
             {triageMeta && (
               <Pill color={triageMeta.color} bg={triageMeta.bg} bd={triageMeta.bd}
@@ -449,7 +435,7 @@ function FindingCard({ finding, view, catMeta, triage, onTriage, onRaiseIncident
               </Pill>
             )}
             {finding.incidentId && (
-              <Pill color="#b91c1c" bg="#fef2f2" bd="#fecaca">Incident raised</Pill>
+              <Pill color="#b91c1c" bg="#fef2f2" bd="#fecaca">{tx('Incident raised')}</Pill>
             )}
           </div>
           {showSubject && (
@@ -479,43 +465,39 @@ function FindingCard({ finding, view, catMeta, triage, onTriage, onRaiseIncident
           <button onClick={onTriage}
             className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:bg-[#fef2f2]"
             style={{ borderColor: '#fecaca', color: '#b91c1c' }}>
-            {triage ? 'Review triage' : 'Triage finding'}
+            {triage ? tx('Review triage') : tx('Triage finding')}
           </button>
         )}
         {triage?.risk_id && (
           <button onClick={() => onOpenRisk(triage.risk_id)}
             className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:bg-[#f5f3f3]"
-            style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
-            Open risk
-          </button>
+            style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>{tx('Open risk')}</button>
         )}
         {canIncident && (
-          <button onClick={onRaiseIncident}
+          <button onClick={() => setRaising((r) => !r)} aria-expanded={raising}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors hover:bg-[#f5f3f3]"
             style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
-            <Siren size={12} /> Raise incident
-          </button>
+            <Siren size={12} /> {tx('Raise incident')}</button>
         )}
         {finding.incidentId && (
           <button onClick={onOpenIncident}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors hover:bg-[#fef2f2]"
             style={{ borderColor: '#fecaca', color: '#b91c1c' }}>
-            <Siren size={12} /> Open incident
-          </button>
+            <Siren size={12} /> {tx('Open incident')}</button>
         )}
         {finding.sourceUrl && (
           <a href={finding.sourceUrl} target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors hover:bg-[#f5f3f3]"
             style={{ borderColor: '#e5e0e0', color: '#4a3a3a' }}>
-            <ExternalLink size={12} /> View in {view.portalName || 'source'}
+            <ExternalLink size={12} /> {tx('View in')} {view.portalName || 'source'}
           </a>
         )}
         {finding.firstSeenAt && (
-          <span className="text-[11px]" style={{ color: '#a09090', marginInlineStart: 'auto' }}>
-            First seen {fmtDate(finding.firstSeenAt)}
+          <span className="text-[11px]" style={{ color: '#a09090', marginInlineStart: 'auto' }}>{tx('First seen')} {fmtDate(finding.firstSeenAt)}
           </span>
         )}
       </div>
+      {raising && canIncident && <RaiseIncidentInline finding={finding} onCancel={() => setRaising(false)} />}
     </div>
   )
 }

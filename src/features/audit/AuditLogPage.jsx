@@ -8,10 +8,11 @@ import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { DataTable } from '@/components/ui/DataTable'
-import { Drawer, DetailRow } from '@/components/ui/Drawer'
+import { DetailRow } from '@/components/ui/DetailRow'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { FilterBar } from '@/components/ui/Filters'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { tx, appLocale } from '@/lib/i18n'
 
 /* ── Audit log (§22) ──────────────────────────────────────────────────────────
  *
@@ -32,35 +33,35 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 /* Action vocabulary. `tone` maps into the shared status language (§28) so a
  * destructive audit event is the same red as a critical risk. */
 const ACTION_META = {
-  'risk.created':                  { label: 'Risk created',            tone: 'info' },
-  'risk.updated':                  { label: 'Risk updated',            tone: 'neutral' },
-  'risk.deleted':                  { label: 'Risk deleted',            tone: 'critical' },
-  'risk.status_changed':           { label: 'Risk status changed',     tone: 'neutral' },
-  'risk.submitted_for_review':     { label: 'Risk submitted',          tone: 'medium' },
-  'risk.approved':                 { label: 'Risk approved',           tone: 'low' },
-  'risk.rejected':                 { label: 'Risk rejected',           tone: 'critical' },
-  'risk.closed':                   { label: 'Risk closed',             tone: 'neutral' },
-  'incident.created':              { label: 'Incident raised',         tone: 'critical' },
-  'incident.updated':              { label: 'Incident updated',        tone: 'neutral' },
-  'incident.deleted':              { label: 'Incident deleted',        tone: 'critical' },
-  'incident.status_changed':       { label: 'Incident status changed', tone: 'neutral' },
-  'incident.resolved':             { label: 'Incident resolved',       tone: 'low' },
-  'task.created':                  { label: 'Task created',            tone: 'info' },
-  'task.updated':                  { label: 'Task updated',            tone: 'neutral' },
-  'task.deleted':                  { label: 'Task deleted',            tone: 'critical' },
-  'task.status_changed':           { label: 'Task status changed',     tone: 'neutral' },
-  'task.completed':                { label: 'Task completed',          tone: 'low' },
-  'member.invited':                { label: 'Member invited',          tone: 'brand' },
-  'member.removed':                { label: 'Member removed',          tone: 'critical' },
-  'member.role_changed':           { label: 'Role changed',            tone: 'medium' },
-  'connector.connected':           { label: 'Connector connected',     tone: 'low' },
-  'connector.disconnected':        { label: 'Connector disconnected',  tone: 'critical' },
-  'connector.synced':              { label: 'Sync completed',          tone: 'info' },
-  'finding.escalated_to_risk':     { label: 'Finding → Risk',          tone: 'brand' },
-  'finding.escalated_to_incident': { label: 'Finding → Incident',      tone: 'critical' },
-  'control.created':               { label: 'Control created',         tone: 'info' },
-  'control.updated':               { label: 'Control updated',         tone: 'neutral' },
-  'compliance.status_set':         { label: 'Compliance status set',   tone: 'neutral' },
+  'risk.created':                  { label: tx('Risk created'),            tone: 'info' },
+  'risk.updated':                  { label: tx('Risk updated'),            tone: 'neutral' },
+  'risk.deleted':                  { label: tx('Risk deleted'),            tone: 'critical' },
+  'risk.status_changed':           { label: tx('Risk status changed'),     tone: 'neutral' },
+  'risk.submitted_for_review':     { label: tx('Risk submitted'),          tone: 'medium' },
+  'risk.approved':                 { label: tx('Risk approved'),           tone: 'low' },
+  'risk.rejected':                 { label: tx('Risk rejected'),           tone: 'critical' },
+  'risk.closed':                   { label: tx('Risk closed'),             tone: 'neutral' },
+  'incident.created':              { label: tx('Incident raised'),         tone: 'critical' },
+  'incident.updated':              { label: tx('Incident updated'),        tone: 'neutral' },
+  'incident.deleted':              { label: tx('Incident deleted'),        tone: 'critical' },
+  'incident.status_changed':       { label: tx('Incident status changed'), tone: 'neutral' },
+  'incident.resolved':             { label: tx('Incident resolved'),       tone: 'low' },
+  'task.created':                  { label: tx('Task created'),            tone: 'info' },
+  'task.updated':                  { label: tx('Task updated'),            tone: 'neutral' },
+  'task.deleted':                  { label: tx('Task deleted'),            tone: 'critical' },
+  'task.status_changed':           { label: tx('Task status changed'),     tone: 'neutral' },
+  'task.completed':                { label: tx('Task completed'),          tone: 'low' },
+  'member.invited':                { label: tx('Member invited'),          tone: 'brand' },
+  'member.removed':                { label: tx('Member removed'),          tone: 'critical' },
+  'member.role_changed':           { label: tx('Role changed'),            tone: 'medium' },
+  'connector.connected':           { label: tx('Connector connected'),     tone: 'low' },
+  'connector.disconnected':        { label: tx('Connector disconnected'),  tone: 'critical' },
+  'connector.synced':              { label: tx('Sync completed'),          tone: 'info' },
+  'finding.escalated_to_risk':     { label: tx('Finding → Risk'),          tone: 'brand' },
+  'finding.escalated_to_incident': { label: tx('Finding → Incident'),      tone: 'critical' },
+  'control.created':               { label: tx('Control created'),         tone: 'info' },
+  'control.updated':               { label: tx('Control updated'),         tone: 'neutral' },
+  'compliance.status_set':         { label: tx('Compliance status set'),   tone: 'neutral' },
 }
 
 /* A raw key like `incident.deleted` leaking into the UI — visible in the
@@ -73,21 +74,21 @@ function actionMeta(action) {
   const label = `${entity} ${verb.join(' ').replace(/_/g, ' ')}`.trim()
   const destructive = /delete|remove|revoke|disconnect/.test(action || '')
   return {
-    label: label ? label.charAt(0).toUpperCase() + label.slice(1) : 'Unknown action',
+    label: label ? label.charAt(0).toUpperCase() + label.slice(1) : tx('Unknown action'),
     tone: destructive ? 'critical' : 'neutral',
     derived: true,
   }
 }
 
 const ENTITY_META = {
-  risk:       { label: 'Risk',      icon: ShieldAlert,   route: (id) => `/app/risks/${id}` },
-  incident:   { label: 'Incident',  icon: AlertTriangle, route: (id) => `/app/incidents/${id}` },
-  task:       { label: 'Task',      icon: CheckSquare2,  route: (id) => `/app/tasks/${id}` },
-  member:     { label: 'Member',    icon: Users,         route: () => '/app/people' },
-  connector:  { label: 'Connector', icon: Plug,          route: () => '/app/settings' },
-  finding:    { label: 'Finding',   icon: FileWarning,   route: () => '/app/findings' },
-  control:    { label: 'Control',   icon: CheckSquare2,  route: (id) => `/app/controls/${id}` },
-  compliance: { label: 'Compliance',icon: ScrollText,    route: () => '/app/compliance' },
+  risk:       { label: tx('Risk'),      icon: ShieldAlert,   route: (id) => `/app/risks/${id}` },
+  incident:   { label: tx('Incident'),  icon: AlertTriangle, route: (id) => `/app/incidents/${id}` },
+  task:       { label: tx('Task'),      icon: CheckSquare2,  route: (id) => `/app/tasks/${id}` },
+  member:     { label: tx('Member'),    icon: Users,         route: () => '/app/people' },
+  connector:  { label: tx('Connector'), icon: Plug,          route: () => '/app/settings' },
+  finding:    { label: tx('Finding'),   icon: FileWarning,   route: () => '/app/findings' },
+  control:    { label: tx('Control'),   icon: CheckSquare2,  route: (id) => `/app/controls/${id}` },
+  compliance: { label: tx('Compliance'),icon: ScrollText,    route: () => '/app/compliance' },
 }
 
 const ENTITY_FILTERS = ['risk', 'incident', 'task', 'member', 'connector', 'finding']
@@ -132,11 +133,11 @@ function timeAgo(d) {
   if (hrs < 24)  return `${hrs}h ago`
   const days = Math.floor(hrs / 24)
   if (days < 7)  return `${days}d ago`
-  return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(d).toLocaleDateString(appLocale(), { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 const fullTime = (d) =>
-  new Date(d).toLocaleString('en-GB', {
+  new Date(d).toLocaleString(appLocale(), {
     day: 'numeric', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit', second: '2-digit',
   })
@@ -181,7 +182,10 @@ function Diff({ field, before, after }) {
       }}>{field}</p>
       <div style={{ display: 'flex', alignItems: 'stretch', gap: 7 }}>
         {cell(before, 'before')}
-        <ArrowRight size={13} style={{ color: 'var(--taupe)', flexShrink: 0, alignSelf: 'center' }} />
+        <ArrowRight
+          size={13}
+          style={{ color: 'var(--taupe)', flexShrink: 0, alignSelf: 'center' }}
+          className='rtl-flip' />
         {cell(after, 'after')}
       </div>
     </div>
@@ -189,62 +193,51 @@ function Diff({ field, before, after }) {
 }
 
 /* ── Event detail (§22) ──────────────────────────────────────────────────── */
-function EventDrawer({ event, onClose, onOpenRecord }) {
-  if (!event) return null
-  const meta = actionMeta(event.action)
+/* Opens under the event's own row, so the list keeps its place and several
+ * events can be compared by opening one after another. */
+function EventDetail({ event, onOpenRecord }) {
   const entity = ENTITY_META[event.entity_type]
   const { diffs, rest } = extractDiff(event.meta)
   const canOpen = entity?.route && event.entity_id
 
   return (
-    <Drawer
-      open={!!event}
-      onClose={onClose}
-      title={meta.label}
-      subtitle={fullTime(event.created_at)}
-      width={480}
-      footer={canOpen && (
-        <button className="btn-primary" style={{ width: '100%' }}
-          onClick={() => { onClose(); onOpenRecord(entity.route(event.entity_id)) }}>
-          Open {entity.label.toLowerCase()}
-        </button>
-      )}
-    >
+    <div className="anim-fade" style={{ padding: '14px 16px 16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px 24px' }}
+         onClick={(e) => e.stopPropagation()}>
       {diffs.length > 0 && (
-        <section style={{ marginBottom: 20 }}>
-          <p className="eyebrow" style={{ marginBottom: 10 }}>What changed</p>
+        <section style={{ gridColumn: '1 / -1' }}>
+          <p className="rp-label" style={{ marginBottom: 8 }}>{tx('What changed')}</p>
           {diffs.map(d => <Diff key={d.field} {...d} />)}
         </section>
       )}
 
-      <section style={{ marginBottom: 20 }}>
-        <p className="eyebrow" style={{ marginBottom: 8 }}>Event</p>
-        <DetailRow label="Action">
+      <section>
+        <p className="rp-label">{tx('Event')}</p>
+        <DetailRow label={tx('Action')}>
           <span className="mono" style={{ fontSize: 'var(--t-meta)' }}>{event.action}</span>
         </DetailRow>
-        <DetailRow label="Module">{entity?.label || event.entity_type || '—'}</DetailRow>
-        <DetailRow label="Record">{event.entity_title || '—'}</DetailRow>
-        <DetailRow label="Record ID" mono>{event.entity_id || '—'}</DetailRow>
-        <DetailRow label="Event ID" mono>{event.id}</DetailRow>
+        <DetailRow label={tx('Module')}>{entity?.label || event.entity_type || '—'}</DetailRow>
+        <DetailRow label={tx('Record')}>{event.entity_title || '—'}</DetailRow>
+        <DetailRow label={tx('Record ID')} mono>{event.entity_id || '—'}</DetailRow>
+        <DetailRow label={tx('Event ID')} mono>{event.id}</DetailRow>
       </section>
 
-      <section style={{ marginBottom: 20 }}>
-        <p className="eyebrow" style={{ marginBottom: 8 }}>Actor</p>
-        <DetailRow label="Name">
+      <section>
+        <p className="rp-label">{tx('Actor')}</p>
+        <DetailRow label={tx('Name')}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
             <Avatar name={event.actor_name || 'System'} size={20} />
-            {event.actor_name || 'System'}
+            {event.actor_name || tx('System')}
           </span>
         </DetailRow>
-        {event.actor_email && <DetailRow label="Email">{event.actor_email}</DetailRow>}
-        <DetailRow label="Actor ID" mono>{event.actor_id || '—'}</DetailRow>
-        {event.ip_address && <DetailRow label="Source IP" mono>{event.ip_address}</DetailRow>}
-        <DetailRow label="Timestamp">{fullTime(event.created_at)}</DetailRow>
+        {event.actor_email && <DetailRow label={tx('Email')}>{event.actor_email}</DetailRow>}
+        <DetailRow label={tx('Actor ID')} mono>{event.actor_id || '—'}</DetailRow>
+        {event.ip_address && <DetailRow label={tx('Source IP')} mono>{event.ip_address}</DetailRow>}
+        <DetailRow label={tx('Timestamp')}>{fullTime(event.created_at)}</DetailRow>
       </section>
 
       {Object.keys(rest).length > 0 && (
         <section>
-          <p className="eyebrow" style={{ marginBottom: 8 }}>Metadata</p>
+          <p className="rp-label">{tx('Metadata')}</p>
           {Object.entries(rest).map(([k, v]) => (
             <DetailRow key={k} label={k.replace(/_/g, ' ')} mono={/id$/i.test(k)}>
               {typeof v === 'object' ? JSON.stringify(v) : String(v)}
@@ -252,7 +245,15 @@ function EventDrawer({ event, onClose, onOpenRecord }) {
           ))}
         </section>
       )}
-    </Drawer>
+
+      {canOpen && (
+        <div style={{ gridColumn: '1 / -1' }}>
+          <button className="btn-secondary" onClick={() => onOpenRecord(entity.route(event.entity_id))}>
+            {tx('Open')} {entity.label.toLowerCase()}
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -322,13 +323,13 @@ export function AuditLogPage() {
   }, [rows])
 
   const filterDefs = useMemo(() => [
-    { key: 'actor',  label: 'Actor',  options: actorOptions,  multiple: true, pinned: true },
-    { key: 'action', label: 'Action', options: actionOptions, multiple: true, pinned: true },
-    { key: 'since',  label: 'Period', options: [
-      { value: '24h', label: 'Last 24 hours' },
-      { value: '7d',  label: 'Last 7 days' },
-      { value: '30d', label: 'Last 30 days' },
-      { value: '90d', label: 'Last 90 days' },
+    { key: 'actor',  label: tx('Actor'),  options: actorOptions,  multiple: true, pinned: true },
+    { key: 'action', label: tx('Action'), options: actionOptions, multiple: true, pinned: true },
+    { key: 'since',  label: tx('Period'), options: [
+      { value: '24h', label: tx('Last 24 hours') },
+      { value: '7d',  label: tx('Last 7 days') },
+      { value: '30d', label: tx('Last 30 days') },
+      { value: '90d', label: tx('Last 90 days') },
     ] },
   ], [actorOptions, actionOptions])
 
@@ -384,7 +385,7 @@ export function AuditLogPage() {
 
   const columns = useMemo(() => [
     {
-      key: 'created_at', header: 'When', width: 150, sortable: true,
+      key: 'created_at', header: tx('When'), width: 150, sortable: true,
       sortValue: r => new Date(r.created_at).getTime(),
       render: r => (
         <span style={{ display: 'block' }}>
@@ -392,7 +393,7 @@ export function AuditLogPage() {
             {timeAgo(r.created_at)}
           </span>
           <span className="tnum" style={{ display: 'block', fontSize: 'var(--t-micro)', color: 'var(--text-3)' }}>
-            {new Date(r.created_at).toLocaleString('en-GB', {
+            {new Date(r.created_at).toLocaleString(appLocale(), {
               day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
             })}
           </span>
@@ -400,7 +401,7 @@ export function AuditLogPage() {
       ),
     },
     {
-      key: 'action', header: 'Action', width: 230, sortable: true,
+      key: 'action', header: tx('Action'), width: 230, sortable: true,
       sortValue: r => actionMeta(r.action).label,
       render: r => {
         const m = actionMeta(r.action)
@@ -414,7 +415,7 @@ export function AuditLogPage() {
       },
     },
     {
-      key: 'entity_title', header: 'Record', sortable: true,
+      key: 'entity_title', header: tx('Record'), sortable: true,
       render: r => {
         const { rest } = extractDiff(r.meta)
         const summary = Object.entries(rest)
@@ -430,7 +431,7 @@ export function AuditLogPage() {
             }}>
               {/* A deleted record has no title left to show. "Deleted record"
                   is the truthful label; the old page printed "NONE". */}
-              {r.entity_title || (/delete/.test(r.action || '') ? 'Deleted record' : '—')}
+              {r.entity_title || (/delete/.test(r.action || '') ? tx('Deleted record') : '—')}
             </span>
             {summary && (
               <span className="truncate" style={{
@@ -442,18 +443,18 @@ export function AuditLogPage() {
       },
     },
     {
-      key: 'actor_name', header: 'Actor', width: 170, sortable: true,
+      key: 'actor_name', header: tx('Actor'), width: 170, sortable: true,
       render: r => (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
           <Avatar name={r.actor_name || 'System'} />
           <span className="truncate" style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)' }}>
-            {r.actor_name || 'System'}
+            {r.actor_name || tx('System')}
           </span>
         </span>
       ),
     },
     {
-      key: 'entity_type', header: 'Module', width: 120, sortable: true, hideBelow: 1280,
+      key: 'entity_type', header: tx('Module'), width: 120, sortable: true, hideBelow: 1280,
       render: r => {
         const e = ENTITY_META[r.entity_type]
         const Icon = e?.icon || Box
@@ -475,15 +476,14 @@ export function AuditLogPage() {
   return (
     <div className="h-full flex flex-col">
       <Topbar
-        title="Audit Log"
-        subtitle="Every consequential action taken in this workspace, and who took it."
+        title={tx('Audit Log')}
+        subtitle={tx('Every consequential action taken in this workspace, and who took it.')}
         actions={
           <>
             <button onClick={exportCsv} className="btn-secondary" disabled={visible.length === 0}>
-              <Download size={13} /> Export CSV
-            </button>
+              <Download size={13} /> {tx('Export CSV')}</button>
             <button onClick={() => { setOffset(0); setRows([]); load(true) }}
-              className="btn-secondary" title="Refresh" aria-label="Refresh"
+              className="btn-secondary" title={tx('Refresh')} aria-label={tx('Refresh')}
               style={{ padding: '7px 9px' }}>
               <RefreshCw size={13} />
             </button>
@@ -497,12 +497,12 @@ export function AuditLogPage() {
           <FilterBar
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Search by action, actor, or record…"
+            searchPlaceholder={tx('Search by action, actor, or record…')}
             defs={filterDefs}
             value={filters}
             onChange={setFilters}
             views={[
-              { value: 'All', label: 'All' },
+              { value: 'All', label: tx('All') },
               ...ENTITY_FILTERS.map(f => ({
                 value: f, label: ENTITY_META[f]?.label || f,
               })),
@@ -518,14 +518,18 @@ export function AuditLogPage() {
           rowKey={r => r.id}
           loading={loading && rows.length === 0}
           defaultDensity="comfortable"
-          onRowClick={setSelected}
+          onRowClick={(r) => setSelected((cur) => (cur?.id === r.id ? null : r))}
+          expandedKey={selected?.id}
+          renderExpanded={(r) => <EventDetail event={r} onOpenRecord={navigate} />}
           empty={
             <EmptyState
               icon={ScrollText}
-              title={rows.length === 0 ? 'No audit events yet' : 'No events match these filters'}
+              title={rows.length === 0 ? tx('No audit events yet') : tx('No events match these filters')}
               description={rows.length === 0
-                ? 'Creating risks, raising incidents and inviting members are all recorded here.'
-                : 'Try a different module, actor, or period.'}
+                ? tx(
+                'Creating risks, raising incidents and inviting members are all recorded here.'
+              )
+                : tx('Try a different module, actor, or period.')}
               filtered={rows.length > 0}
               onClearFilters={() => { setFilters({}); setSearch(''); setEntityFilter('All') }}
             />
@@ -535,7 +539,7 @@ export function AuditLogPage() {
         {hasMore && (
           <div style={{ textAlign: 'center', marginTop: 14 }}>
             <button onClick={() => load(false)} disabled={loading} className="btn-secondary">
-              {loading ? 'Loading…' : 'Load 50 more events'}
+              {loading ? tx('Loading…') : tx('Load 50 more events')}
             </button>
           </div>
         )}
@@ -546,17 +550,10 @@ export function AuditLogPage() {
           <p style={{
             textAlign: 'center', marginTop: 8,
             fontSize: 'var(--t-meta)', color: 'var(--text-3)',
-          }}>
-            Filters apply to the {rows.length} events loaded so far.
-          </p>
+          }}>{tx('Filters apply to the')} {rows.length} {tx('events loaded so far.')}</p>
         )}
       </div>
 
-      <EventDrawer
-        event={selected}
-        onClose={() => setSelected(null)}
-        onOpenRecord={navigate}
-      />
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { tx } from '@/lib/i18n'
 
 /*
  * Google + Microsoft sign-in via Supabase Auth.
@@ -34,8 +35,8 @@ function MicrosoftIcon() {
 }
 
 const PROVIDERS = [
-  { id: 'google', label: 'Continue with Google', Icon: GoogleIcon, options: {} },
-  { id: 'azure', label: 'Continue with Microsoft', Icon: MicrosoftIcon, options: { scopes: 'email' } },
+  { id: 'google', label: tx('Continue with Google'), Icon: GoogleIcon, options: {} },
+  { id: 'azure', label: tx('Continue with Microsoft'), Icon: MicrosoftIcon, options: { scopes: 'email' } },
 ]
 
 export function OAuthButtons({ redirectTo, dividerLabel = 'or' }) {
@@ -79,7 +80,7 @@ export function OAuthButtons({ redirectTo, dividerLabel = 'or' }) {
             opacity: busy && busy !== p.id ? 0.5 : 1,
           }}>
           <p.Icon />
-          {busy === p.id ? 'Redirecting…' : p.label}
+          {busy === p.id ? tx('Redirecting…') : p.label}
         </button>
       ))}
       {error && <p style={{ fontSize: 11.5, color: '#8C1616', background: '#FBEAEA', padding: '8px 11px', borderRadius: 8 }}>{error}</p>}

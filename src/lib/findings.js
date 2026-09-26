@@ -4,6 +4,7 @@ import {
   FileX, Users, Share2, Bug,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { tx } from '@/lib/i18n'
 
 /*
  * ─────────────────────────────────────────────────────────────────────────────
@@ -31,9 +32,9 @@ import { supabase } from '@/lib/supabase'
  */
 
 export const SEVERITY_CONFIG = {
-  critical: { color: '#b91c1c', bg: '#fef2f2', border: '#fecaca', dot: '#ef4444', label: 'Critical' },
-  warning:  { color: '#92400e', bg: '#fffbeb', border: '#fde68a', dot: '#f59e0b', label: 'Warning'  },
-  info:     { color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe', dot: '#3b82f6', label: 'Info'     },
+  critical: { color: '#b91c1c', bg: '#fef2f2', border: '#fecaca', dot: '#ef4444', label: tx('Critical') },
+  warning:  { color: '#92400e', bg: '#fffbeb', border: '#fde68a', dot: '#f59e0b', label: tx('Warning')  },
+  info:     { color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe', dot: '#3b82f6', label: tx('Info')     },
 }
 
 export const SEVERITY_RANK = { critical: 0, warning: 1, info: 2 }
@@ -53,10 +54,10 @@ export function findingDisplayTitle(title, subjectName) {
 // NCA ECC-2:2024 references, verified against nca_ecc. Identity findings sit in
 // 2-2 (Identity and Access Management); 2-1 is Asset Management and does not apply.
 export const ECC_IAM = {
-  mfa:    'NCA ECC 2-2-3-2 · Multi-factor Authentication',
-  authz:  'NCA ECC 2-2-3-3 · User Authorization (need-to-know, least privilege)',
-  pam:    'NCA ECC 2-2-3-4 · Privileged Access Management',
-  review: 'NCA ECC 2-2-3-5 · Periodic Review of Identities and Access Rights',
+  mfa:    tx('NCA ECC 2-2-3-2 · Multi-factor Authentication'),
+  authz:  tx('NCA ECC 2-2-3-3 · User Authorization (need-to-know, least privilege)'),
+  pam:    tx('NCA ECC 2-2-3-4 · Privileged Access Management'),
+  review: tx('NCA ECC 2-2-3-5 · Periodic Review of Identities and Access Rights'),
 }
 
 // Method names come either from the registration report ("microsoftAuthenticatorPush")
@@ -86,10 +87,14 @@ export function getEntraFindings(u) {
   if (mfaKnown && !u.is_mfa_registered && u.account_enabled) {
     findings.push({
       id: 'no_mfa', severity: 'critical',
-      label: 'No MFA', title: 'MFA Not Registered',
-      description: 'This user has not registered any multi-factor authentication method. Any compromised password gives full account access with no additional barrier.',
+      label: tx('No MFA'), title: tx('MFA Not Registered'),
+      description: tx(
+        'This user has not registered any multi-factor authentication method. Any compromised password gives full account access with no additional barrier.'
+      ),
       control: u.is_privileged ? `${ECC_IAM.mfa} | ${ECC_IAM.pam}` : ECC_IAM.mfa,
-      recommendation: 'Require MFA registration via Microsoft Authenticator. Enable a Conditional Access policy to block sign-ins without MFA. Consider disabling the account temporarily until MFA is set up.',
+      recommendation: tx(
+        'Require MFA registration via Microsoft Authenticator. Enable a Conditional Access policy to block sign-ins without MFA. Consider disabling the account temporarily until MFA is set up.'
+      ),
       icon: Smartphone,
     })
   }
@@ -97,10 +102,12 @@ export function getEntraFindings(u) {
   if (u.is_privileged) {
     findings.push({
       id: 'privileged', severity: 'warning',
-      label: 'Privileged Role', title: 'Holds Privileged Directory Role',
+      label: tx('Privileged Role'), title: tx('Holds Privileged Directory Role'),
       description: `Assigned: ${(u.directory_roles || []).map(r => r.displayName).join(', ')}. Privileged accounts are the highest-value targets for attackers and require additional access controls beyond standard users.`,
       control: ECC_IAM.pam,
-      recommendation: 'Ensure MFA is enforced on this account. Review whether all assigned roles are necessary (principle of least privilege). Consider enabling Privileged Identity Management (PIM) for just-in-time access.',
+      recommendation: tx(
+        'Ensure MFA is enforced on this account. Review whether all assigned roles are necessary (principle of least privilege). Consider enabling Privileged Identity Management (PIM) for just-in-time access.'
+      ),
       icon: Crown,
     })
   }
@@ -108,10 +115,14 @@ export function getEntraFindings(u) {
   if (u.user_type === 'Guest') {
     findings.push({
       id: 'guest', severity: 'info',
-      label: 'Guest Account', title: 'External / Guest Identity',
-      description: 'This is an external guest account. Guest access should be time-limited and reviewed regularly to ensure it is still required.',
+      label: tx('Guest Account'), title: tx('External / Guest Identity'),
+      description: tx(
+        'This is an external guest account. Guest access should be time-limited and reviewed regularly to ensure it is still required.'
+      ),
       control: `${ECC_IAM.review} | ${ECC_IAM.authz}`,
-      recommendation: 'Confirm guest access is still required. Set an expiry date on the guest invitation. Restrict guest access to only the specific resources they need.',
+      recommendation: tx(
+        'Confirm guest access is still required. Set an expiry date on the guest invitation. Restrict guest access to only the specific resources they need.'
+      ),
       icon: Globe,
     })
   }
@@ -119,10 +130,14 @@ export function getEntraFindings(u) {
   if (!u.account_enabled) {
     findings.push({
       id: 'disabled', severity: 'info',
-      label: 'Account Disabled', title: 'Account is Disabled',
-      description: 'This account is currently disabled. If the user has left the organisation, the account should be deleted to maintain a clean directory and prevent potential re-activation.',
+      label: tx('Account Disabled'), title: tx('Account is Disabled'),
+      description: tx(
+        'This account is currently disabled. If the user has left the organisation, the account should be deleted to maintain a clean directory and prevent potential re-activation.'
+      ),
       control: ECC_IAM.review,
-      recommendation: 'Confirm whether the user has left the organisation. If so, delete the account and reclaim any licences. If the disabling is temporary, document the reason and set a review date.',
+      recommendation: tx(
+        'Confirm whether the user has left the organisation. If so, delete the account and reclaim any licences. If the disabling is temporary, document the reason and set a review date.'
+      ),
       icon: UserX,
     })
   }
@@ -135,7 +150,9 @@ export function getEntraFindings(u) {
         label: `Inactive ${daysSince}d`, title: `Inactive for ${daysSince} Days`,
         description: `This user has not signed in for ${daysSince} days. Inactive accounts are an access control risk — they may belong to departed employees or forgotten service accounts that have not been properly off-boarded.`,
         control: ECC_IAM.review,
-        recommendation: 'Contact the account owner to confirm active use. If no response within 7 days, disable the account and reclaim the licence. Review group memberships and application assignments.',
+        recommendation: tx(
+          'Contact the account owner to confirm active use. If no response within 7 days, disable the account and reclaim the licence. Review group memberships and application assignments.'
+        ),
         icon: Clock,
       })
     }
@@ -157,10 +174,10 @@ const DEFENDER_ICON_MAP = {
 }
 
 const DEFENDER_SOURCE_LABELS = {
-  alert:          'Alert',
-  secure_score:   'Posture Gap',
-  recommendation: 'Vulnerability',
-  device:         'Device Health',
+  alert:          tx('Alert'),
+  secure_score:   tx('Posture Gap'),
+  recommendation: tx('Vulnerability'),
+  device:         tx('Device Health'),
 }
 
 // Columns the finding lists need. raw_data stays out of list queries: it can be
@@ -214,14 +231,14 @@ const M365_ICON_MAP = {
 }
 
 export const M365_CATEGORY_LABELS = {
-  external_forwarding: 'External Forwarding',
-  guest_access:        'Guest Access',
-  app_consent:         'App Consent',
-  app_privilege:       'App Privilege',
-  mail_dns:            'Mail Domain DNS',
-  exchange:            'Exchange',
-  sharepoint:          'SharePoint',
-  guests:              'Guests',
+  external_forwarding: tx('External Forwarding'),
+  guest_access:        tx('Guest Access'),
+  app_consent:         tx('App Consent'),
+  app_privilege:       tx('App Privilege'),
+  mail_dns:            tx('Mail Domain DNS'),
+  exchange:            tx('Exchange'),
+  sharepoint:          tx('SharePoint'),
+  guests:              tx('Guests'),
 }
 
 // raw_data is left out of list queries (it can be large).
@@ -235,7 +252,7 @@ export const FINDING_PROVIDERS = [
   // ── Microsoft Entra ID ────────────────────────────────────────────────────
   {
     connectorId: 'entra',
-    connectorName: 'Microsoft Entra ID',
+    connectorName: tx('Microsoft Entra ID'),
     accent: '#0078D4',
     async fetch(orgId) {
       const { data } = await supabase
@@ -249,7 +266,7 @@ export const FINDING_PROVIDERS = [
       return getEntraFindings(user).map(f => ({
         key: `entra:${user.entra_id}:${f.id}`,
         connectorId: 'entra',
-        connectorName: 'Microsoft Entra ID',
+        connectorName: tx('Microsoft Entra ID'),
         accent: '#0078D4',
         severity: f.severity,
         label: f.label,
@@ -273,7 +290,7 @@ export const FINDING_PROVIDERS = [
   // ── Microsoft 365 Security ────────────────────────────────────────────────
   {
     connectorId: 'm365',
-    connectorName: 'Microsoft 365 Security',
+    connectorName: tx('Microsoft 365 Security'),
     accent: '#0078D4',
     piggybakcsOn: 'entra',
     // Open findings by default; { status: 'resolved' } for history. M365
@@ -295,7 +312,7 @@ export const FINDING_PROVIDERS = [
       return [{
         key: `m365:${finding.finding_id}`,
         connectorId: 'm365',
-        connectorName: 'Microsoft 365 Security',
+        connectorName: tx('Microsoft 365 Security'),
         accent: '#0078D4',
         severity: finding.severity,
         label: M365_CATEGORY_LABELS[finding.category] || 'M365',
@@ -325,7 +342,7 @@ export const FINDING_PROVIDERS = [
   // ── Microsoft Defender for Cloud / Security Alerts ────────────────────────
   {
     connectorId: 'defender',
-    connectorName: 'Microsoft Defender',
+    connectorName: tx('Microsoft Defender'),
     accent: '#00B4D8',
     piggybakcsOn: 'entra',   // reuses Entra token, no separate OAuth
     // Open findings by default; { status: 'resolved' } for history.
@@ -346,10 +363,10 @@ export const FINDING_PROVIDERS = [
       return [{
         key: `defender:${finding.finding_id}`,
         connectorId: 'defender',
-        connectorName: 'Microsoft Defender',
+        connectorName: tx('Microsoft Defender'),
         accent: '#00B4D8',
         severity: finding.severity,
-        label: DEFENDER_SOURCE_LABELS[finding.source] || 'Finding',
+        label: DEFENDER_SOURCE_LABELS[finding.source] || tx('Finding'),
         title: finding.title,
         description: finding.description,
         control: finding.control,
@@ -376,7 +393,7 @@ export const FINDING_PROVIDERS = [
   // ── SharePoint Deep Scan ──────────────────────────────────────────────────
   {
     connectorId: 'sharepoint',
-    connectorName: 'SharePoint Security',
+    connectorName: tx('SharePoint Security'),
     accent: '#038387',
     piggybakcsOn: 'entra',
     async fetch(orgId, { status = 'open' } = {}) {
@@ -396,10 +413,10 @@ export const FINDING_PROVIDERS = [
       return [{
         key: `sharepoint:${finding.finding_id}`,
         connectorId: 'sharepoint',
-        connectorName: 'SharePoint Security',
+        connectorName: tx('SharePoint Security'),
         accent: '#038387',
         severity: finding.severity,
-        label: SHAREPOINT_CATEGORY_LABELS[finding.category] || 'Exposure',
+        label: SHAREPOINT_CATEGORY_LABELS[finding.category] || tx('Exposure'),
         title: finding.title,
         description: finding.description,
         control: finding.control,

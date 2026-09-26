@@ -20,6 +20,7 @@ import {
 import { bandForScore, bandMeta, levelFor } from '@/lib/matrix'
 import { Spinner } from '@/components/ui/Spinner'
 import { SelectField } from '@/components/ui/Combobox'
+import { tx, appLocale } from '@/lib/i18n'
 
 // ============================================================
 // TREATMENT — step 9, the plans that execute it, and the acceptance
@@ -86,8 +87,8 @@ function OptionCard({ meta, record, canManage, acceptHint, onSave }) {
 
   const save = async () => {
     setError('')
-    if (needsReason && !form.rejection_reason.trim()) { setError('Say why — auditors ask why you did not do the other thing.'); return }
-    if (needsHorizon && !form.horizon) { setError('Choose a horizon for the selected option.'); return }
+    if (needsReason && !form.rejection_reason.trim()) { setError(tx('Say why — auditors ask why you did not do the other thing.')); return }
+    if (needsHorizon && !form.horizon) { setError(tx('Choose a horizon for the selected option.')); return }
     setSaving(true)
     try {
       await onSave(meta.value, {
@@ -115,7 +116,7 @@ function OptionCard({ meta, record, canManage, acceptHint, onSave }) {
         )}
         <textarea className="risys-input" rows={2} style={{ width: '100%', resize: 'vertical', fontSize: 12 }} disabled={!canManage}
           value={form.assessment} onChange={e => setForm(f => ({ ...f, assessment: e.target.value }))}
-          placeholder="Assessment — what this option would involve, cost and change" />
+          placeholder={tx('Assessment — what this option would involve, cost and change')} />
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
           {OPTION_DECISIONS.filter(d => d.value !== 'pending').map(d => {
             const active = form.decision === d.value
@@ -135,7 +136,7 @@ function OptionCard({ meta, record, canManage, acceptHint, onSave }) {
         </div>
         {needsHorizon && (
           <SelectField size="sm" value={form.horizon} disabled={!canManage} onChange={e => setForm(f => ({ ...f, horizon: e.target.value }))}>
-            <option value="">Horizon…</option>
+            <option value="">{tx('Horizon…')}</option>
             {HORIZONS.map(h => <option key={h.value} value={h.value}>{h.label}</option>)}
           </SelectField>
         )}
@@ -143,14 +144,16 @@ function OptionCard({ meta, record, canManage, acceptHint, onSave }) {
           <textarea className="risys-input" rows={2} style={{ width: '100%', resize: 'vertical', fontSize: 12 }} disabled={!canManage}
             value={form.rejection_reason} onChange={e => setForm(f => ({ ...f, rejection_reason: e.target.value }))}
             placeholder={meta.value === 'transfer'
-              ? 'e.g. Insurance moves financial impact only; it does not move likelihood or fix ECC non-compliance.'
-              : 'Why this option is rejected or not available'} />
+              ? tx(
+              'e.g. Insurance moves financial impact only; it does not move likelihood or fix ECC non-compliance.'
+            )
+              : tx('Why this option is rejected or not available')} />
         )}
         {error && <p style={{ fontSize: 'var(--t-meta)', color: 'var(--critical)' }}>{error}</p>}
         {canManage && dirty && (
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'auto' }}>
             <button className="btn-primary" style={{ fontSize: 12 }} disabled={saving} onClick={save}>
-              {saving ? <Spinner size="sm" /> : <><Save size={12} /> Save decision</>}
+              {saving ? <Spinner size="sm" /> : <><Save size={12} /> {tx('Save decision')}</>}
             </button>
           </div>
         )}
@@ -199,23 +202,23 @@ function ActionCard({ action, member, onUpdate, onStatusUpdate, fetchUpdates, on
                 background: mv.value === 'none' ? 'var(--surface)' : 'var(--crimson-wash)',
                 color: mv.value === 'none' ? 'var(--text-3)' : 'var(--crimson)',
               }}>
-                {mv.value === 'none' ? 'Supporting' : `Moves ${mv.short}`}
+                {mv.value === 'none' ? tx('Supporting') : `Moves ${mv.short}`}
               </span>
             )}
-            {overdue && <span style={{ fontSize: 11, color: 'var(--critical)', fontWeight: 600 }}>OVERDUE</span>}
+            {overdue && <span style={{ fontSize: 11, color: 'var(--critical)', fontWeight: 600 }}>{tx('OVERDUE')}</span>}
           </div>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 11.5, color: 'var(--text-3)', marginTop: 4 }}>
             <span style={{ color: pr.color, fontWeight: 600 }}>{pr.label}</span>
-            {action.owner_id && <span>Owner: <strong style={{ color: 'var(--text-2)' }}>{member(action.owner_id)}</strong></span>}
-            {action.target_date && <span>Due <strong style={{ color: overdue ? 'var(--critical)' : 'var(--text-2)' }}>{new Date(action.target_date).toLocaleDateString('en-GB')}</strong></span>}
-            <span>{action.percent_complete || 0}% complete</span>
+            {action.owner_id && <span>{tx('Owner:')} <strong style={{ color: 'var(--text-2)' }}>{member(action.owner_id)}</strong></span>}
+            {action.target_date && <span>{tx('Due')} <strong style={{ color: overdue ? 'var(--critical)' : 'var(--text-2)' }}>{new Date(action.target_date).toLocaleDateString(appLocale())}</strong></span>}
+            <span>{action.percent_complete || 0}{tx('% complete')}</span>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'flex-start' }}>
           <SelectField value={action.status} onChange={e => onUpdate(action.id, { status: e.target.value })} size="sm">
             {TREATMENT_ACTION_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </SelectField>
-          <button onClick={() => onDelete(action.id)} title="Delete task" className="btn-ghost" style={{ padding: 5 }}>
+          <button onClick={() => onDelete(action.id)} title={tx('Delete task')} className="btn-ghost" style={{ padding: 5 }}>
             <Trash size={12} />
           </button>
         </div>
@@ -223,34 +226,33 @@ function ActionCard({ action, member, onUpdate, onStatusUpdate, fetchUpdates, on
 
       <button onClick={() => setOpen(o => !o)}
         style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8, fontSize: 11.5, color: 'var(--crimson)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-        Progress updates {updates ? `(${updates.length})` : ''}
+        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}{tx('Progress updates')} {updates ? `(${updates.length})` : ''}
       </button>
 
       {open && (
         <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-3)' }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', marginBottom: 10, flexWrap: 'wrap' }}>
             <div style={{ width: 140 }}>
-              <p style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 3 }}>% complete: <strong style={{ color: 'var(--text)' }}>{pct}%</strong></p>
+              <p style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 3 }}>{tx('% complete:')} <strong style={{ color: 'var(--text)' }}>{pct}%</strong></p>
               <input type="range" min="0" max="100" step="5" value={pct} onChange={e => setPct(parseInt(e.target.value))} style={{ width: '100%' }} />
             </div>
-            <input value={comment} onChange={e => setComment(e.target.value)} placeholder="What changed?"
+            <input value={comment} onChange={e => setComment(e.target.value)} placeholder={tx('What changed?')}
               className="risys-input" style={{ flex: 1, minWidth: 180, fontSize: 12 }} />
             <button onClick={submitUpdate} disabled={saving || (!comment.trim() && pct === (action.percent_complete || 0))}
               className="btn-primary" style={{ fontSize: 12 }}>
-              {saving ? <Spinner size="sm" /> : 'Post update'}
+              {saving ? <Spinner size="sm" /> : tx('Post update')}
             </button>
           </div>
           {updates === null ? <Spinner size="sm" /> : updates.length === 0
-            ? <p style={{ fontSize: 12, color: 'var(--text-3)' }}>No updates posted yet.</p>
+            ? <p style={{ fontSize: 12, color: 'var(--text-3)' }}>{tx('No updates posted yet.')}</p>
             : updates.map(u => (
               <div key={u.id} style={{ display: 'flex', gap: 8, padding: '6px 0', borderTop: '1px solid var(--surface)' }}>
                 <Clock size={12} style={{ color: 'var(--text-3)', marginTop: 2, flexShrink: 0 }} />
                 <div>
                   <p style={{ fontSize: 12, color: 'var(--text)' }}>
-                    {u.percent_complete != null && <strong>{u.percent_complete}% — </strong>}{u.comment || 'Progress updated'}
+                    {u.percent_complete != null && <strong>{u.percent_complete}% — </strong>}{u.comment || tx('Progress updated')}
                   </p>
-                  <p style={{ fontSize: 11, color: 'var(--text-3)' }}>{member(u.updated_by)} · {new Date(u.created_at).toLocaleString('en-GB')}</p>
+                  <p style={{ fontSize: 11, color: 'var(--text-3)' }}>{member(u.updated_by)} · {new Date(u.created_at).toLocaleString(appLocale())}</p>
                 </div>
               </div>
             ))}
@@ -271,8 +273,8 @@ function PlanCard({ plan, tasks, member, members, canManage, matrix, onUpdatePla
 
   const addTask = async () => {
     setError('')
-    if (!task.title.trim()) { setError('A task needs a title.'); return }
-    if (!task.moves) { setError('Say whether this task moves likelihood, impact, both — or is supporting.'); return }
+    if (!task.title.trim()) { setError(tx('A task needs a title.')); return }
+    if (!task.moves) { setError(tx('Say whether this task moves likelihood, impact, both — or is supporting.')); return }
     setSaving(true)
     try {
       await onCreateTask({
@@ -295,8 +297,8 @@ function PlanCard({ plan, tasks, member, members, canManage, matrix, onUpdatePla
           {optionMeta(plan.option).label}{plan.horizon ? ` · ${HORIZONS.find(h => h.value === plan.horizon)?.label}` : ''}
         </span>
         {target && (
-          <span className="badge tnum" title="Target residual score" style={{ color: target.color, background: target.bg, border: `1px solid ${target.border}` }}>
-            <Target size={10} style={{ marginRight: 3 }} /> Target {target.score} · {target.label}
+          <span className="badge tnum" title={tx('Target residual score')} style={{ color: target.color, background: target.bg, border: `1px solid ${target.border}` }}>
+            <Target size={10} style={{ marginInlineEnd: 3 }} /> {tx('Target')} {target.score} · {target.label}
           </span>
         )}
         {canManage ? (
@@ -306,15 +308,17 @@ function PlanCard({ plan, tasks, member, members, canManage, matrix, onUpdatePla
         ) : <Pill s={status} />}
       </div>
       <div style={{ padding: '6px 14px', display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 11.5, color: 'var(--text-3)', background: 'var(--surface)' }}>
-        {plan.owner_id && <span>Owner <strong style={{ color: 'var(--text-2)' }}>{member(plan.owner_id)}</strong></span>}
-        {plan.due_date && <span>Due <strong style={{ color: 'var(--text-2)' }}>{new Date(plan.due_date).toLocaleDateString('en-GB')}</strong></span>}
-        <span>{done} of {tasks.length} task{tasks.length === 1 ? '' : 's'} complete</span>
-        {plan.approved_at && <span>Approved {new Date(plan.approved_at).toLocaleDateString('en-GB')}{plan.approved_by ? ` by ${member(plan.approved_by)}` : ''}</span>}
+        {plan.owner_id && <span>{tx('Owner')} <strong style={{ color: 'var(--text-2)' }}>{member(plan.owner_id)}</strong></span>}
+        {plan.due_date && <span>{tx('Due')} <strong style={{ color: 'var(--text-2)' }}>{new Date(plan.due_date).toLocaleDateString(appLocale())}</strong></span>}
+        <span>{done} {tx('of')} {tasks.length} {tx('task')}{tasks.length === 1 ? '' : 's'} {tx('complete')}</span>
+        {plan.approved_at && <span>{tx('Approved')} {new Date(plan.approved_at).toLocaleDateString(appLocale())}{plan.approved_by ? ` by ${member(plan.approved_by)}` : ''}</span>}
       </div>
 
       <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 7 }}>
         {tasks.length === 0 && !adding && (
-          <p style={{ fontSize: 12, color: 'var(--text-3)' }}>No tasks yet. Front-load the cheap, fast tasks that remove the worst of the impact while the real fix is built.</p>
+          <p style={{ fontSize: 12, color: 'var(--text-3)' }}>{tx(
+            'No tasks yet. Front-load the cheap, fast tasks that remove the worst of the impact while the real fix is built.'
+          )}</p>
         )}
         {tasks.map(t => (
           <ActionCard key={t.id} action={t} member={member}
@@ -326,14 +330,16 @@ function PlanCard({ plan, tasks, member, members, canManage, matrix, onUpdatePla
           <div style={{ border: '1px dashed var(--border-2)', borderRadius: 8, padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <input className="risys-input" autoFocus style={{ width: '100%', fontSize: 12.5 }} value={task.title}
               onChange={e => setTask(t => ({ ...t, title: e.target.value }))}
-              placeholder="e.g. Remove the 6 privileged accounts from the VPN; route them through the PAM jump host" />
+              placeholder={tx(
+                'e.g. Remove the 6 privileged accounts from the VPN; route them through the PAM jump host'
+              )} />
             <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr 150px', gap: 8 }}>
               <SelectField size="sm" value={task.moves} onChange={e => setTask(t => ({ ...t, moves: e.target.value }))}>
-                <option value="">What does it move? *</option>
+                <option value="">{tx('What does it move? *')}</option>
                 {MOVES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
               </SelectField>
               <SelectField size="sm" value={task.owner_id} onChange={e => setTask(t => ({ ...t, owner_id: e.target.value }))}>
-                <option value="">Task owner…</option>
+                <option value="">{tx('Task owner…')}</option>
                 {members.map(m => <option key={m.user_id} value={m.user_id}>{m.full_name || m.email || m.user_id?.slice(0, 8)}</option>)}
               </SelectField>
               <input type="date" className="risys-input" style={{ fontSize: 12 }} value={task.target_date}
@@ -341,16 +347,15 @@ function PlanCard({ plan, tasks, member, members, canManage, matrix, onUpdatePla
             </div>
             {error && <p style={{ fontSize: 'var(--t-meta)', color: 'var(--critical)' }}>{error}</p>}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
-              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={() => { setAdding(false); setError('') }}>Cancel</button>
+              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={() => { setAdding(false); setError('') }}>{tx('Cancel')}</button>
               <button className="btn-primary" style={{ fontSize: 12 }} disabled={saving} onClick={addTask}>
-                {saving ? <Spinner size="sm" /> : 'Add task'}
+                {saving ? <Spinner size="sm" /> : tx('Add task')}
               </button>
             </div>
           </div>
         ) : canManage && (
           <button className="btn-ghost" style={{ fontSize: 12, alignSelf: 'flex-start' }} onClick={() => setAdding(true)}>
-            <Plus size={12} /> Add task
-          </button>
+            <Plus size={12} /> {tx('Add task')}</button>
         )}
       </div>
     </Card>
@@ -366,8 +371,8 @@ function PlanForm({ option, horizon, members, matrix, onCancel, onCreate }) {
 
   const create = async () => {
     setError('')
-    if (!form.title.trim()) { setError('Give the plan a title.'); return }
-    if (!form.target_likelihood || !form.target_impact) { setError('Set the target residual score this plan must reach.'); return }
+    if (!form.title.trim()) { setError(tx('Give the plan a title.')); return }
+    if (!form.target_likelihood || !form.target_impact) { setError(tx('Set the target residual score this plan must reach.')); return }
     setSaving(true)
     try {
       await onCreate({
@@ -380,44 +385,41 @@ function PlanForm({ option, horizon, members, matrix, onCancel, onCreate }) {
 
   return (
     <Card style={{ borderStyle: 'dashed' }}>
-      <p style={{ fontSize: 'var(--t-sm)', fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>
-        New {optionMeta(option).label.toLowerCase()} plan
-      </p>
+      <p style={{ fontSize: 'var(--t-sm)', fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>{tx('New')} {optionMeta(option).label.toLowerCase()} {tx('plan')}</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
         <input className="risys-input" autoFocus style={{ width: '100%' }} value={form.title} onChange={set('title')}
-          placeholder={option === 'avoid' ? 'e.g. Decommission VPN-LEGACY-01 and migrate remote access to ZTNA' : 'e.g. Put a RADIUS proxy with MFA in front of the VPN concentrator'} />
+          placeholder={option === 'avoid' ? tx('e.g. Decommission VPN-LEGACY-01 and migrate remote access to ZTNA') : tx('e.g. Put a RADIUS proxy with MFA in front of the VPN concentrator')} />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0,1fr))', gap: 8, alignItems: 'end' }}>
-          <SelectField label="Horizon" size="sm" value={form.horizon} onChange={set('horizon')}>
+          <SelectField label={tx('Horizon')} size="sm" value={form.horizon} onChange={set('horizon')}>
             <option value="">—</option>
             {HORIZONS.map(h => <option key={h.value} value={h.value}>{h.label}</option>)}
           </SelectField>
-          <SelectField label="Target likelihood *" size="sm" value={form.target_likelihood} onChange={set('target_likelihood')}>
+          <SelectField label={tx('Target likelihood *')} size="sm" value={form.target_likelihood} onChange={set('target_likelihood')}>
             <option value="">—</option>
             {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
           </SelectField>
-          <SelectField label="Target impact *" size="sm" value={form.target_impact} onChange={set('target_impact')}>
+          <SelectField label={tx('Target impact *')} size="sm" value={form.target_impact} onChange={set('target_impact')}>
             <option value="">—</option>
             {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
           </SelectField>
-          <SelectField label="Plan owner" size="sm" value={form.owner_id} onChange={set('owner_id')}>
+          <SelectField label={tx('Plan owner')} size="sm" value={form.owner_id} onChange={set('owner_id')}>
             <option value="">—</option>
             {members.map(m => <option key={m.user_id} value={m.user_id}>{m.full_name || m.email || m.user_id?.slice(0, 8)}</option>)}
           </SelectField>
           <div>
-            <p className="field-label">Due</p>
+            <p className="field-label">{tx('Due')}</p>
             <input type="date" className="risys-input" style={{ width: '100%', fontSize: 12 }} value={form.due_date} onChange={set('due_date')} />
           </div>
         </div>
         {target && (
-          <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-2)' }}>
-            Target residual: <strong style={{ color: target.color }}>{target.score} · {target.label}</strong>
+          <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-2)' }}>{tx('Target residual:')} <strong style={{ color: target.color }}>{target.score} · {target.label}</strong>
           </p>
         )}
         {error && <p style={{ fontSize: 'var(--t-meta)', color: 'var(--critical)' }}>{error}</p>}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
-          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onCancel}>Cancel</button>
+          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onCancel}>{tx('Cancel')}</button>
           <button className="btn-primary" style={{ fontSize: 12 }} disabled={saving} onClick={create}>
-            {saving ? <Spinner size="sm" /> : 'Create plan'}
+            {saving ? <Spinner size="sm" /> : tx('Create plan')}
           </button>
         </div>
       </div>
@@ -451,27 +453,26 @@ function ExceptionCard({ exc, member, risk, holders, fallbackRequired, onDecide 
         <span className="badge" style={isException
           ? { color: 'var(--critical)', background: 'var(--critical-bg)', border: '1px solid var(--critical-bd)' }
           : { color: 'var(--neutral)', background: 'var(--neutral-bg)', border: '1px solid var(--neutral-bd)' }}>
-          {isException ? 'Exception · above tolerance' : 'Acceptance'}
+          {isException ? tx('Exception · above tolerance') : tx('Acceptance')}
         </span>
         <Pill s={st} />
-        <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Needs <strong style={{ color: 'var(--text-2)' }}>{tierMeta(required).label}</strong></span>
+        <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{tx('Needs')} <strong style={{ color: 'var(--text-2)' }}>{tierMeta(required).label}</strong></span>
         {exc.residual_at_request != null && (
-          <span className="tnum" style={{ fontSize: 11.5, color: 'var(--text-3)' }}>at {exc.residual_at_request} · {bandMeta(exc.band_at_request).label}</span>
+          <span className="tnum" style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{tx('at')} {exc.residual_at_request} · {bandMeta(exc.band_at_request).label}</span>
         )}
-        {expiringSoon && <span style={{ fontSize: 11, color: 'var(--high)', fontWeight: 600 }}>Expires {new Date(exc.expires_at).toLocaleDateString('en-GB')}</span>}
+        {expiringSoon && <span style={{ fontSize: 11, color: 'var(--high)', fontWeight: 600 }}>{tx('Expires')} {new Date(exc.expires_at).toLocaleDateString(appLocale())}</span>}
       </div>
       <p style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5, marginBottom: 6 }}>{exc.justification}</p>
       {exc.compensating_controls && (
-        <p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}><strong>Compensating controls:</strong> {exc.compensating_controls}</p>
+        <p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}><strong>{tx('Compensating controls:')}</strong> {exc.compensating_controls}</p>
       )}
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 11.5, color: 'var(--text-3)' }}>
-        <span>Requested by <strong style={{ color: 'var(--text-2)' }}>{member(exc.requested_by)}</strong> {new Date(exc.created_at).toLocaleDateString('en-GB')}</span>
-        {exc.approver_id && <span>Approver: <strong style={{ color: 'var(--text-2)' }}>{member(exc.approver_id)}</strong></span>}
-        {exc.expires_at && <span>Valid until <strong style={{ color: 'var(--text-2)' }}>{new Date(exc.expires_at).toLocaleDateString('en-GB')}</strong></span>}
-        {exc.review_frequency && <span>Reviewed <strong style={{ color: 'var(--text-2)' }}>{exc.review_frequency}</strong></span>}
+        <span>{tx('Requested by')} <strong style={{ color: 'var(--text-2)' }}>{member(exc.requested_by)}</strong> {new Date(exc.created_at).toLocaleDateString(appLocale())}</span>
+        {exc.approver_id && <span>{tx('Approver:')} <strong style={{ color: 'var(--text-2)' }}>{member(exc.approver_id)}</strong></span>}
+        {exc.expires_at && <span>{tx('Valid until')} <strong style={{ color: 'var(--text-2)' }}>{new Date(exc.expires_at).toLocaleDateString(appLocale())}</strong></span>}
+        {exc.review_frequency && <span>{tx('Reviewed')} <strong style={{ color: 'var(--text-2)' }}>{exc.review_frequency}</strong></span>}
         {exc.decided_at && (
-          <span>
-            Decided {new Date(exc.decided_at).toLocaleDateString('en-GB')}
+          <span>{tx('Decided')} {new Date(exc.decided_at).toLocaleDateString(appLocale())}
             {exc.decided_authority ? ` as ${tierMeta(exc.decided_authority).label}` : ''}
             {exc.decision_comment ? ` — "${exc.decision_comment}"` : ''}
           </span>
@@ -482,22 +483,21 @@ function ExceptionCard({ exc, member, risk, holders, fallbackRequired, onDecide 
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
           {verdict.allowed ? (
             <>
-              <input value={comment} onChange={e => setComment(e.target.value)} placeholder="Decision comment"
+              <input value={comment} onChange={e => setComment(e.target.value)} placeholder={tx('Decision comment')}
                 className="risys-input" style={{ width: '100%', fontSize: 12, marginBottom: 8 }} />
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => decide('approved')} disabled={deciding}
                   style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500, padding: '6px 12px', borderRadius: 7, background: 'var(--low)', color: '#fff', border: 'none', cursor: 'pointer' }}>
-                  <CheckCircle2 size={13} /> Approve as {tierMeta(verdict.held).label}
+                  <CheckCircle2 size={13} /> {tx('Approve as')} {tierMeta(verdict.held).label}
                 </button>
                 <button onClick={() => decide('rejected')} disabled={deciding}
                   style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500, padding: '6px 12px', borderRadius: 7, background: '#fff', color: 'var(--critical)', border: '1px solid var(--critical-bd)', cursor: 'pointer' }}>
-                  <XCircle size={13} /> Reject
-                </button>
+                  <XCircle size={13} /> {tx('Reject')}</button>
               </div>
             </>
           ) : (
             <p style={{ fontSize: 12, color: 'var(--text-3)' }}>
-              <Scale size={12} style={{ display: 'inline', marginRight: 5, verticalAlign: '-2px' }} />
+              <Scale size={12} style={{ display: 'inline', marginInlineEnd: 5, verticalAlign: '-2px' }} />
               {verdict.reason}
             </p>
           )}
@@ -506,9 +506,7 @@ function ExceptionCard({ exc, member, risk, holders, fallbackRequired, onDecide 
       {canRevoke && (
         <div style={{ marginTop: 10 }}>
           <button onClick={() => decide('revoked')} disabled={deciding}
-            style={{ fontSize: 11.5, color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
-            Revoke — puts the risk back in front of the gate
-          </button>
+            style={{ fontSize: 11.5, color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>{tx('Revoke — puts the risk back in front of the gate')}</button>
         </div>
       )}
     </Card>
@@ -561,10 +559,10 @@ export function TreatmentTab({ risk, member, members, onRiskChanged, perms, verd
   const submitAcceptance = async () => {
     setExcError('')
     const f = excForm
-    if (f.justification.trim().length < 20) { setExcError('Give the rationale — why retaining this risk is justified.'); return }
-    if (type === 'exception' && !f.compensating_controls.trim()) { setExcError('An exception above tolerance needs its compensating controls on record.'); return }
+    if (f.justification.trim().length < 20) { setExcError(tx('Give the rationale — why retaining this risk is justified.')); return }
+    if (type === 'exception' && !f.compensating_controls.trim()) { setExcError(tx('An exception above tolerance needs its compensating controls on record.')); return }
     if (!f.approver_id) { setExcError(`Choose an approver who holds ${tierMeta(required).label} authority.`); return }
-    if (!f.expires_at || new Date(f.expires_at) <= new Date()) { setExcError('An acceptance is time-bound: set an expiry date in the future.'); return }
+    if (!f.expires_at || new Date(f.expires_at) <= new Date()) { setExcError(tx('An acceptance is time-bound: set an expiry date in the future.')); return }
     setExcSaving(true)
     try {
       await requestException({
@@ -592,9 +590,7 @@ export function TreatmentTab({ risk, member, members, onRiskChanged, perms, verd
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {!migrated && (
         <div style={{ padding: '11px 13px', borderRadius: 8, background: 'var(--medium-bg)', border: '1px solid var(--medium-bd)' }}>
-          <p style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
-            Treatment decisions, plans and acceptance authority need <span className="mono">supabase/migrations/003_treatment_acceptance_triage.sql</span>. Apply it in the Supabase SQL editor, then reload.
-          </p>
+          <p style={{ fontSize: 12.5, color: 'var(--text-2)' }}>{tx('Treatment decisions, plans and acceptance authority need')} <span className="mono">{tx('supabase/migrations/003_treatment_acceptance_triage.sql')}</span>{tx('. Apply it in the Supabase SQL editor, then reload.')}</p>
         </div>
       )}
 
@@ -609,10 +605,10 @@ export function TreatmentTab({ risk, member, members, onRiskChanged, perms, verd
           : <Info size={15} style={{ color: 'var(--rose)', flexShrink: 0, marginTop: 1 }} />}
         <div>
           <p style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text)' }}>
-            {readiness.ready ? 'Treatment decision is complete — the plan can be approved.' : 'Treatment decision is not complete yet'}
+            {readiness.ready ? tx('Treatment decision is complete — the plan can be approved.') : tx('Treatment decision is not complete yet')}
           </p>
           {!readiness.ready && (
-            <ul style={{ margin: '3px 0 0', paddingLeft: 16 }}>
+            <ul style={{ margin: '3px 0 0', paddingInlineStart: 16 }}>
               {readiness.blockers.map((b, i) => <li key={i} style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.6 }}>{b}</li>)}
             </ul>
           )}
@@ -620,8 +616,10 @@ export function TreatmentTab({ risk, member, members, onRiskChanged, perms, verd
       </div>
 
       {/* 1. Decide */}
-      <StepHeader n={1} title="Decide the treatment"
-        hint="Record all four options, including the rejected ones — an auditor always asks why you did not do the other thing. Reduce and Avoid can both be selected, on different horizons." />
+      <StepHeader n={1} title={tx('Decide the treatment')}
+        hint={tx(
+          'Record all four options, including the rejected ones — an auditor always asks why you did not do the other thing. Reduce and Avoid can both be selected, on different horizons.'
+        )} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 10 }}>
         {TREATMENT_OPTIONS.map(meta => (
           <OptionCard key={meta.value} meta={meta} record={byOption.get(meta.value)} canManage={canManage && migrated}
@@ -631,12 +629,14 @@ export function TreatmentTab({ risk, member, members, onRiskChanged, perms, verd
       </div>
 
       {/* 2. Plan */}
-      <StepHeader n={2} title="Plan each selected option"
-        hint="Every plan names the residual score it must reach. Every task says whether it moves likelihood, impact or both; a task that moves neither is marked as supporting." />
+      <StepHeader n={2} title={tx('Plan each selected option')}
+        hint={tx(
+          'Every plan names the residual score it must reach. Every task says whether it moves likelihood, impact or both; a task that moves neither is marked as supporting.'
+        )} />
       {selectedPlanned.length === 0 ? (
         <div style={{ border: '1px dashed var(--border)', borderRadius: 10, padding: '22px 16px', textAlign: 'center', background: 'var(--bg-2)' }}>
           <Wrench size={22} strokeWidth={1.2} style={{ color: 'var(--border-2)', margin: '0 auto 8px' }} />
-          <p style={{ fontSize: 12.5, color: 'var(--text-3)' }}>Select Avoid, Reduce or Transfer above to plan it.</p>
+          <p style={{ fontSize: 12.5, color: 'var(--text-3)' }}>{tx('Select Avoid, Reduce or Transfer above to plan it.')}</p>
         </div>
       ) : selectedPlanned.map(o => {
         const optionPlans = plans.filter(p => p.option === o.option)
@@ -645,7 +645,7 @@ export function TreatmentTab({ risk, member, members, onRiskChanged, perms, verd
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <p className="eyebrow">{optionMeta(o.option).label}{o.horizon ? ` · ${HORIZONS.find(h => h.value === o.horizon)?.label}` : ''}</p>
               {canManage && migrated && planFor !== o.option && (
-                <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setPlanFor(o.option)}><Plus size={12} /> Add plan</button>
+                <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setPlanFor(o.option)}><Plus size={12} /> {tx('Add plan')}</button>
               )}
             </div>
             {optionPlans.map(p => (
@@ -660,77 +660,80 @@ export function TreatmentTab({ risk, member, members, onRiskChanged, perms, verd
                 onCreate={async data => { await createPlan(data, risk); setPlanFor(null); changed() }} />
             )}
             {optionPlans.length === 0 && planFor !== o.option && (
-              <p style={{ fontSize: 12, color: 'var(--text-3)' }}>No plan yet for {optionMeta(o.option).label}.</p>
+              <p style={{ fontSize: 12, color: 'var(--text-3)' }}>{tx('No plan yet for')} {optionMeta(o.option).label}.</p>
             )}
           </div>
         )
       })}
 
       {/* 3. Accept */}
-      <StepHeader n={3} title="Acceptance"
-        hint="Acceptance is a record, not the absence of one: a rationale, an approver whose authority matches the band, an expiry and a review cadence. Above tolerance it is an exception and needs at least the Steering Committee."
+      <StepHeader n={3} title={tx('Acceptance')}
+        hint={tx(
+          'Acceptance is a record, not the absence of one: a rationale, an approver whose authority matches the band, an expiry and a review cadence. Above tolerance it is an exception and needs at least the Steering Committee.'
+        )}
         right={perms?.canRequestException(risk) && !requesting && (
           <button className="btn-secondary" disabled={!canRequest} onClick={() => setRequesting(true)}
-            title={preMeasurement ? 'Score the risk before requesting acceptance'
-              : hasOpenAcceptance ? 'An acceptance is already pending or active'
+            title={preMeasurement ? tx('Score the risk before requesting acceptance')
+              : hasOpenAcceptance ? tx('An acceptance is already pending or active')
               : `Needs ${tierMeta(required).label} approval`}
             style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, opacity: canRequest ? 1 : 0.55 }}>
-            <ShieldCheck size={13} /> Request {type === 'exception' ? 'exception' : 'acceptance'}
+            <ShieldCheck size={13} /> {tx('Request')} {type === 'exception' ? 'exception' : 'acceptance'}
           </button>
         )} />
 
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '9px 12px', borderRadius: 8, background: 'var(--bg-2)', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
         <Scale size={13} style={{ color: 'var(--crimson)' }} />
         <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
-          {preMeasurement ? 'Not yet scored. ' : ''}
-          Current residual <strong className="tnum">{score || '—'}</strong>{band ? ` · ${bandMeta(band).label}` : ''}
-          {' — '}{type === 'exception' ? 'outside tolerance, so acceptance is an exception' : 'an acceptance'} signed by the <strong>{tierMeta(required).label}</strong>.
-        </span>
+          {preMeasurement ? tx('Not yet scored. ') : ''}{tx('Current residual')} <strong className="tnum">{score || '—'}</strong>{band ? ` · ${bandMeta(band).label}` : ''}
+          {' — '}{type === 'exception' ? tx('outside tolerance, so acceptance is an exception') : tx('an acceptance')} {tx('signed by the')} <strong>{tierMeta(required).label}</strong>.
+                  </span>
       </div>
 
       {requesting && (
         <Card>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
-              <p className="field-label">Rationale <span className="field-req">*</span></p>
+              <p className="field-label">{tx('Rationale')} <span className="field-req">*</span></p>
               <textarea className="risys-input" rows={3} autoFocus style={{ width: '100%', resize: 'vertical', fontSize: 12.5 }}
                 value={excForm.justification} onChange={e => setExcForm(f => ({ ...f, justification: e.target.value }))}
-                placeholder="e.g. Vendor end-of-life, no MFA integration path; the ZTNA replacement is funded and in flight" />
+                placeholder={tx(
+                  'e.g. Vendor end-of-life, no MFA integration path; the ZTNA replacement is funded and in flight'
+                )} />
             </div>
             <div>
-              <p className="field-label">Compensating controls{type === 'exception' && <span className="field-req"> *</span>}</p>
+              <p className="field-label">{tx('Compensating controls')}{type === 'exception' && <span className="field-req"> *</span>}</p>
               <textarea className="risys-input" rows={2} style={{ width: '100%', resize: 'vertical', fontSize: 12.5 }}
                 value={excForm.compensating_controls} onChange={e => setExcForm(f => ({ ...f, compensating_controls: e.target.value }))}
-                placeholder="e.g. Privileged accounts removed from the VPN; access limited to 12 named users; source IP allowlist; session recording" />
+                placeholder={tx(
+                  'e.g. Privileged accounts removed from the VPN; access limited to 12 named users; source IP allowlist; session recording'
+                )} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: 10 }}>
               <div>
                 <SelectField label={`Approver (${tierMeta(required).label} or above) *`} size="sm" value={excForm.approver_id}
                   disabled={eligible.length === 0} onChange={e => setExcForm(f => ({ ...f, approver_id: e.target.value }))}>
-                  <option value="">{eligible.length ? 'Select approver…' : 'Nobody holds this authority'}</option>
+                  <option value="">{eligible.length ? tx('Select approver…') : tx('Nobody holds this authority')}</option>
                   {eligible.map(m => <option key={m.user_id} value={m.user_id}>{m.full_name || m.email || m.user_id?.slice(0, 8)}</option>)}
                 </SelectField>
                 {eligible.length === 0 && (
-                  <p style={{ fontSize: 11, color: 'var(--critical)', marginTop: 4 }}>
-                    No member holds {tierMeta(required).label} authority. An admin assigns it on Risk Register → Tolerances.
-                  </p>
+                  <p style={{ fontSize: 11, color: 'var(--critical)', marginTop: 4 }}>{tx('No member holds')} {tierMeta(required).label} {tx('authority. An admin assigns it on Risk Register → Tolerances.')}</p>
                 )}
               </div>
               <div>
-                <p className="field-label">Expires <span className="field-req">*</span></p>
+                <p className="field-label">{tx('Expires')} <span className="field-req">*</span></p>
                 <input type="date" className="risys-input" style={{ width: '100%', fontSize: 12 }} value={excForm.expires_at}
                   onChange={e => setExcForm(f => ({ ...f, expires_at: e.target.value }))} />
               </div>
-              <SelectField label="Review" size="sm" value={excForm.review_frequency || (type === 'exception' ? 'Monthly' : 'Quarterly')}
+              <SelectField label={tx('Review')} size="sm" value={excForm.review_frequency || (type === 'exception' ? 'Monthly' : 'Quarterly')}
                 onChange={e => setExcForm(f => ({ ...f, review_frequency: e.target.value }))}>
                 {REVIEW_FREQUENCIES.map(r => <option key={r} value={r}>{r}</option>)}
               </SelectField>
             </div>
             {excError && <p style={{ fontSize: 12, color: 'var(--critical)' }}>{excError}</p>}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => { setRequesting(false); setExcError('') }} className="btn-secondary" style={{ fontSize: 12.5 }}>Cancel</button>
+              <button onClick={() => { setRequesting(false); setExcError('') }} className="btn-secondary" style={{ fontSize: 12.5 }}>{tx('Cancel')}</button>
               <button onClick={submitAcceptance} disabled={excSaving} className="btn-primary" style={{ fontSize: 12.5 }}>
-                {excSaving ? <Spinner size="sm" /> : 'Submit for approval'}
+                {excSaving ? <Spinner size="sm" /> : tx('Submit for approval')}
               </button>
             </div>
           </div>
@@ -745,7 +748,7 @@ export function TreatmentTab({ risk, member, members, onRiskChanged, perms, verd
       {/* Legacy actions not yet attached to a plan */}
       {unplannedActions.length > 0 && (
         <>
-          <p className="eyebrow" style={{ marginTop: 8 }}>Other actions — not attached to a plan</p>
+          <p className="eyebrow" style={{ marginTop: 8 }}>{tx('Other actions — not attached to a plan')}</p>
           {unplannedActions.map(a => (
             <ActionCard key={a.id} action={a} member={member}
               onUpdate={taskApi.updateAction} onStatusUpdate={taskApi.addStatusUpdate}

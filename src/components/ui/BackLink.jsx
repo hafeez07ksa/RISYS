@@ -1,4 +1,5 @@
 import { ArrowLeft } from 'lucide-react'
+import { tx } from '@/lib/i18n'
 
 /* One back affordance (§44). Three pages had hand-rolled versions at 12px,
  * 12.5px and 13px with different gaps and hover behaviour, so stepping out of
@@ -24,8 +25,8 @@ export function BackLink({ to, label, children, style }) {
       onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--crimson)')}
       onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-3)')}
     >
-      <ArrowLeft size={13} style={{ flexShrink: 0 }} />
-      {children ?? <>Back to {label}</>}
+      <ArrowLeft size={13} style={{ flexShrink: 0 }} className='rtl-flip' />
+      {children ?? <>{tx('Back to')} {label}</>}
     </button>
   )
 }

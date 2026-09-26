@@ -2,6 +2,7 @@ import { TrendingDown, TrendingUp, Minus, Clock } from 'lucide-react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useScoreHistory } from '@/hooks/useRiskGate'
 import { bandMeta } from '@/lib/matrix'
+import { tx, appLocale } from '@/lib/i18n'
 
 /**
  * The score history.
@@ -21,7 +22,7 @@ function Delta({ from, to }) {
   if (from == null || from === to) {
     return (
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>
-        <Minus size={11} /> {from == null ? 'first assessment' : 'no change'}
+        <Minus size={11} /> {from == null ? tx('first assessment') : tx('no change')}
       </span>
     )
   }
@@ -48,11 +49,10 @@ export function ScoreHistoryTab({ risk, memberName = () => null }) {
     return (
       <div className="card" style={{ padding: '48px 24px', textAlign: 'center' }}>
         <Clock size={22} strokeWidth={1} style={{ color: 'var(--border-2)', margin: '0 auto 10px' }} />
-        <p style={{ fontSize: 'var(--t-sm)', fontWeight: 500, color: 'var(--text)' }}>No scores recorded yet</p>
-        <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', marginTop: 4, maxWidth: 380, margin: '4px auto 0' }}>
-          Run an assessment to record an inherent and residual score. Each one is written here permanently,
-          with its justification and the matrix version it was scored under.
-        </p>
+        <p style={{ fontSize: 'var(--t-sm)', fontWeight: 500, color: 'var(--text)' }}>{tx('No scores recorded yet')}</p>
+        <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', marginTop: 4, maxWidth: 380, margin: '4px auto 0' }}>{tx(
+          'Run an assessment to record an inherent and residual score. Each one is written here permanently, with its justification and the matrix version it was scored under.'
+        )}</p>
       </div>
     )
   }
@@ -60,8 +60,7 @@ export function ScoreHistoryTab({ risk, memberName = () => null }) {
   return (
     <div>
       <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', marginBottom: 12 }}>
-        {history.length} assessment{history.length === 1 ? '' : 's'} on record. Scores are appended, never overwritten.
-      </p>
+        {history.length} {tx('assessment')}{history.length === 1 ? '' : 's'} {tx('on record. Scores are appended, never overwritten.')}</p>
 
       <div className="card" style={{ overflow: 'hidden' }}>
         {history.map((h, idx) => {
@@ -91,8 +90,7 @@ export function ScoreHistoryTab({ risk, memberName = () => null }) {
                   }}>
                     {h.score_type}
                   </span>
-                  <span className="tnum" style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>
-                    L{h.likelihood} × I{h.impact}
+                  <span className="tnum" style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>L{h.likelihood} × I{h.impact}
                   </span>
                   <Delta from={h.prev_score} to={h.score} />
                 </div>
@@ -105,10 +103,10 @@ export function ScoreHistoryTab({ risk, memberName = () => null }) {
 
                 <p style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)', marginTop: 6 }}>
                   {who ? `${who} · ` : ''}
-                  {new Date(h.assessed_at).toLocaleString('en-GB', {
+                  {new Date(h.assessed_at).toLocaleString(appLocale(), {
                     day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
                   })}
-                  {' · matrix v'}{h.matrix_version}
+                  {tx(' · matrix v')}{h.matrix_version}
                 </p>
               </div>
             </div>

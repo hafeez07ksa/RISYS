@@ -1,5 +1,6 @@
 import markDark from '@/assets/risys-mark.png'
 import markLight from '@/assets/risys-mark-light.png'
+import { tx } from '@/lib/i18n'
 
 /* ── Wordmark ─────────────────────────────────────────────────────────────────
  *
@@ -63,13 +64,11 @@ export function RisysLogo({ size = 'md', tone = 'dark', showText = true, tagline
               letterSpacing: s.track,
               /* Wide tracking adds space to the right of the final S too, which
                  pushes the word off its optical centre. Pull it back. */
-              marginRight: `-${s.track}`,
+              marginInlineEnd: `-${s.track}`,
               color: light ? BRAND.cream : BRAND.ink,
               whiteSpace: 'nowrap',
             }}
-          >
-            RISYS
-          </span>
+          >{tx('RISYS')}</span>
 
           {tagline && (
             <span
@@ -81,9 +80,7 @@ export function RisysLogo({ size = 'md', tone = 'dark', showText = true, tagline
                 opacity: light ? 0.72 : 1,
                 whiteSpace: 'nowrap',
               }}
-            >
-              Risk Intelligence System
-            </span>
+            >{tx('Risk Intelligence System')}</span>
           )}
         </span>
       )}

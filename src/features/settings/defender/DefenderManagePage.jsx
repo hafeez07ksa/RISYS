@@ -1,5 +1,6 @@
 import { Shield, Siren, Bug } from 'lucide-react'
 import { ConnectorScanSettings } from '@/features/settings/shared/ConnectorScanSettings'
+import { tx } from '@/lib/i18n'
 
 // Defender settings: what RISYS can read from Microsoft Defender, when it scans,
 // and how recent scans went. Findings themselves live under Findings → Defender.
@@ -9,21 +10,25 @@ const SOURCES = [
     key: 'posture',
     Icon: Shield,
     permissions: 'Microsoft Graph → SecurityEvents.Read.All',
-    requires: 'Any Microsoft 365 tenant (Secure Score is included).',
+    requires: tx('Any Microsoft 365 tenant (Secure Score is included).'),
   },
   {
     key: 'alerts',
     Icon: Siren,
     permissions: 'Microsoft Graph → SecurityAlert.Read.All',
-    requires: 'A Microsoft Defender XDR workload, e.g. Defender for Office 365, Endpoint or Identity (Microsoft 365 E5, Business Premium or a Defender add-on).',
-    note: 'High-severity alerts are raised as RISYS incidents automatically.',
+    requires: tx(
+      'A Microsoft Defender XDR workload, e.g. Defender for Office 365, Endpoint or Identity (Microsoft 365 E5, Business Premium or a Defender add-on).'
+    ),
+    note: tx('High-severity alerts are raised as RISYS incidents automatically.'),
   },
   {
     key: 'endpoint',
     Icon: Bug,
     permissions: 'WindowsDefenderATP → Machine.Read.All, SecurityRecommendation.Read.All',
-    requires: 'Microsoft Defender for Endpoint (Plan 2, Business, or Microsoft 365 E5).',
-    howTo: 'In the app registration: API permissions → Add a permission → "APIs my organization uses" → type WindowsDefenderATP in full (partial names return nothing) → Application permissions → tick both → Add → Grant admin consent.',
+    requires: tx('Microsoft Defender for Endpoint (Plan 2, Business, or Microsoft 365 E5).'),
+    howTo: tx(
+      'In the app registration: API permissions → Add a permission → "APIs my organization uses" → type WindowsDefenderATP in full (partial names return nothing) → Application permissions → tick both → Add → Grant admin consent.'
+    ),
   },
 ]
 
@@ -56,21 +61,21 @@ function summaryCards(run) {
   const open = run?.counts?.open
   return [
     {
-      label: 'Secure Score',
+      label: tx('Secure Score'),
       value: score?.current != null ? `${Math.round((score.current / (score.max || 1)) * 100)}%` : '—',
-      sub: score?.current != null ? `${score.current} / ${score.max} points` : 'Not scanned yet',
+      sub: score?.current != null ? `${score.current} / ${score.max} points` : tx('Not scanned yet'),
     },
-    { label: 'Open posture gaps', value: open?.posture ?? '—', sub: 'From Secure Score' },
+    { label: tx('Open posture gaps'), value: open?.posture ?? '—', sub: tx('From Secure Score') },
     {
-      label: 'Open alerts',
+      label: tx('Open alerts'),
       value: src.alerts?.state === 'ok' ? (open?.alerts ?? 0) : '—',
-      sub: src.alerts && src.alerts.state !== 'ok' ? 'Could not be read' : 'From Defender XDR',
+      sub: src.alerts && src.alerts.state !== 'ok' ? tx('Could not be read') : tx('From Defender XDR'),
       warn: src.alerts && src.alerts.state !== 'ok',
     },
     {
-      label: 'Vulnerabilities / devices',
+      label: tx('Vulnerabilities / devices'),
       value: src.endpoint?.state === 'ok' ? `${open?.vulnerabilities ?? 0} / ${open?.devices ?? 0}` : '—',
-      sub: src.endpoint && src.endpoint.state !== 'ok' ? 'Could not be read' : 'From Defender for Endpoint',
+      sub: src.endpoint && src.endpoint.state !== 'ok' ? tx('Could not be read') : tx('From Defender for Endpoint'),
       warn: src.endpoint && src.endpoint.state !== 'ok',
     },
   ]
@@ -81,7 +86,7 @@ export function DefenderManagePage() {
     <ConnectorScanSettings
       connectorId="defender"
       functionName="defender-security"
-      title="Microsoft Defender"
+      title={tx('Microsoft Defender')}
       accent="#00B4D8"
       findingsPath="/app/findings/defender"
       sources={SOURCES}

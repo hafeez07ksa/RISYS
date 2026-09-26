@@ -15,6 +15,7 @@ import { BAND_ORDER, bandMeta } from '@/lib/matrix'
 import { usePeople } from '@/hooks/usePeople'
 import { useAuthorityHolders } from '@/hooks/useTreatment'
 import { AUTHORITY_TIERS, BAND_AUTHORITY, EXCEPTION_FLOOR, tierMeta } from '@/lib/authority'
+import { tx } from '@/lib/i18n'
 
 // ============================================================
 // TOLERANCE CONFIGURATION
@@ -41,34 +42,33 @@ function RuleEditor({ rule, onChange, onRemove, breachCount }) {
       borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--bg-2)',
     }}>
       <div style={{ flex: 2, minWidth: 0 }}>
-        <SelectField label="Metric" size="sm" value={rule.metric}
+        <SelectField label={tx('Metric')} size="sm" value={rule.metric}
           onChange={e => onChange({ ...rule, metric: e.target.value })}>
           {GATE_METRICS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
         </SelectField>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <SelectField label="Must be" size="sm" value={rule.operator}
+        <SelectField label={tx('Must be')} size="sm" value={rule.operator}
           onChange={e => onChange({ ...rule, operator: e.target.value })}>
           {GATE_OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </SelectField>
       </div>
       <div style={{ width: 78 }}>
-        <p className="field-label">Value</p>
+        <p className="field-label">{tx('Value')}</p>
         <input className="risys-input tnum" type="number" value={rule.value} style={{ width: '100%' }}
           onChange={e => onChange({ ...rule, value: Number(e.target.value) })} />
       </div>
 
-      <div style={{ minWidth: 96, textAlign: 'right', paddingBottom: 8 }}>
+      <div style={{ minWidth: 96, textAlign: 'end', paddingBottom: 8 }}>
         {breachCount > 0 ? (
           <span className="tnum" style={{ fontSize: 'var(--t-meta)', color: 'var(--critical)', fontWeight: 600 }}>
-            {breachCount} would breach
-          </span>
+            {breachCount} {tx('would breach')}</span>
         ) : (
-          <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>none breach</span>
+          <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{tx('none breach')}</span>
         )}
       </div>
 
-      <button onClick={onRemove} className="btn-ghost" style={{ padding: 6, marginBottom: 4 }} title="Remove rule">
+      <button onClick={onRemove} className="btn-ghost" style={{ padding: 6, marginBottom: 4 }} title={tx('Remove rule')}>
         <Trash2 size={13} />
       </button>
 
@@ -135,7 +135,9 @@ function CategoryCard({ category, tolerance, risks, matrix, canEdit, onSave }) {
       })
       setDraft(null)
     } catch (e) {
-      setError(e.message || 'Could not save. If the tolerance table does not exist yet, apply 002_risk_gate.sql first.')
+      setError(e.message || tx(
+        'Could not save. If the tolerance table does not exist yet, apply 002_risk_gate.sql first.'
+      ))
     } finally { setSaving(false) }
   }
 
@@ -145,42 +147,42 @@ function CategoryCard({ category, tolerance, risks, matrix, canEdit, onSave }) {
       <button onClick={() => setOpen(o => !o)}
         style={{
           width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
-          background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
+          background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'start',
         }}>
-        {open ? <ChevronDown size={14} style={{ color: 'var(--text-3)' }} /> : <ChevronRight size={14} style={{ color: 'var(--text-3)' }} />}
+        {open ? <ChevronDown size={14} style={{ color: 'var(--text-3)' }} /> : <ChevronRight size={14} style={{ color: 'var(--text-3)' }} className='rtl-flip' />}
 
         <span style={{ fontSize: 'var(--t-body)', fontWeight: 500, color: 'var(--text)', flex: 1 }}>
           {category}
         </span>
 
         {!tolerance && (
-          <span className="badge badge-neutral">No rules set</span>
+          <span className="badge badge-neutral">{tx('No rules set')}</span>
         )}
         {tolerance && (
           <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>
-            {tolerance.rules?.length || 0} rule{(tolerance.rules?.length || 0) === 1 ? '' : 's'}
+            {tolerance.rules?.length || 0} {tx('rule')}{(tolerance.rules?.length || 0) === 1 ? '' : 's'}
           </span>
         )}
 
-        <span className="tnum" style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', minWidth: 62, textAlign: 'right' }}>
-          {categoryRisks.length} risk{categoryRisks.length === 1 ? '' : 's'}
+        <span className="tnum" style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', minWidth: 62, textAlign: 'end' }}>
+          {categoryRisks.length} {tx('risk')}{categoryRisks.length === 1 ? '' : 's'}
         </span>
 
         {/* Two different numbers, kept visually distinct: what the gate has
             recorded (matches the register), and what these rules would
             catch once the remaining risks are assessed (a preview). */}
         {recordedBreaches > 0 && (
-          <span className="badge" title="Recorded outside tolerance by the gate"
+          <span className="badge" title={tx('Recorded outside tolerance by the gate')}
             style={{ color: 'var(--critical)', background: 'var(--critical-bg)', border: '1px solid var(--critical-bd)' }}>
-            {recordedBreaches} outside
-          </span>
+            {recordedBreaches} {tx('outside')}</span>
         )}
         {wouldBreach > recordedBreaches && (
           <span className="badge"
-            title="Risks these rules would catch against their current scores once they are assessed"
+            title={tx(
+              'Risks these rules would catch against their current scores once they are assessed'
+            )}
             style={{ color: 'var(--text-3)', background: 'var(--surface)', border: '1px solid var(--border)' }}>
-            {wouldBreach - recordedBreaches} would breach once assessed
-          </span>
+            {wouldBreach - recordedBreaches} {tx('would breach once assessed')}</span>
         )}
       </button>
 
@@ -189,31 +191,30 @@ function CategoryCard({ category, tolerance, risks, matrix, canEdit, onSave }) {
 
           {/* Appetite — prose, deliberately */}
           <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 12, marginTop: 14 }}>
-            <SelectField label="Appetite" size="sm" value={current.appetite} disabled={!canEdit}
+            <SelectField label={tx('Appetite')} size="sm" value={current.appetite} disabled={!canEdit}
               onChange={e => update({ appetite: e.target.value })}>
               {RISK_APPETITES.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
             </SelectField>
             <div>
-              <p className="field-label">Appetite statement</p>
+              <p className="field-label">{tx('Appetite statement')}</p>
               <input className="risys-input" style={{ width: '100%' }} disabled={!canEdit}
                 value={current.appetite_statement}
                 onChange={e => update({ appetite_statement: e.target.value })}
-                placeholder="e.g. Low appetite for cyber risk on internet-facing assets." />
+                placeholder={tx('e.g. Low appetite for cyber risk on internet-facing assets.')} />
             </div>
           </div>
-          <p className="field-help" style={{ marginTop: 5 }}>
-            Direction, for the board. Nothing evaluates this — the rules below are what the gate reads.
-          </p>
+          <p className="field-help" style={{ marginTop: 5 }}>{tx(
+            'Direction, for the board. Nothing evaluates this — the rules below are what the gate reads.'
+          )}</p>
 
           {/* Tolerance — the evaluable part */}
           <div style={{ marginTop: 18 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <p className="eyebrow">Tolerance rules — all must pass</p>
+              <p className="eyebrow">{tx('Tolerance rules — all must pass')}</p>
               {canEdit && (
                 <button className="btn-ghost" style={{ fontSize: 'var(--t-meta)' }}
                   onClick={() => update({ rules: [...current.rules, { ...BLANK_RULE }] })}>
-                  <Plus size={12} /> Add rule
-                </button>
+                  <Plus size={12} /> {tx('Add rule')}</button>
               )}
             </div>
 
@@ -224,9 +225,9 @@ function CategoryCard({ category, tolerance, risks, matrix, canEdit, onSave }) {
                   onRemove={() => update({ rules: current.rules.filter((_, k) => k !== idx) })} />
               ))}
               {current.rules.length === 0 && (
-                <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-3)', padding: '10px 0' }}>
-                  No rules. The gate will abstain for this category and no risk in it can breach.
-                </p>
+                <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-3)', padding: '10px 0' }}>{tx(
+                  'No rules. The gate will abstain for this category and no risk in it can breach.'
+                )}</p>
               )}
             </div>
           </div>
@@ -234,25 +235,25 @@ function CategoryCard({ category, tolerance, risks, matrix, canEdit, onSave }) {
           {/* Consequences */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginTop: 18 }}>
             <div>
-              <p className="field-label">Who can accept</p>
-              <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-2)', lineHeight: 1.5 }}>
-                Set by band, not by category — see <strong>Acceptance authority</strong> above. Outside this tolerance an acceptance is an exception and needs at least the Steering Committee.
-              </p>
+              <p className="field-label">{tx('Who can accept')}</p>
+              <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-2)', lineHeight: 1.5 }}>{tx('Set by band, not by category — see')} <strong>{tx('Acceptance authority')}</strong> {tx(
+                  'above. Outside this tolerance an acceptance is an exception and needs at least the Steering Committee.'
+                )}</p>
             </div>
             <div>
-              <p className="field-label">Treatment SLA (days)</p>
+              <p className="field-label">{tx('Treatment SLA (days)')}</p>
               <input className="risys-input tnum" type="number" style={{ width: '100%' }} disabled={!canEdit}
                 value={current.treatment_sla_days}
                 onChange={e => update({ treatment_sla_days: Number(e.target.value) })} />
-              <p className="field-help" style={{ marginTop: 4 }}>Clock starts the moment the gate fails.</p>
+              <p className="field-help" style={{ marginTop: 4 }}>{tx('Clock starts the moment the gate fails.')}</p>
             </div>
             <div>
-              <p className="field-label">Escalate to</p>
+              <p className="field-label">{tx('Escalate to')}</p>
               <input className="risys-input" style={{ width: '100%' }} disabled={!canEdit}
                 value={current.escalate_to}
                 onChange={e => update({ escalate_to: e.target.value })}
-                placeholder="e.g. Cybersecurity Steering Committee" />
-              <p className="field-help" style={{ marginTop: 4 }}>Named on every breach notification.</p>
+                placeholder={tx('e.g. Cybersecurity Steering Committee')} />
+              <p className="field-help" style={{ marginTop: 4 }}>{tx('Named on every breach notification.')}</p>
             </div>
           </div>
 
@@ -260,11 +261,9 @@ function CategoryCard({ category, tolerance, risks, matrix, canEdit, onSave }) {
 
           {canEdit && draft && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-              <button className="btn-secondary" style={{ fontSize: 'var(--t-sm)' }} onClick={() => { setDraft(null); setError('') }}>
-                Discard
-              </button>
+              <button className="btn-secondary" style={{ fontSize: 'var(--t-sm)' }} onClick={() => { setDraft(null); setError('') }}>{tx('Discard')}</button>
               <button className="btn-primary" style={{ fontSize: 'var(--t-sm)' }} onClick={save} disabled={saving}>
-                {saving ? <Spinner size="sm" /> : <><Save size={12} /> Save tolerance</>}
+                {saving ? <Spinner size="sm" /> : <><Save size={12} /> {tx('Save tolerance')}</>}
               </button>
             </div>
           )}
@@ -287,17 +286,15 @@ export function TolerancePage() {
   return (
     <div className="h-full flex flex-col">
       <Topbar
-        title="Risk Tolerances"
+        title={tx('Risk Tolerances')}
         subtitle={organization?.name}
         actions={
-          <button className="btn-secondary" style={{ fontSize: 'var(--t-sm)' }} onClick={() => navigate('/app/risks')}>
-            Back to register
-          </button>
+          <button className="btn-secondary" style={{ fontSize: 'var(--t-sm)' }} onClick={() => navigate('/app/risks')}>{tx('Back to register')}</button>
         }
       />
 
       <div className="flex-1 overflow-y-auto page-content">
-        <BackLink to={() => navigate('/app/risks')} label="Risk Register" style={{ marginBottom: 12 }} />
+        <BackLink to={() => navigate('/app/risks')} label={tx('Risk Register')} style={{ marginBottom: 12 }} />
 
         <div style={{
           display: 'flex', gap: 10, padding: '12px 14px', borderRadius: 'var(--r-md)',
@@ -305,16 +302,13 @@ export function TolerancePage() {
         }}>
           <Info size={15} style={{ color: 'var(--rose)', flexShrink: 0, marginTop: 1 }} />
           <div>
-            <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text)', lineHeight: 1.6 }}>
-              These rules are the only thing standing between a register and a spreadsheet. Every time a residual
-              score changes, a control test fails or evidence expires, each risk is re-checked against the rules for
-              its category. Failing one makes treatment mandatory, disables Accept, starts the SLA clock and
-              notifies the escalation path — with nobody pressing a button.
-            </p>
+            <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text)', lineHeight: 1.6 }}>{tx(
+              'These rules are the only thing standing between a register and a spreadsheet. Every time a residual score changes, a control test fails or evidence expires, each risk is re-checked against the rules for its category. Failing one makes treatment mandatory, disables Accept, starts the SLA clock and notifies the escalation path — with nobody pressing a button.'
+            )}</p>
             <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', marginTop: 6 }}>
               {totalOutside > 0
                 ? `${totalOutside} risk${totalOutside === 1 ? '' : 's'} currently sit outside tolerance.`
-                : 'No risks are currently recorded as outside tolerance.'}
+                : tx('No risks are currently recorded as outside tolerance.')}
             </p>
           </div>
         </div>
@@ -325,11 +319,9 @@ export function TolerancePage() {
             background: 'var(--medium-bg)', border: '1px solid var(--medium-bd)', marginBottom: 18,
           }}>
             <ShieldAlert size={14} style={{ color: 'var(--medium)', flexShrink: 0, marginTop: 1 }} />
-            <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)' }}>
-              The <span className="mono">risk_tolerances</span> table is not readable yet. Apply
-              {' '}<span className="mono">supabase/migrations/002_risk_gate.sql</span> in the Supabase SQL editor —
-              it seeds a sensible default for every category, which you can then tune here.
-            </p>
+            <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)' }}>{tx('The')} <span className="mono">{tx('risk_tolerances')}</span> {tx('table is not readable yet. Apply')}{' '}<span className="mono">{tx('supabase/migrations/002_risk_gate.sql')}</span> {tx(
+                'in the Supabase SQL editor — it seeds a sensible default for every category, which you can then tune here.'
+              )}</p>
           </div>
         )}
 
@@ -387,17 +379,14 @@ function AuthorityPanel({ canEdit }) {
     <div className="card" style={{ padding: '14px 16px', marginBottom: 18 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
         <Scale size={14} style={{ color: 'var(--crimson)' }} />
-        <p style={{ fontSize: 'var(--t-section)', fontWeight: 600, color: 'var(--text)' }}>Acceptance authority</p>
+        <p style={{ fontSize: 'var(--t-section)', fontWeight: 600, color: 'var(--text)' }}>{tx('Acceptance authority')}</p>
       </div>
-      <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', marginBottom: 12, maxWidth: 760 }}>
-        Who may sign an acceptance depends on the band of the residual score. Outside tolerance an acceptance is an
-        exception, and needs at least the {tierMeta(EXCEPTION_FLOOR).label} whatever the band.
-      </p>
+      <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', marginBottom: 12, maxWidth: 760 }}>{tx(
+          'Who may sign an acceptance depends on the band of the residual score. Outside tolerance an acceptance is an exception, and needs at least the'
+        )} {tierMeta(EXCEPTION_FLOOR).label} {tx('whatever the band.')}</p>
 
       {!migrated && (
-        <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)', background: 'var(--medium-bg)', border: '1px solid var(--medium-bd)', borderRadius: 'var(--r-md)', padding: '8px 10px', marginBottom: 10 }}>
-          Authority holders need <span className="mono">003_treatment_acceptance_triage.sql</span> applied.
-        </p>
+        <p style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)', background: 'var(--medium-bg)', border: '1px solid var(--medium-bd)', borderRadius: 'var(--r-md)', padding: '8px 10px', marginBottom: 10 }}>{tx('Authority holders need')} <span className="mono">{tx('003_treatment_acceptance_triage.sql')}</span> {tx('applied.')}</p>
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -414,16 +403,16 @@ function AuthorityPanel({ canEdit }) {
                 <p style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)' }}>{t.desc}</p>
               </div>
               <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)' }}>Accepts</span>
+                <span style={{ fontSize: 'var(--t-micro)', color: 'var(--text-3)' }}>{tx('Accepts')}</span>
                 {bandsFor(t.value).map(b => (
                   <span key={b.band} className="badge" style={{ color: b.color, background: b.bg, border: `1px solid ${b.border}` }}>{b.label}</span>
                 ))}
               </div>
               {t.value === 'risk_owner' ? (
-                <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>Each risk's own owner — no assignment needed.</p>
+                <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{tx('Each risk\'s own owner — no assignment needed.')}</p>
               ) : (
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                  {tierHolders.length === 0 && <span style={{ fontSize: 'var(--t-meta)', color: 'var(--critical)' }}>Nobody assigned</span>}
+                  {tierHolders.length === 0 && <span style={{ fontSize: 'var(--t-meta)', color: 'var(--critical)' }}>{tx('Nobody assigned')}</span>}
                   {tierHolders.map(h => (
                     <span key={h.id} style={{
                       display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 'var(--t-meta)', padding: '3px 8px',
@@ -431,7 +420,7 @@ function AuthorityPanel({ canEdit }) {
                     }}>
                       {nameOf(h.user_id)}
                       {canEdit && (
-                        <button onClick={() => removeHolder(h).catch(e => setError(e.message))} title="Remove"
+                        <button onClick={() => removeHolder(h).catch(e => setError(e.message))} title={tx('Remove')}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--text-3)', display: 'flex' }}>
                           <X size={11} />
                         </button>
@@ -439,9 +428,9 @@ function AuthorityPanel({ canEdit }) {
                     </span>
                   ))}
                   {canEdit && migrated && (
-                    <span style={{ display: 'inline-flex', gap: 5, alignItems: 'center', marginLeft: 'auto' }}>
+                    <span style={{ display: 'inline-flex', gap: 5, alignItems: 'center', marginInlineStart: 'auto' }}>
                       <SelectField size="sm" value={picks[t.value] || ''} onChange={e => setPicks(p => ({ ...p, [t.value]: e.target.value }))}>
-                        <option value="">Add a member…</option>
+                        <option value="">{tx('Add a member…')}</option>
                         {members.filter(m => !assigned.has(m.user_id)).map(m => (
                           <option key={m.user_id} value={m.user_id}>{m.full_name || m.email || m.user_id?.slice(0, 8)}</option>
                         ))}

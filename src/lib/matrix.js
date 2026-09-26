@@ -1,3 +1,4 @@
+import { tx } from '@/lib/i18n'
 // ============================================================
 // RISK MATRIX — the single source of truth for banding
 //
@@ -32,13 +33,13 @@ export const BAND_ORDER = ['low', 'medium', 'high', 'critical']
  * nothing on day one.
  */
 export const BAND_META = {
-  critical: { band: 'critical', label: 'Critical', color: '#8C1616', bg: '#FBEAEA', border: '#F0CECE' },
-  high:     { band: 'high',     label: 'High',     color: '#B5491B', bg: '#FBEFE7', border: '#F0D4C2' },
-  medium:   { band: 'medium',   label: 'Medium',   color: '#9C6F0F', bg: '#FAF3E2', border: '#EBDCB6' },
-  low:      { band: 'low',      label: 'Low',      color: '#2F6B3C', bg: '#ECF4EE', border: '#C8DECD' },
+  critical: { band: 'critical', label: tx('Critical'), color: '#8C1616', bg: '#FBEAEA', border: '#F0CECE' },
+  high:     { band: 'high',     label: tx('High'),     color: '#B5491B', bg: '#FBEFE7', border: '#F0D4C2' },
+  medium:   { band: 'medium',   label: tx('Medium'),   color: '#9C6F0F', bg: '#FAF3E2', border: '#EBDCB6' },
+  low:      { band: 'low',      label: tx('Low'),      color: '#2F6B3C', bg: '#ECF4EE', border: '#C8DECD' },
 }
 
-const UNSCORED = { band: null, label: 'Not scored', color: 'var(--text-3)', bg: 'var(--surface)', border: 'var(--border)' }
+const UNSCORED = { band: null, label: tx('Not scored'), color: 'var(--text-3)', bg: 'var(--surface)', border: 'var(--border)' }
 
 /**
  * Written definitions for each scale point. The arithmetic is trivial;
@@ -46,11 +47,11 @@ const UNSCORED = { band: null, label: 'Not scored', color: 'var(--text-3)', bg: 
  * "3" mean the same thing to everyone who scores.
  */
 export const DEFAULT_LIKELIHOOD_SCALE = [
-  { value: 1, label: 'Rare',           definition: 'Less than once in 5 years' },
-  { value: 2, label: 'Unlikely',       definition: 'Once in 2 to 5 years' },
-  { value: 3, label: 'Possible',       definition: 'Roughly annually' },
-  { value: 4, label: 'Likely',         definition: 'Several times a year' },
-  { value: 5, label: 'Almost Certain', definition: 'Monthly or continuous' },
+  { value: 1, label: tx('Rare'),           definition: tx('Less than once in 5 years') },
+  { value: 2, label: tx('Unlikely'),       definition: tx('Once in 2 to 5 years') },
+  { value: 3, label: tx('Possible'),       definition: tx('Roughly annually') },
+  { value: 4, label: tx('Likely'),         definition: tx('Several times a year') },
+  { value: 5, label: tx('Almost Certain'), definition: tx('Monthly or continuous') },
 ]
 
 /**
@@ -61,11 +62,15 @@ export const DEFAULT_LIKELIHOOD_SCALE = [
  * is still a 4, because the regulatory axis dominates.
  */
 export const DEFAULT_IMPACT_SCALE = [
-  { value: 1, label: 'Insignificant', definition: 'Under 50K SAR · internal observation only · under 1 hour degradation' },
-  { value: 2, label: 'Minor',         definition: '50K – 500K SAR · internal finding, tracked · short degradation, one team' },
-  { value: 3, label: 'Moderate',      definition: '500K – 2M SAR · reportable, corrective plan required · half-day outage, one service' },
-  { value: 4, label: 'Major',         definition: '2M – 10M SAR · mandatory regulator notification · multi-service outage' },
-  { value: 5, label: 'Catastrophic',  definition: 'Over 10M SAR · licence at risk, enforcement action · multi-day outage, public services' },
+  { value: 1, label: tx('Insignificant'), definition: tx('Under 50K SAR · internal observation only · under 1 hour degradation') },
+  { value: 2, label: tx('Minor'),         definition: tx('50K – 500K SAR · internal finding, tracked · short degradation, one team') },
+  { value: 3, label: tx('Moderate'),      definition: tx(
+    '500K – 2M SAR · reportable, corrective plan required · half-day outage, one service'
+  ) },
+  { value: 4, label: tx('Major'),         definition: tx('2M – 10M SAR · mandatory regulator notification · multi-service outage') },
+  { value: 5, label: tx('Catastrophic'),  definition: tx(
+    'Over 10M SAR · licence at risk, enforcement action · multi-day outage, public services'
+  ) },
 ]
 
 /** The thresholds the product shipped with, kept as the fallback everywhere. */

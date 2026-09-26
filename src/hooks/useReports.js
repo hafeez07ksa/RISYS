@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
+import { tx } from '@/lib/i18n'
 
 /* The report archive. Every generated report is kept — the file in the
  * private `reports` bucket, the data it was built from in report_runs.snapshot,
@@ -41,7 +42,7 @@ export function useReports({ engagementId } = {}) {
 }
 
 export const REPORT_STATUSES = [
-  { value: 'generated', label: 'Generated' },
-  { value: 'presented', label: 'Presented' },
-  { value: 'submitted', label: 'Submitted' },
+  { value: 'generated', label: tx('Generated') },
+  { value: 'presented', label: tx('Presented') },
+  { value: 'submitted', label: tx('Submitted') },
 ]

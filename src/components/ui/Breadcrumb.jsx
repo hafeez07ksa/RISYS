@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
+import { tx } from '@/lib/i18n'
 
 /* Breadcrumbs (§44). The product is four levels deep in places — Compliance →
  * NCA ECC → 2-2-3 → 2-2-3-1 — and before this there was no way to tell where
@@ -11,19 +12,22 @@ import { ChevronRight } from 'lucide-react'
 export function Breadcrumb({ items = [] }) {
   if (items.length === 0) return null
   return (
-    <nav aria-label="Breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+    <nav aria-label={tx('Breadcrumb')} style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
       {items.map((item, i) => {
         const last = i === items.length - 1
         return (
           <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
-            {i > 0 && <ChevronRight size={12} style={{ color: 'var(--text-3)', flexShrink: 0, opacity: 0.6 }} />}
+            {i > 0 && <ChevronRight
+              size={12}
+              style={{ color: 'var(--text-3)', flexShrink: 0, opacity: 0.6 }}
+              className='rtl-flip' />}
             {last || !item.to ? (
               <span
                 aria-current={last ? 'page' : undefined}
                 className="truncate"
                 style={{ fontSize: 'var(--t-sm)', color: last ? 'var(--text)' : 'var(--text-3)', fontWeight: last ? 500 : 400 }}
               >
-                {item.label}
+                {tx(item.label)}
               </span>
             ) : (
               <Link
@@ -33,7 +37,7 @@ export function Breadcrumb({ items = [] }) {
                 onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--crimson)')}
                 onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-3)')}
               >
-                {item.label}
+                {tx(item.label)}
               </Link>
             )}
           </span>

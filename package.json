@@ -9,12 +9,15 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src --ext .js,.jsx",
-    "test:gate": "node tools/gate-check.mjs"
+    "test:gate": "node tools/gate-check.mjs",
+    "check:rtl": "node tools/check-logical-css.mjs",
+    "check:i18n": "node tools/i18n-coverage.mjs"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.9.0",
     "@supabase/supabase-js": "^2.43.0",
     "clsx": "^2.1.1",
+    "i18next": "^23.16.8",
     "lucide-react": "^0.383.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
