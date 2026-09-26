@@ -57,8 +57,13 @@ export function RecordPresentationPage() {
       </>}
     >
       <FormSection title={tx('Presented or submitted')} description={tx(
-        'Who received this report and when. The report file itself cannot be changed — this record is how the archive answers “what did the board see, and when?”.'
-      )}>
+        'Who received this report and when. The report file itself cannot be changed.'
+      )}
+        tips={[
+          tx('Record this as soon as the report has gone out, while you remember who was in the room.'),
+          tx('Name the body, not a person: “Board Risk Committee”, “NCA portal submission”.'),
+          tx('Put decisions and actions requested in the notes — regulators ask what management did with the report, not just that it existed.'),
+        ]}>
         <div className="fp-grid-2">
           <Field label={tx('Status')}>
             <SelectField className="w-full" value={f.status} onChange={(ev) => setF({ ...f, status: ev.target.value })} options={REPORT_STATUSES} />

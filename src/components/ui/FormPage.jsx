@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Lightbulb } from 'lucide-react'
 import { BackLink } from '@/components/ui/BackLink'
 import { Spinner } from '@/components/ui/Spinner'
 import { tx } from '@/lib/i18n'
@@ -47,16 +48,33 @@ export function FormPage({ title, description, meta, back, onSubmit, footer, not
   )
 }
 
-/* One titled part of a form. The description is where the page teaches: say
- * what the part is for and what a good answer looks like. */
-export function FormSection({ title, description, children }) {
+/* One titled part of a form, in three columns:
+ *   left   — what this part is and why it exists
+ *   middle — the fields
+ *   right  — `tips`: how to do it well, as short points, plus an optional note
+ *
+ * RISYS is new to the people using it and much of this work (audit testing,
+ * ECC mapping, incident classification) is unfamiliar, so the guidance sits
+ * beside the field it is about rather than in a manual nobody opens.
+ *
+ *   <FormSection title description tips={['…', '…']} note="…">
+ */
+export function FormSection({ title, description, tips, note, tipsTitle, children }) {
+  const hasTips = (tips && tips.length > 0) || note
   return (
-    <section className="fp-section">
+    <section className={`fp-section${hasTips ? '' : ' no-tips'}`}>
       <div>
         <h2 className="fp-section-title">{title}</h2>
         {description && <p className="fp-section-desc">{description}</p>}
       </div>
       <div className="fp-fields">{children}</div>
+      {hasTips && (
+        <aside className="fp-tips">
+          <p className="fp-tips-head"><Lightbulb size={12} aria-hidden="true" />{tipsTitle || tx('How to do this well')}</p>
+          {tips?.length > 0 && <ul>{tips.map((t, i) => <li key={i}>{t}</li>)}</ul>}
+          {note && <p className="fp-tips-note">{note}</p>}
+        </aside>
+      )}
     </section>
   )
 }

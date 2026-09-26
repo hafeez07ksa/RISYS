@@ -6,7 +6,10 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { OAuthCallbackPage } from '@/features/auth/OAuthCallbackPage'
 import { AcceptInvitePage } from '@/features/auth/AcceptInvitePage'
 import { PlatformLoginPage } from '@/features/platform/PlatformLoginPage'
-import { PlatformConsolePage } from '@/features/platform/PlatformConsolePage'
+import { PlatformOverviewPage } from '@/features/platform/PlatformOverviewPage'
+import { PlatformCompaniesPage } from '@/features/platform/PlatformCompaniesPage'
+import { PlatformStaffPage } from '@/features/platform/PlatformStaffPage'
+import { PlatformActivityPage } from '@/features/platform/PlatformActivityPage'
 import { PlatformCompanyPage } from '@/features/platform/PlatformCompanyPage'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { IncidentsPage } from '@/features/incidents/IncidentsPage'
@@ -43,7 +46,10 @@ import { RaiseIncidentPage } from '@/features/incidents/RaiseIncidentPage'
 import { EscalateIncidentPage } from '@/features/incidents/EscalateIncidentPage'
 import { ControlFormPage } from '@/features/controls/ControlFormPage'
 import { InvitePage } from '@/features/people/InvitePage'
-import { CreateCompanyPage, CompanyLimitsPage, CompanyActivationPage } from '@/features/platform/PlatformFormPages'
+import {
+  CreateCompanyPage, CompanyProfilePage, CompanyLimitsPage,
+  CompanyActivationPage, CompanySuspendPage, CompanyDeletePage,
+} from '@/features/platform/PlatformFormPages'
 import { GenerateReportPage } from '@/features/reports/GenerateReportPage'
 import { RecordPresentationPage } from '@/features/reports/RecordPresentationPage'
 import { EngagementFormPage } from '@/features/audits/EngagementFormPage'
@@ -70,11 +76,20 @@ export const router = createBrowserRouter([
   { path: '/oauth/callback', element: <OAuthCallbackPage /> },
   { path: '/invite/:token', element: <AcceptInvitePage /> },
   { path: '/platform/login', element: <PlatformLoginPage /> },
-  { path: '/platform', element: <PlatformConsolePage /> },
+  // ── Platform console (RISYS staff only) ──
+  // Gated by platform_admins; every RPC behind these pages re-checks in the
+  // database, and writes to the append-only platform_audit_log.
+  { path: '/platform',            element: <PlatformOverviewPage /> },
+  { path: '/platform/companies',  element: <PlatformCompaniesPage /> },
   { path: '/platform/companies/new', element: <CreateCompanyPage /> },
   { path: '/platform/companies/:id', element: <PlatformCompanyPage /> },
-  { path: '/platform/companies/:id/limits', element: <CompanyLimitsPage /> },
+  { path: '/platform/companies/:id/edit',       element: <CompanyProfilePage /> },
+  { path: '/platform/companies/:id/limits',     element: <CompanyLimitsPage /> },
   { path: '/platform/companies/:id/activation', element: <CompanyActivationPage /> },
+  { path: '/platform/companies/:id/suspend',    element: <CompanySuspendPage /> },
+  { path: '/platform/companies/:id/delete',     element: <CompanyDeletePage /> },
+  { path: '/platform/staff',      element: <PlatformStaffPage /> },
+  { path: '/platform/activity',   element: <PlatformActivityPage /> },
   {
     path: '/app',
     element: <AppLayout />,

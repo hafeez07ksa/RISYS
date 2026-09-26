@@ -79,15 +79,25 @@ export function OpinionPage() {
         <SubmitButton busy={busy} onClick={save}>{closing ? tx('Close engagement') : tx('Save opinion')}</SubmitButton>
       </>}
     >
-      <FormSection title={tx('The question')} description={tx('The opinion answers the objective set in the plan — nothing wider.')}>
+      <FormSection title={tx('The question')} description={tx('The opinion answers the objective set in the plan — nothing wider.')}
+        tips={[
+          tx('If this objective no longer matches what you tested, fix the plan before recording an opinion.'),
+          tx('The opinion may not go wider than this sentence — you cannot conclude on the whole of cybersecurity from an access-control audit.'),
+        ]}>
         <p className="rp-text" style={{ color: e.objective ? 'var(--text)' : 'var(--text-3)' }}>
           {e.objective || tx('No objective was written in the plan. Add one before closing, so the opinion has something to answer.')}
         </p>
       </FormSection>
 
       <FormSection title={tx('Opinion')} description={tx(
-        'Effective: the controls tested can be relied on. Partially effective: largely in place, but reported weaknesses need action. Ineffective: significant weaknesses — the controls cannot be relied on until fixed.'
-      )}>
+        'Your overall conclusion on the objective. Effective: the controls tested can be relied on. Partially effective: largely in place, but reported weaknesses need action. Ineffective: significant weaknesses until fixed.'
+      )}
+        tips={[
+          tx('Weigh the results, do not count them. One ineffective control over privileged access matters more than three low-rated gaps.'),
+          tx('Ask: could management rely on these controls tomorrow? If yes with fixes under way, partially effective. If no, ineffective.'),
+          tx('Be consistent with your findings. An “effective” opinion alongside a high-rated finding will be challenged, and should be.'),
+        ]}
+        note={tx('The opinion can be revised until the engagement is closed. After closing it is read-only.')}>
         <div role="radiogroup" aria-label={tx('Opinion')} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {OPINIONS.map((o) => {
             const on = opinion === o.value
@@ -110,8 +120,14 @@ export function OpinionPage() {
       </FormSection>
 
       <FormSection title={tx('Basis for the opinion')} description={tx(
-        'Two or three sentences a board member can read without the detail: what works, what does not, and what must change before the controls can be relied on.'
-      )}>
+        'The short explanation printed under the opinion in the report.'
+      )}
+        tips={[
+          tx('Two or three sentences a board member can read alone: what works, what does not, and what must change.'),
+          tx('Name the specific weaknesses and point to the finding references, so the reader can go deeper if they want.'),
+          tx('Avoid jargon. “MFA is not enforced for remote access” travels; “CA policy scope gap” does not.'),
+          tx('This paragraph is what makes your judgement checkable by someone who disagrees with it.'),
+        ]}>
         <Field label={tx('Basis')} required={closing}>
           <textarea className="risys-input" rows={5} value={summary} onChange={(ev) => setSummary(ev.target.value)}
             placeholder={tx('Privileged access is well controlled. MFA is registered by most users but is not enforced by policy, and 7 of 25 sampled accounts could sign in with a password alone. Until MFA is enforced for all users, identity controls cannot be fully relied on.')} />
@@ -120,8 +136,14 @@ export function OpinionPage() {
 
       {closing && (
         <FormSection title={tx('Before you close')} description={tx(
-          'Nothing here blocks closing — an auditor may close with items open and explain why. But each open point will show in the report.'
-        )}>
+          'What is still unfinished in this engagement.'
+        )}
+        tips={[
+          tx('Nothing here blocks closing. An auditor may close with items open — but say why in the basis, because the report will show them.'),
+          tx('Untested or unreviewed items weaken the opinion most; settle those first if you can.'),
+          tx('Draft findings are excluded from the report. Issue them or delete them, rather than leaving them behind.'),
+        ]}
+        note={tx('After closing, generate the report again — the final report is the one without “Draft” on every page.')}>
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
             {checks.map((c) => (
               <li key={c.text} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 'var(--t-sm)', color: c.ok ? 'var(--text-2)' : 'var(--medium)' }}>

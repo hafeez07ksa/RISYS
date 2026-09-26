@@ -90,8 +90,13 @@ export function GenerateReportPage() {
           <a className="btn-primary" href={result.url} target="_blank" rel="noreferrer"><ExternalLink size={14} /> {tx('Open report')}</a>
         </>}>
         <FormSection title={tx('Filed')} description={tx(
-          'The archive keeps this file, the data it was built from and its fingerprint. It cannot be edited or deleted. Use Verify in the archive at any time to prove the file is unchanged.'
-        )}>
+          'This report is now in the archive, with the data it was built from.'
+        )}
+        tips={[
+          tx('The archive keeps the file, the data it was built from and its fingerprint. It cannot be edited or deleted.'),
+          tx('Use Verify in the archive at any time to prove a copy someone holds is the one you issued.'),
+          tx('Record who it was presented to once it has gone out — that is what answers “what did the board see, and when?”.'),
+        ]}>
           <div className="flex" style={{ gap: 12, alignItems: 'flex-start' }}>
             <CheckCircle2 size={20} style={{ color: 'var(--low)', flexShrink: 0, marginTop: 2 }} />
             <div style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)', lineHeight: 1.7, minWidth: 0 }}>
@@ -119,7 +124,13 @@ export function GenerateReportPage() {
         <SubmitButton busy={!!stage} onClick={run}>{tx('Generate PDF')}</SubmitButton>
       </>}
     >
-      <FormSection title={tx('Report')} description={tx('Each report is written for a different reader. Pick the one for the audience you are preparing for.')}>
+      <FormSection title={tx('Report')} description={tx('Each report is written for a different reader. Pick the one for the audience you are preparing for.')}
+        tips={[
+          tx('Board pack: for the board or its risk committee — short, decision-focused, covering all of risk.'),
+          tx('ECC status: for a regulator, an external assessor or management — your position against every requirement.'),
+          tx('Audit report: one engagement’s opinion, findings and testing.'),
+          tx('Every report is built from the records as they are right now, so fix the data first, not the PDF afterwards.'),
+        ]}>
         {fixedType ? (
           <p className="rp-text">{DESCRIPTIONS[fixedType]}</p>
         ) : (
@@ -149,8 +160,13 @@ export function GenerateReportPage() {
 
       {type === 'board_pack' && (
         <FormSection title={tx('Reporting period')} description={tx(
-          'Incidents, risks raised and closed, and audit activity are counted for this period. Everything else — the register, compliance position, open findings — is as at today.'
-        )}>
+          'The window the board pack reports activity over.'
+        )}
+        tips={[
+          tx('Activity — incidents, risks raised and closed, audit work — is counted for this period.'),
+          tx('Positions — the register, compliance status, open findings — are always as at today, whatever period you pick.'),
+          tx('Keep to the same period each quarter so the board can compare one pack with the last.'),
+        ]}>
           <Field label={tx('Period')}>
             <SelectField className="w-full" value={periodKey} onChange={(ev) => setPeriodKey(ev.target.value)}
               options={[...quarters.map((q) => ({ value: q.value, label: q.long })), { value: 'custom', label: tx('Custom dates…') }]} />
@@ -166,8 +182,13 @@ export function GenerateReportPage() {
 
       {type === 'audit_report' && (
         <FormSection title={tx('Engagement')} description={tx(
-          'Draft findings are left out. An engagement that is not closed is marked “Draft” on every page — the final report is the one generated after closing.'
-        )}>
+          'Which engagement this report covers.'
+        )}
+        tips={[
+          tx('Draft findings are never included. Issue them first if they belong in the report.'),
+          tx('Generate a draft report before the closing meeting, and the final one after closing.'),
+          tx('An engagement that is not closed is marked “Draft” on every page — do not send that to a regulator.'),
+        ]}>
           {!fixedEngagement && (
             <Field label={tx('Engagement')}>
               <SelectField className="w-full" value={engagementId} onChange={(ev) => setEngagementId(ev.target.value)}

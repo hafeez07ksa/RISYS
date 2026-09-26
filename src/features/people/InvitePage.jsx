@@ -42,7 +42,12 @@ export function InvitePage() {
           <button className="btn-primary" onClick={back.onClick}>{tx('Done')}</button>
         </>}>
         {ok.length > 0 && (
-          <FormSection title={`${ok.length} ${tx('invitation(s) created')}`} description={tx('RISYS does not send email yet — send these links yourself from your own mailbox.')}>
+          <FormSection title={`${ok.length} ${tx('invitation(s) created')}`} description={tx('RISYS does not send email yet — send these links yourself from your own mailbox.')}
+        tips={[
+          tx('Send each link from your own mailbox, to the address it was issued for.'),
+          tx('Links are single-use, expire after 7 days, and let the person set their own password — you never see it.'),
+          tx('Someone lost their link, or it expired? Issue a new one from the People page rather than sharing another person’s.'),
+        ]}>
             {ok.length > 1 && <div><CopyButton text={all} label={tx('Copy all links')} /></div>}
             {ok.map((r) => (
               <div key={r.email} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 'var(--r)', background: 'var(--surface)', border: '1px solid var(--border)' }}>
@@ -82,14 +87,25 @@ export function InvitePage() {
         </button>
       </>}
     >
-      <FormSection title={tx('Who')} description={tx('Paste one address or many, separated by commas or new lines. Duplicates are removed.')}>
+      <FormSection title={tx('Who')} description={tx('Paste one address or many, separated by commas or new lines. Duplicates are removed.')}
+        tips={[
+          tx('Use work addresses. The link only works for the exact address you enter here.'),
+          tx('Invite people as you need them rather than importing the whole company — every seat counts against your plan.'),
+        ]}>
         <Field label={tx('Email addresses')} required
           help={`${unique.length} ${tx('unique address(es)')}${dupes > 0 ? ` · ${dupes} ${tx('duplicate(s) removed')}` : ''}`}>
           <textarea className="risys-input" rows={6} value={emailsRaw} onChange={(e) => setEmailsRaw(e.target.value)} autoFocus
             placeholder={'sara@company.com\nahmed@company.com'} style={{ fontFamily: 'var(--font-mono)' }} />
         </Field>
       </FormSection>
-      <FormSection title={tx('Role')} description={tx('What they can do in this workspace. Everyone invited together gets the same role; it can be changed later on the People page.')}>
+      <FormSection title={tx('Role')} description={tx('What they can do in this workspace.')}
+        tips={[
+          tx('Give the least access that lets someone do their job; you can raise it later in a moment.'),
+          tx('Viewer is right for people who only need to read — auditors from outside, executives following progress.'),
+          tx('Keep administrators few. They can change roles, connectors and settings for everyone.'),
+          tx('Roles also decide audit rights: only the audit roles can test, review and issue findings.'),
+        ]}
+        note={tx('Everyone invited together gets the same role. Invite mixed groups in separate batches.')}>
         <div role="radiogroup" aria-label={tx('Role')} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {ROLES.map((r) => {
             const on = role === r.value

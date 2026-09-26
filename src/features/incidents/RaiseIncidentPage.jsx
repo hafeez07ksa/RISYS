@@ -51,7 +51,13 @@ export function RaiseIncidentPage() {
         <SubmitButton busy={busy} onClick={save}>{tx('Raise incident')}</SubmitButton>
       </>}
     >
-      <FormSection title={tx('What happened')} description={tx('Record what is known now; it can be updated as the investigation goes on. Note when it was noticed and what is affected.')}>
+      <FormSection title={tx('What happened')} description={tx('What is known right now. The record can be updated as the investigation goes on.')}
+        tips={[
+          tx('Raise it early. An incident record with partial facts beats a perfect one written next week.'),
+          tx('In the description, note when it was noticed, how, what is affected, and what has been done so far.'),
+          tx('Keep facts and speculation apart — say “under investigation” rather than guessing a cause.'),
+          tx('Name systems and accounts precisely; this record becomes the evidence of how you responded.'),
+        ]}>
         <Field label={tx('Title')} required>
           <input className="risys-input" value={form.title} onChange={set('title')} autoFocus placeholder={tx('e.g. Unauthorized access attempt on production server')} />
         </Field>
@@ -62,8 +68,15 @@ export function RaiseIncidentPage() {
       </FormSection>
 
       <FormSection title={tx('Classification')} description={tx(
-        'Severity sets the response deadline (SLA). NCA ECC 2-13 expects incidents to be classified; if personal data is affected, PDPL Art. 24 notification may apply within 72 hours.'
-      )}>
+        'How serious this is, where it stands, and who is handling it. NCA ECC 2-13 expects incidents to be classified.'
+      )}
+        tips={[
+          tx('Severity sets the response deadline, so classify on impact, not on how loud the reporter was.'),
+          tx('Critical or high: live attacker, data loss, or a system the business stops without. Medium: contained, with a workaround. Low: no service or data impact.'),
+          tx('Raise the severity later if it turns out worse — do not start high “to be safe”, or the deadlines stop meaning anything.'),
+          tx('Assign one owner. Shared ownership is how incidents go quiet.'),
+        ]}
+        note={tx('Personal data possibly affected? PDPL Article 24 notification may apply within 72 hours — escalate immediately, do not wait for the investigation to finish.')}>
         <div className="fp-grid-2">
           <Field label={tx('Severity')} help={sla ? `${tx('Default response target')}: ${sla.label}` : undefined}>
             <SelectField className="w-full" value={form.severity} onChange={set('severity')} options={SEVERITIES.map((s) => ({ value: s.value, label: s.label }))} />

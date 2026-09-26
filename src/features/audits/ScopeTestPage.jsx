@@ -85,22 +85,36 @@ export function ScopeTestPage() {
         <SubmitButton busy={busy === 'save'} onClick={save}>{tx('Save result')}</SubmitButton>
       </> : <button className="btn-secondary" onClick={() => toTab('scope')}>{tx('Back to scope')}</button>}
     >
-      <FormSection title={tx('Criteria')} description={tx('What the control is tested against. The requirement text is the regulator’s own wording.')}>
+      <FormSection title={tx('Criteria')} description={tx('What the control is tested against. The requirement text is the regulator’s own wording.')}
+        tips={[
+          tx('Test against the wording shown here, not your memory of it — the sub-clauses often carry the real requirement.'),
+          tx('If the requirement does not apply to this organisation, use the Not applicable result and say why, rather than passing it.'),
+        ]}>
         {item.requirement_id
           ? <RequirementText reqs={reqs} id={item.requirement_id} framework={item.framework} />
           : <p className="rp-text" style={{ color: 'var(--text-3)' }}>{tx('Not tied to a framework requirement.')}</p>}
         {item.control && <p className="rp-text">{tx('Organisation control')}: {item.control.control_id ?? ''} {item.control.name}</p>}
       </FormSection>
 
-      <FormSection title={tx('Test procedure')} description={tx('What the tester did. If the plan changed during fieldwork, update it so the working papers match what was actually done.')}>
+      <FormSection title={tx('Test procedure')} description={tx('What the tester did. If the plan changed during fieldwork, update it so the working papers match what was actually done.')}
+        tips={[
+          tx('If the plan changed during fieldwork, update it here so the working papers match what was actually done.'),
+          tx('Never edit the procedure to match a result you have already found. That is the one change an external reviewer looks for.'),
+        ]}>
         <Field label={tx('Procedure')}>
           <textarea className="risys-input" rows={4} value={f.test_procedure} onChange={set('test_procedure')} disabled={!editable} />
         </Field>
       </FormSection>
 
       <FormSection title={tx('Sample')} description={tx(
-        'Population is everything the test could have picked from; sample is how many were checked; exceptions are the ones that failed. “7 of 25 failed” means something; “some failed” does not.'
-      )}>
+        'What you actually checked, in numbers. This is what turns an impression into a testable fact in the report.'
+      )}
+        tips={[
+          tx('Population is everything the test could have picked from — get it from a complete export, not a list someone hands you.'),
+          tx('Sample is how many you checked; exceptions are how many of those failed.'),
+          tx('“7 of 25 failed” can be argued with. “Some accounts failed” cannot be used at all.'),
+          tx('Tested the whole population? Put the same number in both boxes (61 of 61) so the report shows it was complete.'),
+        ]}>
         <div className="fp-grid-3">
           <Field label={tx('Population')}><input className="risys-input" type="number" min="0" value={f.population_size} onChange={set('population_size')} disabled={!editable} /></Field>
           <Field label={tx('Sample')}><input className="risys-input" type="number" min="0" value={f.sample_size} onChange={set('sample_size')} disabled={!editable} /></Field>
@@ -109,8 +123,15 @@ export function ScopeTestPage() {
       </FormSection>
 
       <FormSection title={tx('Result')} description={tx(
-        'Effective: no exceptions, or none that matter. Partially effective: the control works but with gaps. Ineffective: it does not achieve its purpose. Not applicable: the requirement does not apply here — say why.'
-      )}>
+        'Your conclusion on this one item, and the facts behind it. It feeds the numbers and the opinion in the audit report.'
+      )}
+        tips={[
+          tx('Effective: no exceptions, or none that matter. Partially effective: the control works with gaps. Ineffective: it does not achieve its purpose.'),
+          tx('Judge design and operation separately. A control nobody designed fails even if nothing has gone wrong yet.'),
+          tx('Few exceptions can still mean ineffective — if no policy enforces the control at all, the gap is in the design.'),
+          tx('Write the facts and the numbers in “What was found”; save the judgement for the finding.'),
+        ]}
+        note={tx('Changing the result clears any earlier review, because the reviewer approved the old conclusion.')}>
         <Field label={tx('Result')}>
           <SelectField className="w-full" value={f.result} onChange={set('result')} options={TEST_RESULTS} disabled={!editable} />
         </Field>
@@ -134,15 +155,25 @@ export function ScopeTestPage() {
       </FormSection>
 
       <FormSection title={tx('Working papers')} description={tx(
-        'The evidence behind the result: exports, screenshots, the sample list. Each file is fingerprinted (SHA-256) on upload so it can be shown later to be unchanged.'
-      )}>
+        'The evidence behind the result, kept with the engagement.'
+      )}
+        tips={[
+          tx('Attach what a stranger would need to reach your conclusion: the export, the screenshot, the sample list with your selections marked.'),
+          tx('Screenshots should show the system, the setting and the date — a cropped fragment proves little.'),
+          tx('Each file is fingerprinted (SHA-256) at upload, so it can be shown later to be unchanged.'),
+        ]}>
         <EvidenceList audit={audit} files={audit.files.filter((x) => x.scope_item_id === item.id)} locked={locked}
           canUpload={editable} onUpload={(file) => audit.uploadEvidence(file, { scopeItemId: item.id })} />
       </FormSection>
 
       <FormSection title={tx('Review')} description={tx(
-        'A second member of the audit team checks the work. RISYS does not allow the person who performed the test to review it.'
-      )}>
+        'The second pair of eyes on this test. Both names appear against the item in the audit report.'
+      )}
+        tips={[
+          tx('The reviewer checks that the evidence supports the result, the sample was drawn properly, and the procedure was followed.'),
+          tx('RISYS refuses a review by the person who tested — the report shows two names for every tested item.'),
+          tx('If the reviewer disagrees, fix the result or the evidence rather than the review.'),
+        ]}>
         <dl style={{ display: 'grid', gridTemplateColumns: '120px 1fr', rowGap: 8, margin: 0, fontSize: 'var(--t-sm)' }}>
           <dt style={{ color: 'var(--text-3)' }}>{tx('Tested by')}</dt>
           <dd style={{ margin: 0, color: 'var(--text)' }}>{item.tested_by ? `${personName(members, item.tested_by)}, ${fmtDateTime(item.tested_at)}` : '—'}</dd>
@@ -158,7 +189,11 @@ export function ScopeTestPage() {
       </FormSection>
 
       {editable && (
-        <FormSection title={tx('Remove from scope')} description={tx('Takes the item out of the engagement, with its test result and review.')}>
+        <FormSection title={tx('Remove from scope')} description={tx('Takes the item out of the engagement, with its test result and review.')}
+        tips={[
+          tx('Remove an item only if it should never have been in scope. If it was tested and failed, keep it and explain the result.'),
+          tx('Dropping items that produced bad results is scope manipulation, and the audit log records the removal.'),
+        ]}>
           <div>
             <InlineConfirm variant="panel" triggerClassName="btn-secondary"
               message={`${tx('Remove')} “${item.title}” ${tx('from scope?')}`}

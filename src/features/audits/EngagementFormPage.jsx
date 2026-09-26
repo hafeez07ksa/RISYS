@@ -90,8 +90,14 @@ export function EngagementFormPage() {
       </>}
     >
       <FormSection title={tx('Engagement')} description={tx(
-        'A short title the business will recognise, and the kind of audit. The framework decides which requirements can be put in scope.'
-      )}>
+        'What this engagement is called, what kind of audit it is, and who leads it.'
+      )}
+        tips={[
+          tx('Name it the way the business would: “Identity and access management controls review”, not “IAM audit 3”.'),
+          tx('Internal audit is your own assurance work. Use external or regulatory when the engagement records someone else’s visit, so their findings are tracked too.'),
+          tx('The framework decides which requirements you can put in scope and quote as criteria. Leave it unset only for an audit not tied to a framework.'),
+          tx('The lead auditor is accountable for the opinion; anyone in the audit team can still test.'),
+        ]}>
         <Field label={tx('Title')} required>
           <input className="risys-input" value={f.title} onChange={set('title')} autoFocus
                  placeholder={tx('e.g. Identity and access management controls review')} />
@@ -111,8 +117,14 @@ export function EngagementFormPage() {
       </FormSection>
 
       <FormSection title={tx('Objective')} description={tx(
-        'One sentence the audit will answer. The overall opinion at the end is the answer to exactly this question, so write it as something that can be concluded on.'
-      )}>
+        'The one question this audit will answer.'
+      )}
+        tips={[
+          tx('Write one question the audit can answer: “are the controls required by ECC 2-2 designed appropriately and operating effectively?”'),
+          tx('Keep it narrow enough to conclude on. “Review cybersecurity” cannot be answered; “assess access controls over the ERP finance module” can.'),
+          tx('The overall opinion at the end is the answer to exactly this sentence, so a vague objective produces a vague opinion.'),
+        ]}
+        note={tx('Agree the objective with the auditee before fieldwork starts. Changing it later invalidates tests already done.')}>
         <Field label={tx('Objective')}>
           <textarea className="risys-input" rows={3} value={f.objective} onChange={set('objective')}
                     placeholder={tx('To assess whether the controls required by NCA ECC 2-2 are designed appropriately and operating effectively.')} />
@@ -120,8 +132,14 @@ export function EngagementFormPage() {
       </FormSection>
 
       <FormSection title={tx('Scope and approach')} description={tx(
-        'Name the systems, sites and processes covered — and what is deliberately left out, so nobody reads the opinion as covering it. The approach says how evidence will be gathered.'
-      )}>
+        'What the audit covers, and how the evidence will be gathered.'
+      )}
+        tips={[
+          tx('Name the systems, sites and processes covered — be specific: “Entra ID tenant, ERP finance module, VPN”.'),
+          tx('Always write what is out of scope. It stops a reader assuming the opinion covers the warehouse systems or customer accounts.'),
+          tx('For the approach, name the techniques: inquiry (asking), observation (watching), inspection (reading records and settings), re-performance (doing the control yourself).'),
+          tx('Inquiry alone is the weakest evidence. Plan at least inspection for anything you intend to conclude on.'),
+        ]}>
         <Field label={tx('Scope')} help={tx('Systems, locations and processes in scope — and what is explicitly out of scope.')}>
           <textarea className="risys-input" rows={3} value={f.scope_summary} onChange={set('scope_summary')}
                     placeholder={tx('In scope: Microsoft Entra ID tenant, privileged access process, joiner-mover-leaver. Out of scope: on-premises Active Directory.')} />
@@ -133,8 +151,13 @@ export function EngagementFormPage() {
       </FormSection>
 
       <FormSection title={tx('Dates')} description={tx(
-        'The period under audit is the time the evidence must come from — for example the last quarter. Fieldwork is when the testing itself takes place.'
-      )}>
+        'The period the evidence must come from, and when the testing happens.'
+      )}
+        tips={[
+          tx('The period under audit is where evidence must come from — usually the last quarter or half-year. A control switched on after the period does not count for this audit.'),
+          tx('Fieldwork dates are when the testing happens. They usually start after the period ends.'),
+          tx('Pick a period long enough to see the control operate: a monthly review needs at least three months to test a sample.'),
+        ]}>
         <div className="fp-grid-2">
           <Field label={tx('Period under audit — from')}><DateField value={f.period_start} onChange={set('period_start')} /></Field>
           <Field label={tx('to')}><DateField value={f.period_end} onChange={set('period_end')} /></Field>

@@ -66,7 +66,12 @@ export function CreateTaskPage() {
         <SubmitButton busy={busy} onClick={save}>{tx('Create task')}</SubmitButton>
       </>}
     >
-      <FormSection title={tx('What needs doing')} description={tx('Write the title as an action someone can finish, and say in the description what “done” looks like.')}>
+      <FormSection title={tx('What needs doing')} description={tx('The work itself, written so anyone picking it up knows when it is finished.')}
+        tips={[
+          tx('Start the title with a verb and name the thing: “Enable MFA for the finance team”.'),
+          tx('Say in the description what “done” looks like, so nobody has to come back and ask.'),
+          tx('One task, one outcome. Break anything bigger into separate tasks with their own owners.'),
+        ]}>
         <Field label={tx('Title')} required>
           <input className="risys-input" value={form.title} onChange={set('title')} autoFocus placeholder={tx('e.g. Enable MFA for Ahmed Khan')} />
         </Field>
@@ -75,7 +80,12 @@ export function CreateTaskPage() {
         </Field>
       </FormSection>
 
-      <FormSection title={tx('Owner and timing')} description={tx('One person owns each task. The reminder notifies them before the due date.')}>
+      <FormSection title={tx('Owner and timing')} description={tx('Who does it, how urgent it is, and when it is due.')}
+        tips={[
+          tx('One owner. “The IT team” is not an owner.'),
+          tx('Set a due date even when it is approximate — tasks without dates are the ones that never close.'),
+          tx('The reminder should land with enough time to act, not on the deadline itself.'),
+        ]}>
         <div className="fp-grid-2">
           <Field label={tx('Priority')}>
             <SelectField className="w-full" value={form.priority} onChange={set('priority')} options={TASK_PRIORITIES.map((p) => ({ value: p.value, label: p.label }))} />

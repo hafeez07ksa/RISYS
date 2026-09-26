@@ -124,8 +124,14 @@ export function FindingFormPage() {
       </>}
     >
       <FormSection title={tx('Headline')} description={tx(
-        'The title states the problem, not the topic: “MFA is not enforced by policy”, not “MFA”. The rating says how much it matters.'
-      )}>
+        'What the reader sees first, in the findings table and the report summary.'
+      )}
+        tips={[
+          tx('State the problem, not the topic: “MFA is not enforced by policy”, not “Multi-factor authentication”.'),
+          tx('A reader who sees only the title should know what is wrong.'),
+          tx('High: significant exposure, needs prompt action. Medium: fix within the agreed plan. Low: limited exposure. Observation: advice, not a control failure.'),
+          tx('Rate the risk to the organisation, not how annoyed you are — ratings drive management’s priorities.'),
+        ]}>
         <Field label={tx('Title')} required>
           <input className="risys-input" value={f.title} onChange={set('title')} autoFocus placeholder={tx('e.g. MFA is not enforced by policy')} />
         </Field>
@@ -135,8 +141,14 @@ export function FindingFormPage() {
       </FormSection>
 
       <FormSection title={tx('Condition')} description={tx(
-        'What you found — facts only, with the numbers from the test. Someone who was not there should be able to check it.'
-      )}>
+        'What you found. The first of the five parts every audit finding is written in.'
+      )}
+        tips={[
+          tx('Facts only, with the numbers from your test: how many checked, how many failed, out of what population.'),
+          tx('No judgement words here — “7 of 25 accounts had no second factor”, not “access control is careless”.'),
+          tx('Include the date or period the facts relate to, so the finding still makes sense a year later.'),
+          tx('Everything here must be traceable to a working paper you can produce on request.'),
+        ]}>
         <Field label={tx('Condition — what we found')} required>
           <textarea className="risys-input" rows={4} value={f.condition} onChange={set('condition')}
                     placeholder={tx('7 of 25 sampled enabled accounts (28%) had no second authentication factor registered. No Conditional Access policy requires MFA for all users; the only policy in place covers administrators.')} />
@@ -144,8 +156,13 @@ export function FindingFormPage() {
       </FormSection>
 
       <FormSection title={tx('Criteria')} description={tx(
-        'What should be the case: the requirement, policy or standard the condition falls short of. The gap between condition and criteria is the finding.'
-      )}>
+        'What should be the case — the requirement, policy or standard the condition falls short of.'
+      )}
+        tips={[
+          tx('Quote the requirement or policy, do not paraphrase it. The gap between condition and criteria is the entire finding.'),
+          tx('Prefer the regulator’s text or the organisation’s own approved policy over general good practice — both are harder to argue with.'),
+          tx('If nothing requires it, you have an observation, not a finding.'),
+        ]}>
         {e.framework && (
           <Field label={`${e.framework} ${tx('requirement')}`}>
             <SelectField className="w-full" value={f.requirement_id} onChange={set('requirement_id')}
@@ -159,8 +176,14 @@ export function FindingFormPage() {
       </FormSection>
 
       <FormSection title={tx('Cause and effect')} description={tx(
-        'Cause is why it happened — fix the cause and the problem does not come back. Effect is why it matters: the risk to the organisation if nothing changes.'
-      )}>
+        'Why it happened, and what it means for the organisation if nothing changes.'
+      )}
+        tips={[
+          tx('Cause is why it happened, not who did it. Fix the cause and the problem stops coming back.'),
+          tx('Look past the obvious: “no owner assigned” and “the pilot scope was never widened” are causes; “staff forgot” rarely is.'),
+          tx('Effect is the business consequence if nothing changes — say what an attacker or an error could actually do.'),
+          tx('Effect is what gets the finding funded, so make it concrete rather than dramatic.'),
+        ]}>
         <Field label={tx('Cause')}>
           <textarea className="risys-input" rows={3} value={f.cause} onChange={set('cause')}
                     placeholder={tx('MFA was rolled out by invitation, not enforced by policy, and nobody owns tracking registration.')} />
@@ -172,8 +195,14 @@ export function FindingFormPage() {
       </FormSection>
 
       <FormSection title={tx('Recommendation')} description={tx(
-        'What management should do. Aim it at the cause, make it specific enough to check later, and leave the “how” to the people who run the system.'
-      )}>
+        'What management should do about it. You will re-test against this when validating the fix.'
+      )}
+        tips={[
+          tx('Aim it at the cause, not the symptom.'),
+          tx('Say what must be achieved and leave the “how” to the people who run the system.'),
+          tx('Make it specific enough that you can validate it later: “enforce MFA for all users by Conditional Access” can be re-tested.'),
+          tx('Do not design the fix in detail — if you build the control you cannot independently audit it.'),
+        ]}>
         <Field label={tx('Recommendation')} required>
           <textarea className="risys-input" rows={3} value={f.recommendation} onChange={set('recommendation')}
                     placeholder={tx('Enforce MFA for all users through a Conditional Access policy, and assign an owner to report registration coverage monthly.')} />
@@ -181,8 +210,14 @@ export function FindingFormPage() {
       </FormSection>
 
       <FormSection title={tx('Ownership')} description={tx(
-        'The manager who will answer for fixing it — they respond to the finding and report progress. Agree the due date with them; it is what “overdue” is measured against.'
-      )}>
+        'Who answers for the fix, and by when.'
+      )}
+        tips={[
+          tx('The owner is the manager who answers for the fix, not necessarily the person doing the work.'),
+          tx('Agree the date with them before you issue. A date you set alone is a date nobody meets.'),
+          tx('Link the test this came from so the report shows the evidence behind the finding.'),
+        ]}
+        note={tx('Drafts are visible only to the audit team. Issuing notifies the owner and puts the finding in the report.')}>
         <div className="fp-grid-2">
           <Field label={tx('Management owner')} required={isDraft}>
             <SelectField className="w-full" value={f.response_owner} onChange={set('response_owner')}

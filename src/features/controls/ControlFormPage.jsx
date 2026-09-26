@@ -77,7 +77,13 @@ export function ControlFormPage() {
         <SubmitButton busy={busy} onClick={save}>{editing ? tx('Save changes') : tx('Add control')}</SubmitButton>
       </>}
     >
-      <FormSection title={tx('The control')} description={tx('Name it by what it does, specifically enough that someone could test it.')}>
+      <FormSection title={tx('The control')} description={tx('What this control is and how it is implemented.')}
+        tips={[
+          tx('Name it by what it does and to what: “MFA enforced on all privileged accounts”.'),
+          tx('One control, one thing. If the name needs “and”, it is probably two controls.'),
+          tx('Write it so a tester could check it without asking you what you meant.'),
+          tx('In the description, say how it is implemented and where — the system, the policy, the schedule.'),
+        ]}>
         <Field label={tx('Control name')} required>
           <input className="risys-input" value={form.name} onChange={set('name')} autoFocus placeholder={tx('e.g. MFA enforced on all privileged accounts')} />
         </Field>
@@ -87,8 +93,14 @@ export function ControlFormPage() {
       </FormSection>
 
       <FormSection title={tx('How it operates')} description={tx(
-        'Preventive controls stop a problem, detective controls find it, corrective controls fix it. Frequency is how often the control runs. Effectiveness feeds the residual score of the risks it is mapped to.'
-      )}>
+        'How this control works and how much you can rely on it today.'
+      )}
+        tips={[
+          tx('Preventive stops a problem (MFA); detective finds it (log review); corrective fixes it (restore from backup); compensating covers for a control you cannot implement.'),
+          tx('Frequency is how often it runs. Continuous means enforced by the system rather than by someone remembering.'),
+          tx('Effectiveness lowers the residual score of every risk this control is mapped to, so do not rate it high until it has been tested.'),
+          tx('Automated controls fail less and are easier to evidence, but still need testing — a rule can be switched off.'),
+        ]}>
         <div className="fp-grid-2">
           <Field label={tx('Type')}><SelectField className="w-full" value={form.control_type} onChange={set('control_type')} options={CONTROL_TYPES} /></Field>
           <Field label={tx('Frequency')}><SelectField className="w-full" value={form.control_frequency} onChange={set('control_frequency')} options={CONTROL_FREQUENCIES} /></Field>
@@ -102,7 +114,12 @@ export function ControlFormPage() {
         </label>
       </FormSection>
 
-      <FormSection title={tx('Ownership and testing')} description={tx('The owner answers for the control working. The next test date is when it will be checked again; overdue tests are flagged.')}>
+      <FormSection title={tx('Ownership and testing')} description={tx('Who is accountable for it, and when it gets checked next.')}
+        tips={[
+          tx('The owner answers for the control working, and is who the auditor will ask.'),
+          tx('Pick a test date that matches the risk: quarterly for access controls, annually for a policy review.'),
+          tx('Overdue tests are flagged on the dashboard, so an empty date hides the control rather than helping it.'),
+        ]}>
         <div className="fp-grid-2">
           <Field label={tx('Owner')}>
             <SelectField className="w-full" value={form.owner_id} onChange={set('owner_id')}
@@ -112,7 +129,12 @@ export function ControlFormPage() {
         </div>
       </FormSection>
 
-      <FormSection title={tx('Framework reference')} description={tx('Optional. The clause this control primarily meets. Mappings to more clauses are made from Compliance.')}>
+      <FormSection title={tx('Framework reference')} description={tx('Optional. The clause this control primarily meets. Mappings to more clauses are made from Compliance.')}
+        tips={[
+          tx('Set the clause this control primarily meets. It is what lets the ECC status report show coverage.'),
+          tx('One control often serves several clauses — map the extra ones from Compliance, where a requirement can hold many controls.'),
+          tx('Leave it empty for controls that manage a business risk with no framework requirement behind it.'),
+        ]}>
         <ClausePickerField value={form.framework_ref} onChange={(ref) => setForm((f) => ({ ...f, framework_ref: ref }))} />
         <Field label={tx('Notes')}>
           <textarea className="risys-input" rows={3} value={form.notes} onChange={set('notes')} placeholder={tx('Implementation notes, testing guidance, or context…')} />

@@ -137,7 +137,7 @@ export function TriagePage() {
       </header>
 
       <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--s-5) var(--gutter) var(--s-10)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 300px', gap: 20, alignItems: 'start', maxWidth: 1180 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,340px)', gap: 'var(--s-6)', alignItems: 'start', maxWidth: 1560 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
             {/* The finding */}

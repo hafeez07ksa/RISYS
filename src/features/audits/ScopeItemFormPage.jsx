@@ -59,8 +59,14 @@ export function ScopeItemFormPage() {
       </>}
     >
       <FormSection title={tx('What is being tested')} description={tx(
-        'Pick the requirement the regulator sets, the control your organisation runs to meet it, or both. Testing a control against a requirement is the usual case.'
-      )}>
+        'The requirement, the control, or both — and how the item will be named in the report.'
+      )}
+        tips={[
+          tx('Usual case: pick both. The requirement is what the regulator demands; the control is what your organisation actually runs to meet it.'),
+          tx('One scope item should test one thing. If the requirement has several parts, add an item per part so each gets its own result.'),
+          tx('Requirements already in scope are marked in the list, so you do not test the same clause twice.'),
+          tx('The title is what appears in the report — keep it short and concrete: “MFA enforced for all users”.'),
+        ]}>
         {framework && (
           <Field label={`${framework} ${tx('requirement')}`}>
             <SelectField className="w-full" value={f.requirement_id} onChange={(ev) => pickReq(ev.target.value)}
@@ -80,8 +86,15 @@ export function ScopeItemFormPage() {
       </FormSection>
 
       <FormSection title={tx('Test procedure')} description={tx(
-        'Write the test before doing it, so it is planned rather than fitted to the result. Say which technique you will use — inquiry, inspection, observation or re-performance — what population you will sample from, and how many items.'
-      )}>
+        'How this item will be tested, written before the testing starts.'
+      )}
+        tips={[
+          tx('Write it before testing. A procedure written afterwards tends to describe whatever you happened to find.'),
+          tx('Say four things: the technique, the population, how many you will select, and what makes an item pass.'),
+          tx('Prefer testing the whole population when the data allows it (all leavers, all privileged accounts) — it is stronger than any sample.'),
+          tx('For samples, 25 items is a common starting point for a frequently operating control; choose them at random, not the convenient ones.'),
+        ]}
+        note={tx('A colleague should be able to repeat your test from this text alone and reach the same result.')}>
         <Field label={tx('Procedure')}>
           <textarea className="risys-input" rows={5} value={f.test_procedure} onChange={(ev) => setF({ ...f, test_procedure: ev.target.value })}
                     placeholder={tx('Obtain the list of all enabled user accounts. Select 25 at random. For each, inspect the registered authentication methods in Entra ID and confirm a second factor is registered and required by Conditional Access.')} />

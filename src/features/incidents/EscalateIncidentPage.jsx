@@ -79,7 +79,12 @@ export function EscalateIncidentPage() {
         <SubmitButton busy={busy} onClick={save}>{tx('Create risk')}</SubmitButton>
       </>}
     >
-      <FormSection title={tx('The risk')} description={tx('Describe the risk of this happening again or getting worse — not the incident itself, which stays on its own record.')}>
+      <FormSection title={tx('The risk')} description={tx('The ongoing risk this incident revealed. The incident itself stays on its own record.')}
+        tips={[
+          tx('An incident is what happened; a risk is the chance of it happening again. Write the risk, not a retelling.'),
+          tx('Escalate when the cause is systemic — a control that is missing or not working — rather than a one-off.'),
+          tx('Good form: “Customer data is exposed because privileged access is not reviewed” — cause and consequence in one line.'),
+        ]}>
         <Field label={tx('Risk title')} required>
           <input className="risys-input" value={form.title} onChange={(e) => set('title', e.target.value)} autoFocus />
         </Field>
@@ -87,7 +92,13 @@ export function EscalateIncidentPage() {
           <textarea className="risys-input" rows={4} value={form.description} onChange={(e) => set('description', e.target.value)} />
         </Field>
       </FormSection>
-      <FormSection title={tx('Starting score')} description={tx('Pre-filled from the incident’s severity. It is a starting point; the full assessment happens on the risk.')}>
+      <FormSection title={tx('Starting score')} description={tx('Pre-filled from the incident’s severity. It is a starting point; the full assessment happens on the risk.')}
+        tips={[
+          tx('Likelihood is how often this could happen in a year; impact is the damage if it does.'),
+          tx('These are inherent scores: before controls. The residual score comes from the controls you map to the risk.'),
+          tx('Pre-filled from the incident severity — treat it as a starting point and reassess properly on the risk itself.'),
+        ]}
+        note={tx('The risk is created as a draft for its owner to assess and submit.')}>
         <div className="fp-grid-2">
           <Field label={tx('Likelihood (1–5)')}>
             <SelectField className="w-full" value={form.inherent_likelihood} onChange={(e) => set('inherent_likelihood', Number(e.target.value))} options={SCALE} />

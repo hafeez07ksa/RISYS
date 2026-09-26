@@ -47,8 +47,14 @@ export function RequestFormPage() {
       </>}
     >
       <FormSection title={tx('What is needed')} description={tx(
-        'Be exact, so the first answer is the right one: the system it comes from, the format, the period it must cover and the population it must include. Vague requests produce evidence that cannot be tested.'
-      )}>
+        'What you are asking the business to provide, and in what form.'
+      )}
+        tips={[
+          tx('Say the system, the format, the period covered and the population it must include. Vague requests come back unusable.'),
+          tx('Ask for the complete population, not a sample — you choose the sample yourself, or it is not random.'),
+          tx('Ask for exports rather than summaries typed by the owner; you are testing the system, not their spreadsheet.'),
+          tx('Say explicitly when you need things that are switched off or empty (disabled policies, users with no roles) — people leave them out.'),
+        ]}>
         <Field label={tx('Request')} required>
           <input className="risys-input" value={f.title} onChange={set('title')} autoFocus placeholder={tx('e.g. Export of Conditional Access policies')} />
         </Field>
@@ -63,8 +69,14 @@ export function RequestFormPage() {
       </FormSection>
 
       <FormSection title={tx('Who and when')} description={tx(
-        'Ask the person who owns the system or process, not whoever is easiest to reach. A due date lets RISYS show the request as overdue.'
-      )}>
+        'Who provides it, and by when.'
+      )}
+        tips={[
+          tx('Ask the person who owns the system or process, not whoever answers fastest.'),
+          tx('Tie the request to its scope item so the files land with that test’s working papers.'),
+          tx('Give a due date that leaves room to test — evidence arriving on the last day of fieldwork cannot be followed up.'),
+        ]}
+        note={tx('The person asked is notified and answers from their own Audits page; you accept the evidence or return it saying what is missing.')}>
         <div className="fp-grid-2">
           <Field label={tx('Asked of')} required>
             <SelectField className="w-full" value={f.requested_from} onChange={set('requested_from')}

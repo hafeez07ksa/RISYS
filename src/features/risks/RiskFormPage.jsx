@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Info, Check, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Info, Check, AlertTriangle, Lightbulb } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useRisks } from '@/hooks/useRisks'
 import { useAuth } from '@/hooks/useAuth'
@@ -32,7 +32,7 @@ import { tx } from '@/lib/i18n'
 // the detail page, after the gate has spoken.
 // ============================================================
 
-function Section({ step, title, hint, children }) {
+function Section({ step, title, hint, tips, note, children }) {
   return (
     <section style={{
       background: 'var(--bg-2)', border: '1px solid var(--border)',
@@ -50,7 +50,20 @@ function Section({ step, title, hint, children }) {
         </div>
         {hint && <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', marginTop: 5, paddingInlineStart: 28, maxWidth: 620 }}>{hint}</p>}
       </div>
-      <div style={{ padding: '18px' }}>{children}</div>
+      <div style={{
+        padding: '18px',
+        display: 'grid', gap: 'var(--s-6)',
+        gridTemplateColumns: tips ? 'minmax(0, 1fr) minmax(0, 320px)' : 'minmax(0, 1fr)',
+      }} className={tips ? 'rf-body' : undefined}>
+        {children}
+        {tips && (
+          <aside className="fp-tips">
+            <p className="fp-tips-head"><Lightbulb size={12} aria-hidden="true" />{tx('How to do this well')}</p>
+            <ul>{tips.map((x, i) => <li key={i}>{x}</li>)}</ul>
+            {note && <p className="fp-tips-note">{note}</p>}
+          </aside>
+        )}
+      </div>
     </section>
   )
 }
@@ -236,12 +249,19 @@ export function RiskFormPage() {
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--s-5) var(--gutter) var(--s-10)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: 20, alignItems: 'start', maxWidth: 1180 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 320px)', gap: 'var(--s-6)', alignItems: 'start', maxWidth: 1560 }}>
 
           {/* ── Form column ── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
             <Section step={1} title={tx('What is the risk?')}
+              tips={[
+                tx('Test your title: if it describes something already true, it is a finding, not a risk. A risk has not happened yet.'),
+                tx('Cause is a fact about today. Event is what could happen. Impact is the damage, in money, downtime, data or licence to operate.'),
+                tx('Write the impact so it can be sized. “Reputational damage” cannot be scored; “notifiable breach of 50,000 customer records” can.'),
+                tx('One risk per record. If the cause could lead to two very different events, that is two risks.'),
+              ]}
+              note={tx('Ends up in the register as a draft. A reviewer admits it before it is scored and gated.')}
               hint={tx(
                 'Write it as Cause → Event → Impact. “Weak passwords” is not a risk; it is a finding. A risk is testable: the cause is what you fix, the event is what you prevent, the impact is what you size.'
               )}>
@@ -291,6 +311,12 @@ export function RiskFormPage() {
             </Section>
 
             <Section step={2} title={tx('Classification')}
+              tips={[
+                tx('Category drives the heat maps and the board pack; pick the one the board would expect, not the most precise one.'),
+                tx('Business unit is what lets an owner filter to their own risks later — set it even when it feels obvious.'),
+                tx('Source records where the risk came from: an incident, an audit finding, a workshop, a regulator. It is the first thing a reviewer checks.'),
+                tx('Direction is your view of where this is heading, not where you want it to go.'),
+              ]}
               hint={tx(
                 'The category is not cosmetic — it selects which tolerance rules the gate will hold this risk to.'
               )}>
@@ -339,6 +365,12 @@ export function RiskFormPage() {
             </Section>
 
             <Section step={3} title={tx('Inherent assessment')}
+              tips={[
+                tx('Inherent means before controls — score it as if nothing were in place. Controls come later and produce the residual score.'),
+                tx('Likelihood is how often this could happen in a year; impact is the damage if it does.'),
+                tx('Score against the organisation’s scales, not your instinct. Everyone scoring their own risk a 3 makes the register useless.'),
+                tx('When torn between two values, take the higher and write why in the context field.'),
+              ]}
               hint={tx(
                 'Rate as if no controls existed. The question is not “how bad is it today” but “how bad is this class of exposure by nature”. Controls are credited later, in the residual score.'
               )}>
@@ -355,6 +387,12 @@ export function RiskFormPage() {
             </Section>
 
             <Section step={4} title={tx('Accountability and cadence')}
+              tips={[
+                tx('The owner is accountable for the outcome and signs off scores — senior enough to direct the fix, close enough to know the detail.'),
+                tx('Owner and assignee should usually be different people: one answers for it, the other does the work.'),
+                tx('The reviewer is second line and cannot be the owner — that separation is what makes the register credible.'),
+                tx('Review frequency should match the score: high risks monthly or quarterly, low risks annually.'),
+              ]}
               hint={tx(
                 'Four separate roles, deliberately. If the person fixing a risk is also the person confirming it is fixed, there is no independent accountability — and an auditor will say so.'
               )}>
