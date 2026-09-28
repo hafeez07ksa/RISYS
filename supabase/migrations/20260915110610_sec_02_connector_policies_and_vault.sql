@@ -1,13 +1,11 @@
 -- V5: remove permissive member policies; only org admins (and service role) touch connector rows
--- V4: OAuth tokens live in Vault, reachable only by the service role
--- Applied to project cfyjfmlhquyxgwrekswe on 2026-09-15.
-
 drop policy if exists connectors_select on public.org_connectors;
 drop policy if exists connectors_insert on public.org_connectors;
 drop policy if exists connectors_update on public.org_connectors;
 drop policy if exists connectors_delete on public.org_connectors;
 -- remaining: org_connectors_admin (ALL, authenticated, is_org_admin(org_id))
 
+-- V4: OAuth tokens live in Vault, reachable only by the service role
 create or replace function public.connector_secret_set(p_org uuid, p_connector text, p_secret jsonb)
 returns void
 language plpgsql
@@ -98,3 +96,4 @@ update public.org_connectors
    set meta = meta - 'access_token' - 'refresh_token' - 'id_token'
                    - 'expires_at' - 'expires_in' - 'token_type'
  where meta ?| array['access_token','refresh_token','id_token'];
+;

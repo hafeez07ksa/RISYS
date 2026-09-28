@@ -1,17 +1,24 @@
 {
   "name": "risys",
   "version": "0.1.0",
-  "description": "RISYS — Risk Intelligence System. Automated GRC for Saudi regulatory frameworks.",
+  "description": "RISYS \u2014 Risk Intelligence System. Automated GRC for Saudi regulatory frameworks.",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
+    "build": "npm run build:app && npm run build:console",
+    "build:app": "vite build --mode app --outDir dist/app && node scripts/postbuild.mjs app",
+    "build:console": "vite build --mode console --outDir dist/console && node scripts/postbuild.mjs console",
+    "preview:app": "vite preview --outDir dist/app",
+    "preview:console": "vite preview --outDir dist/console",
+    "deploy:app": "npm run build:app && wrangler deploy -c wrangler.app.jsonc",
+    "deploy:console": "npm run build:console && wrangler deploy -c wrangler.console.jsonc",
+    "deploy": "npm run deploy:app && npm run deploy:console",
     "lint": "eslint src --ext .js,.jsx",
-    "test:gate": "node tools/gate-check.mjs",
+    "test:gate": "node --import ./tools/alias-loader.mjs tools/gate-check.mjs",
     "check:rtl": "node tools/check-logical-css.mjs",
-    "check:i18n": "node tools/i18n-coverage.mjs"
+    "check:i18n": "node tools/i18n-coverage.mjs",
+    "check": "npm run check:rtl && npm run test:gate"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.9.0",
@@ -34,6 +41,7 @@
     "eslint-plugin-react-hooks": "^4.6.2",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
-    "vite": "^5.2.11"
+    "vite": "^5.2.11",
+    "wrangler": "^4.42.0"
   }
 }

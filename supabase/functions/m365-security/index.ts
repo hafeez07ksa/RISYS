@@ -40,8 +40,7 @@
 //     `sharingCapability` field Graph does not return on /sites. Site and file
 //     exposure belongs to sharepoint-security, which reads it properly.
 import {
-  adminClient, corsHeaders, errorResponse, getMicrosoftAppToken, HttpError, json, requireOrgAccess,
-} from '../_shared/auth.ts'
+  adminClient, corsHeaders, errorResponse, getMicrosoftAppToken, HttpError, json, requireOrgAccess, serveWithCors } from '../_shared/auth.ts'
 import {
   GRAPH, graphGetAll, Json, mapLimit, SourceError, SourceResult, sourceFailure,
 } from '../_shared/graph.ts'
@@ -107,8 +106,7 @@ const MICROSOFT_TENANTS = new Set([
   '72f988bf-86f1-41af-91ab-2d7cd011db47',   // Microsoft Corporation
 ])
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+serveWithCors(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   const supabase = adminClient()

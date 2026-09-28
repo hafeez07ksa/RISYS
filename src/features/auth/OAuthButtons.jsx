@@ -1,3 +1,4 @@
+import { APP_URL } from '@/lib/env'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { tx } from '@/lib/i18n'
@@ -48,7 +49,7 @@ export function OAuthButtons({ redirectTo, dividerLabel = 'or' }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: p.id,
       options: {
-        redirectTo: redirectTo || `${window.location.origin}/app/dashboard`,
+        redirectTo: redirectTo || `${APP_URL}/app/dashboard`,
         ...p.options,
       },
     })

@@ -1,16 +1,12 @@
 import { createBrowserRouter, Navigate, useParams } from 'react-router-dom'
+import { BUILD_MODE } from '@/lib/env'
+import { consoleRoutes } from './consoleRoutes'
 import { AppLayout } from '@/layouts/AppLayout'
 import { RequireRole } from '@/layouts/RequireRole'
 import { ROLE_SETS } from '@/lib/roles'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { OAuthCallbackPage } from '@/features/auth/OAuthCallbackPage'
 import { AcceptInvitePage } from '@/features/auth/AcceptInvitePage'
-import { PlatformLoginPage } from '@/features/platform/PlatformLoginPage'
-import { PlatformOverviewPage } from '@/features/platform/PlatformOverviewPage'
-import { PlatformCompaniesPage } from '@/features/platform/PlatformCompaniesPage'
-import { PlatformStaffPage } from '@/features/platform/PlatformStaffPage'
-import { PlatformActivityPage } from '@/features/platform/PlatformActivityPage'
-import { PlatformCompanyPage } from '@/features/platform/PlatformCompanyPage'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { IncidentsPage } from '@/features/incidents/IncidentsPage'
 import { IncidentDetailPage } from '@/features/incidents/IncidentDetailPage'
@@ -46,10 +42,6 @@ import { RaiseIncidentPage } from '@/features/incidents/RaiseIncidentPage'
 import { EscalateIncidentPage } from '@/features/incidents/EscalateIncidentPage'
 import { ControlFormPage } from '@/features/controls/ControlFormPage'
 import { InvitePage } from '@/features/people/InvitePage'
-import {
-  CreateCompanyPage, CompanyProfilePage, CompanyLimitsPage,
-  CompanyActivationPage, CompanySuspendPage, CompanyDeletePage,
-} from '@/features/platform/PlatformFormPages'
 import { GenerateReportPage } from '@/features/reports/GenerateReportPage'
 import { RecordPresentationPage } from '@/features/reports/RecordPresentationPage'
 import { EngagementFormPage } from '@/features/audits/EngagementFormPage'
@@ -68,28 +60,23 @@ function EngagementTab({ tab }) {
   return <Navigate to={`/app/audits/${id}?tab=${tab}`} replace />
 }
 
-export const router = createBrowserRouter([
-  { path: '/', element: <Navigate to="/app/dashboard" replace /> },
+/* Which half of the product this build serves. Vite replaces the env var with
+ * a literal at build time, so the unused branch — and everything it imports —
+ * is removed from the bundle entirely. */
+const WITH_APP = BUILD_MODE === 'app' || BUILD_MODE === 'all'
+const WITH_CONSOLE = BUILD_MODE === 'console' || BUILD_MODE === 'all'
+
+/* On the console host, "/" goes to the console; on the tenant host, to the app. */
+const ROOT = WITH_APP
+  ? { path: '/', element: <Navigate to="/app/dashboard" replace /> }
+  : { path: '/', element: <Navigate to="/platform" replace /> }
+
+const appRoutes = [
   { path: '/login', element: <LoginPage /> },
   { path: '/signup', element: <Navigate to="/login" replace /> },
   { path: '/onboarding', element: <Navigate to="/login" replace /> },
   { path: '/oauth/callback', element: <OAuthCallbackPage /> },
   { path: '/invite/:token', element: <AcceptInvitePage /> },
-  { path: '/platform/login', element: <PlatformLoginPage /> },
-  // ── Platform console (RISYS staff only) ──
-  // Gated by platform_admins; every RPC behind these pages re-checks in the
-  // database, and writes to the append-only platform_audit_log.
-  { path: '/platform',            element: <PlatformOverviewPage /> },
-  { path: '/platform/companies',  element: <PlatformCompaniesPage /> },
-  { path: '/platform/companies/new', element: <CreateCompanyPage /> },
-  { path: '/platform/companies/:id', element: <PlatformCompanyPage /> },
-  { path: '/platform/companies/:id/edit',       element: <CompanyProfilePage /> },
-  { path: '/platform/companies/:id/limits',     element: <CompanyLimitsPage /> },
-  { path: '/platform/companies/:id/activation', element: <CompanyActivationPage /> },
-  { path: '/platform/companies/:id/suspend',    element: <CompanySuspendPage /> },
-  { path: '/platform/companies/:id/delete',     element: <CompanyDeletePage /> },
-  { path: '/platform/staff',      element: <PlatformStaffPage /> },
-  { path: '/platform/activity',   element: <PlatformActivityPage /> },
   {
     path: '/app',
     element: <AppLayout />,
@@ -217,4 +204,12 @@ export const router = createBrowserRouter([
       },
     ],
   },
+]
+
+export const router = createBrowserRouter([
+  ROOT,
+  ...(WITH_APP ? appRoutes : []),
+  ...(WITH_CONSOLE ? consoleRoutes : []),
+  // Anything else on either host returns to that host's home.
+  { path: '*', element: <Navigate to="/" replace /> },
 ])

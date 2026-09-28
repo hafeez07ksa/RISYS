@@ -1,7 +1,7 @@
 // oauth-exchange — server-side authorization-code exchange for secret-holding connectors.
 // V6: caller must be an admin of orgId (previously anyone could overwrite any org's connection).
 // V4: tokens go to Vault via connector_secret_set; org_connectors.meta never holds tokens.
-import { adminClient, corsHeaders, errorResponse, HttpError, json, requireOrgRole } from '../_shared/auth.ts'
+import { adminClient, corsHeaders, errorResponse, HttpError, json, requireOrgRole, serveWithCors } from '../_shared/auth.ts'
 
 const CONNECTOR_CONFIGS: Record<string, { tokenUrl: string; clientIdEnv: string; clientSecretEnv: string }> = {
   jira:   { tokenUrl: 'https://auth.atlassian.com/oauth/token',  clientIdEnv: 'JIRA_CLIENT_ID',   clientSecretEnv: 'JIRA_CLIENT_SECRET' },
@@ -10,8 +10,7 @@ const CONNECTOR_CONFIGS: Record<string, { tokenUrl: string; clientIdEnv: string;
   slack:  { tokenUrl: 'https://slack.com/api/oauth.v2.access',   clientIdEnv: 'SLACK_CLIENT_ID',  clientSecretEnv: 'SLACK_CLIENT_SECRET' },
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+serveWithCors(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   try {

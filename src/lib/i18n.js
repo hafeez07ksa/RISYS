@@ -67,6 +67,9 @@ export function appLocale() {
 }
 
 function applyToDocument(lng) {
+  // Node has no DOM: tools/gate-check.mjs runs the gate engine, which imports
+  // tx() from here, with no browser present.
+  if (typeof document === 'undefined') return
   const el = document.documentElement
   el.lang = lng
   el.dir = LANGUAGES[lng]?.dir || 'ltr'

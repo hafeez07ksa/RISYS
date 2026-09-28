@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
+import { inviteUrl } from '@/lib/env'
 
 /* Platform console data layer.
  *
@@ -130,4 +131,5 @@ export function useCompany(orgId) {
   return { detail, loading, error, reload: load }
 }
 
-export const activationLink = (token) => `${window.location.origin}/invite/${token}`
+// Generated in the console, opened by the client: always the tenant app's URL.
+export const activationLink = (token) => inviteUrl(token)

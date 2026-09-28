@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { inviteUrl } from '@/lib/env'
 import { useAuth } from './useAuth'
 import { isAdminRole } from '@/lib/roles'
 
@@ -14,7 +15,7 @@ export function invitationState(inv) {
 }
 
 export function inviteLink(inv) {
-  return `${window.location.origin}/invite/${inv.token}`
+  return inviteUrl(inv.token)
 }
 
 export function usePeople() {

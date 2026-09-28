@@ -18,8 +18,7 @@
 // finding never fired. It now comes from users?$select=signInActivity, with a
 // fallback to the sign-in logs for tenants where that property is not available.
 import {
-  adminClient, corsHeaders, errorResponse, getMicrosoftAppToken, HttpError, json, requireOrgAccess,
-} from '../_shared/auth.ts'
+  adminClient, corsHeaders, errorResponse, getMicrosoftAppToken, HttpError, json, requireOrgAccess, serveWithCors } from '../_shared/auth.ts'
 import { GRAPH, graphGetAll, Json, mapLimit, SourceError, SourceResult, sourceFailure } from '../_shared/graph.ts'
 
 const CONNECTOR = 'entra'
@@ -38,8 +37,7 @@ const USER_SELECT =
   'id,userPrincipalName,displayName,givenName,surname,mail,jobTitle,department,officeLocation,' +
   'mobilePhone,accountEnabled,userType,createdDateTime'
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+serveWithCors(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   const supabase = adminClient()

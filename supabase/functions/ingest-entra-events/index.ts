@@ -2,7 +2,7 @@
 // V3 fix: previously had no authentication at all.
 // Requires header  x-risys-token: <per-tenant ingest token for connector "entra">
 // and ?org_id=<uuid>. Fails closed when no token has been issued.
-import { adminClient, corsHeaders, isUuid, json, verifyIngestToken } from '../_shared/auth.ts'
+import { adminClient, corsHeaders, isUuid, json, verifyIngestToken, serveWithCors } from '../_shared/auth.ts'
 
 function mapRiskToSeverity(riskLevel: string, failureReason?: string): string {
   if (riskLevel === 'high') return 'critical'
@@ -23,8 +23,7 @@ function shouldCreateIncident(event: any): boolean {
 
 const MAX_EVENTS = 500
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+serveWithCors(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   try {

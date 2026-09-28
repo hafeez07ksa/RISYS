@@ -1,0 +1,17 @@
+{
+  // Tenant application → app.risysgrc.com
+  //   npm run build:app && npx wrangler deploy -c wrangler.app.jsonc
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "risys-app",
+  "compatibility_date": "2026-09-26",
+  "assets": {
+    "directory": "./dist/app/",
+    // React Router owns the URLs, so any unmatched navigation must return
+    // index.html rather than a 404.
+    "not_found_handling": "single-page-application"
+  },
+  "routes": [
+    { "pattern": "app.risysgrc.com", "custom_domain": true }
+  ],
+  "observability": { "enabled": true }
+}

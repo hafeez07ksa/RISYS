@@ -3,10 +3,9 @@
 // V4: Jira token read from Vault (refreshed server-side when near expiry).
 // V2: the webhook URL carries a freshly issued per-tenant ingest token; ingest-incident
 //     additionally verifies Jira's HS256 JWT. Re-registering rotates the token.
-import { adminClient, corsHeaders, errorResponse, getJiraAccessToken, HttpError, json, requireOrgRole } from '../_shared/auth.ts'
+import { adminClient, corsHeaders, errorResponse, getJiraAccessToken, HttpError, json, requireOrgRole, serveWithCors } from '../_shared/auth.ts'
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+serveWithCors(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   try {

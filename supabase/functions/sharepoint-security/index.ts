@@ -24,8 +24,7 @@
 // (errors were ignored), only looked at top-level files, and read app
 // permissions (/sites/{id}/permissions) as if they were guest users.
 import {
-  adminClient, corsHeaders, errorResponse, getMicrosoftAppToken, HttpError, json, requireOrgAccess,
-} from '../_shared/auth.ts'
+  adminClient, corsHeaders, errorResponse, getMicrosoftAppToken, HttpError, json, requireOrgAccess, serveWithCors } from '../_shared/auth.ts'
 import {
   fetchWithRetry, GRAPH, graphGet, graphGetAll, Json, mapLimit, SourceError, SourceResult, sourceFailure,
 } from '../_shared/graph.ts'
@@ -58,8 +57,7 @@ const PDPL = {
 }
 const withPdpl = (ecc: string, ...pdpl: string[]) => [ecc, ...pdpl].join(' | ')
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+serveWithCors(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   const supabase = adminClient()

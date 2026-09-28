@@ -3,10 +3,57 @@
 // asserts active-organisation membership (and role) before touching data.
 import { createClient, type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2'
 
+/* ── CORS ────────────────────────────────────────────────────────────────────
+ * These functions are called from the browser with the caller's session token,
+ * so the origin that may read their responses is restricted to the RISYS
+ * front ends. ALLOWED_ORIGINS overrides the default list without a code change
+ * (comma-separated), which is how preview deployments are permitted.
+ *
+ * Note this is not the security boundary: every function still verifies the
+ * JWT and org membership. CORS only stops another website from reading a
+ * response using a visitor's logged-in session.
+ */
+const DEFAULT_ORIGINS = [
+  'https://app.risysgrc.com',
+  'https://console.risysgrc.com',
+  'http://localhost:5173',
+]
+
+const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') ?? '')
+  .split(',').map((o) => o.trim()).filter(Boolean)
+
+const allowList = ALLOWED_ORIGINS.length ? ALLOWED_ORIGINS : DEFAULT_ORIGINS
+
+/* Headers common to every response. No Access-Control-Allow-Origin here: it is
+ * added per request, only when the origin is on the list. */
 export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-risys-token',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Vary': 'Origin',
+}
+
+export function corsFor(req: Request): Record<string, string> {
+  const origin = req.headers.get('Origin')
+  // No Origin header means a server-to-server call (Jira webhooks, cron,
+  // scan-dispatcher). Those are unaffected by CORS and need no allow header.
+  if (origin && allowList.includes(origin)) {
+    return { ...corsHeaders, 'Access-Control-Allow-Origin': origin }
+  }
+  return corsHeaders
+}
+
+/* Wraps Deno.serve so every response carries the right CORS headers and the
+ * preflight is answered in one place. Functions call this instead of
+ * Deno.serve; the handler itself is unchanged. */
+export function serveWithCors(handler: (req: Request) => Response | Promise<Response>): void {
+  Deno.serve(async (req) => {
+    const cors = corsFor(req)
+    if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+    const res = await handler(req)
+    const headers = new Headers(res.headers)
+    for (const [k, v] of Object.entries(cors)) headers.set(k, v)
+    return new Response(res.body, { status: res.status, statusText: res.statusText, headers })
+  })
 }
 
 export class HttpError extends Error {

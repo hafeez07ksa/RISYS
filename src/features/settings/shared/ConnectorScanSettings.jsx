@@ -11,6 +11,9 @@ import {
   useConnectorScans, SCAN_INTERVALS, formatRelative, isActiveRun, runStatus,
 } from '@/hooks/useConnectorScans'
 import { SourceStatePill, SOURCE_LABELS } from '@/features/findings/ScanHealth'
+import { InlineConfirm } from '@/components/ui/InlineConfirm'
+import { useConnectors } from '@/hooks/useConnectors'
+import { CONNECTORS } from '@/lib/constants'
 import { tx, appLocale } from '@/lib/i18n'
 
 const STATUS_STYLE = {
@@ -148,8 +151,67 @@ export function ConnectorScanSettings({
             <ScanSourcesCard connectorId={connectorId} accent={accent} sources={sources} lastCompletedRun={lastCompletedRun} />
             <ScanScheduleCard scans={scansApi} isAdmin={isAdmin} onMessage={setMsg} />
             <ScanHistoryCard runs={runs} openTotal={openTotal} changes={changes} />
+            {isAdmin && <DisconnectCard connectorId={connectorId} title={title} />}
           </>
         )}
+      </div>
+    </div>
+  )
+}
+
+/* Danger zone, shared by every scan-based connector.
+ *
+ * M365, Defender and SharePoint hold no connection of their own: all three run
+ * on the Microsoft Entra ID token (piggybacksOn: 'entra' in lib/constants).
+ * Disconnecting "M365" would therefore delete a row that does not exist and
+ * appear to do nothing, so the card names the connection that actually has to
+ * go and says what else stops with it. This is the path an admin needs after
+ * changing Graph permissions in Azure, because consent is only re-requested on
+ * a fresh connect. */
+function DisconnectCard({ connectorId, title }) {
+  const navigate = useNavigate()
+  const { disconnect } = useConnectors()
+
+  const self = CONNECTORS.find((c) => c.id === connectorId)
+  // The field is spelled "piggybakcsOn" in lib/constants; read both spellings
+  // so a later correction there does not silently disable this card.
+  const sharedWith = self?.piggybacksOn ?? self?.piggybakcsOn ?? null
+  const targetId = sharedWith ?? connectorId
+  const target = CONNECTORS.find((c) => c.id === targetId)
+  const targetName = target?.name ?? targetId
+
+  // Everything that stops when the shared connection goes.
+  const alsoAffected = CONNECTORS
+    .filter((c) => c.id !== targetId && (c.piggybacksOn ?? c.piggybakcsOn) === targetId)
+    .map((c) => c.shortName || c.name)
+
+  const consequence = sharedWith
+    ? `${tx('This connector runs on the')} ${targetName} ${tx('connection, so disconnecting stops')} ${[target?.shortName ?? targetName, ...alsoAffected].join(', ')} ${tx('together.')}`
+    : tx('Scans stop immediately and findings will no longer update.')
+
+  return (
+    <div className="rounded-xl mb-4" style={{ background: '#fff', border: '1px solid #F0CECE' }}>
+      <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid #F0CECE' }}>
+        <AlertTriangle size={14} style={{ color: '#8C1616' }} />
+        <p className="text-sm font-medium flex-1" style={{ color: '#8C1616' }}>{tx('Danger zone')}</p>
+      </div>
+      <div className="p-4 flex items-center gap-4 flex-wrap">
+        <div style={{ flex: 1, minWidth: 260 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1314', marginBottom: 3 }}>
+            {tx('Disconnect')} {targetName}
+          </p>
+          <p style={{ fontSize: 12, color: '#8a7070', lineHeight: 1.6 }}>
+            {consequence}{' '}
+            {tx('Findings already collected are kept as evidence. Reconnect at any time from Settings → Integrations — do this after changing permissions in Microsoft, so consent is requested again.')}
+          </p>
+        </div>
+        <InlineConfirm variant="panel" requireText="DISCONNECT" confirmLabel={tx('Disconnect')}
+          triggerClassName="btn-secondary" triggerStyle={{ color: 'var(--critical)', borderColor: 'var(--critical-bd)' }}
+          message={`${tx('Disconnect')} ${targetName}?`}
+          detail={`${consequence} ${tx('Existing findings and scan history are preserved, and you can reconnect at any time.')}`}
+          onConfirm={async () => { await disconnect(targetId); navigate('/app/settings') }}>
+          {tx('Disconnect')}
+        </InlineConfirm>
       </div>
     </div>
   )

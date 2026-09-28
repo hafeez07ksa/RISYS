@@ -1,5 +1,4 @@
 -- V1: risk-evidence bucket private + tenant-scoped storage policies
--- Applied to project cfyjfmlhquyxgwrekswe on 2026-09-15.
 
 -- Helper: first path segment of a storage object name as uuid (null if malformed)
 create or replace function public.storage_object_org(p_name text)
@@ -65,3 +64,4 @@ create policy compliance_evidence_upload on storage.objects
   for insert to authenticated
   with check (bucket_id = 'compliance-evidence'
               and public.is_risk_manager_or_admin(public.storage_object_org(name)));
+;

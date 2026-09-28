@@ -4,7 +4,7 @@
 //      Authorization: Bearer <HS256 JWT signed with JIRA_CLIENT_SECRET>
 //      AND ?token=<per-tenant token for "jira"> binding the call to one organisation.
 //   2. n8n / manual: header  x-risys-token: <per-tenant token for "jira-n8n">
-import { adminClient, corsHeaders, isUuid, json, verifyHs256Jwt, verifyIngestToken } from '../_shared/auth.ts'
+import { adminClient, corsHeaders, isUuid, json, verifyHs256Jwt, verifyIngestToken, serveWithCors } from '../_shared/auth.ts'
 
 const DEFAULT_PRIORITY_MAP: Record<string, string> = {
   highest: 'critical', high: 'high', medium: 'medium', low: 'low', lowest: 'informational',
@@ -17,8 +17,7 @@ const STATUS_MAP: Record<string, string> = {
 }
 const ALLOWED_CONNECTORS = new Set(['jira'])
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+serveWithCors(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   try {

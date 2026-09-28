@@ -8,7 +8,7 @@
 //
 // verify_jwt = false: pg_net has no user session. The secret check below is
 // the authentication and it fails closed.
-import { adminClient, corsHeaders, errorResponse, HttpError, isInternalCall, json } from '../_shared/auth.ts'
+import { adminClient, corsHeaders, errorResponse, HttpError, isInternalCall, json, serveWithCors } from '../_shared/auth.ts'
 
 // Connectors that accept internal (scheduled) calls.
 const SCHEDULABLE: Record<string, string> = {
@@ -21,8 +21,7 @@ const SCHEDULABLE: Record<string, string> = {
 const BATCH = 10        // schedules claimed per dispatcher run
 const CONCURRENCY = 3   // scans running at once
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+serveWithCors(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   try {

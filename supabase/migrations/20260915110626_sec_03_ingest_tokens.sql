@@ -1,7 +1,4 @@
 -- V2/V3: per-tenant ingest credentials. Only a SHA-256 hash is stored.
--- Applied to project cfyjfmlhquyxgwrekswe on 2026-09-15.
--- (issue_ingest_token / rotate_ingest_token are superseded by sec_05.)
-
 create table if not exists public.ingest_tokens (
   id           uuid primary key default gen_random_uuid(),
   org_id       uuid not null references public.organizations(id) on delete cascade,
@@ -15,6 +12,7 @@ alter table public.ingest_tokens enable row level security;
 -- No policies on purpose: service role only.
 revoke all on public.ingest_tokens from anon, authenticated;
 
+-- Internal issuer (service role only): rotates and returns plaintext once
 create or replace function public.issue_ingest_token(p_org uuid, p_connector text, p_actor uuid default null)
 returns text
 language plpgsql
@@ -36,6 +34,7 @@ end $$;
 revoke all on function public.issue_ingest_token(uuid, text, uuid) from public, anon, authenticated;
 grant execute on function public.issue_ingest_token(uuid, text, uuid) to service_role;
 
+-- Admin-facing wrapper: org admin rotates their own tenant's token (e.g. for n8n)
 create or replace function public.rotate_ingest_token(p_org uuid, p_connector text)
 returns text
 language plpgsql
@@ -50,3 +49,4 @@ begin
 end $$;
 revoke all on function public.rotate_ingest_token(uuid, text) from public, anon;
 grant execute on function public.rotate_ingest_token(uuid, text) to authenticated;
+;

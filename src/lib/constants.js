@@ -1,3 +1,4 @@
+import { OAUTH_REDIRECT_URI } from '@/lib/env'
 import { tx } from '@/lib/i18n'
 export const CONNECTORS = [
   {
@@ -13,7 +14,7 @@ export const CONNECTORS = [
     oauthUrl: `https://accounts.google.com/o/oauth2/v2/auth`,
     oauthParams: {
       client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-      redirect_uri: import.meta.env.VITE_OAUTH_REDIRECT_URI,
+      redirect_uri: OAUTH_REDIRECT_URI,
       response_type: 'code',
       scope: 'openid email profile https://www.googleapis.com/auth/admin.directory.user.readonly https://www.googleapis.com/auth/calendar.readonly',
       access_type: 'offline',
@@ -36,7 +37,7 @@ export const CONNECTORS = [
     usePKCE: true,
     oauthParams: {
       client_id: import.meta.env.VITE_MICROSOFT_CLIENT_ID,
-      redirect_uri: import.meta.env.VITE_OAUTH_REDIRECT_URI,
+      redirect_uri: OAUTH_REDIRECT_URI,
       response_type: 'code',
       scope: 'openid email profile offline_access User.Read',
       prompt: 'consent',
@@ -107,7 +108,7 @@ export const CONNECTORS = [
     oauthUrl: `https://auth.atlassian.com/authorize`,
     oauthParams: {
       client_id: import.meta.env.VITE_JIRA_CLIENT_ID,
-      redirect_uri: import.meta.env.VITE_OAUTH_REDIRECT_URI,
+      redirect_uri: OAUTH_REDIRECT_URI,
       response_type: 'code',
       scope: 'read:jira-work read:jira-user write:jira-work manage:jira-webhook offline_access',
       audience: 'api.atlassian.com',
@@ -128,7 +129,7 @@ export const CONNECTORS = [
     oauthUrl: `https://api.notion.com/v1/oauth/authorize`,
     oauthParams: {
       client_id: import.meta.env.VITE_NOTION_CLIENT_ID,
-      redirect_uri: import.meta.env.VITE_OAUTH_REDIRECT_URI,
+      redirect_uri: OAUTH_REDIRECT_URI,
       response_type: 'code',
       owner: 'user',
     },
@@ -147,7 +148,7 @@ export const CONNECTORS = [
     oauthUrl: `https://slack.com/oauth/v2/authorize`,
     oauthParams: {
       client_id: import.meta.env.VITE_SLACK_CLIENT_ID,
-      redirect_uri: import.meta.env.VITE_OAUTH_REDIRECT_URI,
+      redirect_uri: OAUTH_REDIRECT_URI,
       scope: 'channels:read,chat:write,users:read,team:read',
     },
     permissions: ['Send messages to channels', 'Read channel list', 'Access workspace user directory', 'Post notifications and alerts'],

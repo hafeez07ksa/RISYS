@@ -1,0 +1,19 @@
+{
+  // Platform console → console.risysgrc.com
+  //   npm run build:console && npx wrangler deploy -c wrangler.console.jsonc
+  //
+  // This Worker serves a build that contains no tenant routes. Put Cloudflare
+  // Access in front of the hostname as well: the console should not render at
+  // all for anyone who has not passed identity checks at the edge.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "risys-console",
+  "compatibility_date": "2026-09-26",
+  "assets": {
+    "directory": "./dist/console/",
+    "not_found_handling": "single-page-application"
+  },
+  "routes": [
+    { "pattern": "console.risysgrc.com", "custom_domain": true }
+  ],
+  "observability": { "enabled": true }
+}

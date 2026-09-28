@@ -1,3 +1,4 @@
+import { OAUTH_REDIRECT_URI } from '@/lib/env'
 import { callEdgeFunction } from '@/lib/functions'
 // ── PKCE helpers ──────────────────────────────────────────────────────────────
 
@@ -79,7 +80,7 @@ export function clearPendingOAuth() {
 // For all other connectors we call the oauth-exchange edge function.
 
 export async function exchangeCodeInBrowser({ connector, code, codeVerifier }) {
-  const redirectUri = import.meta.env.VITE_OAUTH_REDIRECT_URI || 'http://localhost:5173/oauth/callback'
+  const redirectUri = OAUTH_REDIRECT_URI
   const clientId    = connector.oauthParams.client_id
 
   const body = new URLSearchParams({
@@ -104,7 +105,7 @@ export async function exchangeCodeInBrowser({ connector, code, codeVerifier }) {
 }
 
 export async function exchangeCodeForTokens({ connectorId, code, orgId }) {
-  const redirectUri = import.meta.env.VITE_OAUTH_REDIRECT_URI || 'http://localhost:5173/oauth/callback'
+  const redirectUri = OAUTH_REDIRECT_URI
   // V6: sent with the user's session; the function verifies org-admin membership.
   // V4: tokens are stored in Vault server-side and never returned to the browser.
   return callEdgeFunction('oauth-exchange', { connectorId, code, redirectUri, orgId })

@@ -209,7 +209,7 @@ function Overview({ detail, org, members }) {
                     <span style={{ color: 'var(--text)', textTransform: 'capitalize' }}>{c.connector_id}</span>
                     <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.last_sync_at ? `synced ${ago(c.last_sync_at)}` : 'never synced'}</span>
-                      <Chip tone={c.status === 'connected' ? 'green' : 'neutral'}>{c.status}</Chip>
+                      <Chip tone={c.status === 'active' ? 'green' : 'neutral'}>{c.status}</Chip>
                     </span>
                   </li>
                 ))}

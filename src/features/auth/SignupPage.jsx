@@ -1,3 +1,4 @@
+import { APP_URL } from '@/lib/env'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { RisysLogo } from '@/components/ui/RisysLogo'
@@ -42,7 +43,7 @@ export function SignupPage() {
           <Button type="submit" loading={loading} className="w-full mt-1">{tx('Create Account →')}</Button>
         </form>
         <div className="mt-4">
-          <OAuthButtons redirectTo={`${window.location.origin}/onboarding`} />
+          <OAuthButtons redirectTo={`${APP_URL}/onboarding`} />
         </div>
         <div className="mt-5 text-center">
           <p className="text-xs" style={{ color: '#8a7070' }}>{tx('Already have an account?')}{' '}

@@ -25,8 +25,7 @@
 //    hostStates belong to the retired v1 API).
 import {
   adminClient, corsHeaders, errorResponse, getMicrosoftAppToken, HttpError, json,
-  MDE_SCOPE, MicrosoftTokenError, requireOrgAccess,
-} from '../_shared/auth.ts'
+  MDE_SCOPE, MicrosoftTokenError, requireOrgAccess, serveWithCors } from '../_shared/auth.ts'
 
 const GRAPH = 'https://graph.microsoft.com/v1.0'
 const MDE   = 'https://api.securitycenter.microsoft.com/api'
@@ -43,8 +42,7 @@ class SourceError extends Error {
   constructor(state: SourceState, detail: string) { super(detail); this.state = state }
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+serveWithCors(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   const supabase = adminClient()

@@ -1,5 +1,4 @@
 -- V8 + V9: suspension revokes access everywhere; pin search_path on remaining definer functions
--- Applied to project cfyjfmlhquyxgwrekswe on 2026-09-15.
 
 create or replace function public.is_org_active(p_org uuid)
 returns boolean
@@ -58,7 +57,7 @@ revoke all on function public.expire_risk_exceptions(uuid) from public, anon;
 grant execute on function public.expire_risk_exceptions(uuid) to authenticated;
 
 -- Restrictive guard on every tenant table: ANDed with all existing policies,
--- so the policies that query organization_members directly also respect suspension.
+-- so the ~49 policies that query organization_members directly also respect suspension.
 do $$
 declare t text;
 begin
@@ -78,6 +77,4 @@ begin
          with check (org_id is null or public.is_org_active(org_id))', t);
   end loop;
 end $$;
-
--- Applied separately right after this migration (anon evaluates the guard policy too):
-grant execute on function public.is_org_active(uuid) to anon;
+;
