@@ -24,7 +24,6 @@ create index if not exists platform_audit_log_action_idx  on platform_audit_log 
 
 alter table platform_audit_log enable row level security;
 
--- Readable only by platform staff, and only through the API's anon/auth roles.
 drop policy if exists platform_audit_log_read on platform_audit_log;
 create policy platform_audit_log_read on platform_audit_log
   for select using (is_platform_admin());
@@ -35,7 +34,7 @@ create policy platform_audit_log_read on platform_audit_log
 -- The log is append-only even for the service role, so a console action cannot
 -- be taken and then quietly erased.
 create or replace function platform_audit_log_immutable()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql set search_path to 'public' as $$
 begin
   raise exception 'platform_audit_log is append-only';
 end $$;
@@ -46,8 +45,6 @@ create trigger platform_audit_log_no_change
   for each row execute function platform_audit_log_immutable();
 
 -- ── Tenant lifecycle columns ────────────────────────────────────────────────
--- Suspension is now a recorded decision with a reason and a timestamp, not just
--- a status flag, because deletion depends on it.
 alter table organizations add column if not exists suspended_at      timestamptz;
 alter table organizations add column if not exists suspension_reason text;
 alter table organizations add column if not exists notes             text;
@@ -72,4 +69,4 @@ begin
           p_target_user, p_target_email, nullif(trim(coalesce(p_reason,'')), ''), coalesce(p_meta,'{}'::jsonb));
 end $$;
 
-revoke all on function platform_log(text, uuid, text, uuid, text, text, jsonb) from public, anon, authenticated;;
+revoke all on function platform_log(text, uuid, text, uuid, text, text, jsonb) from public, anon, authenticated;

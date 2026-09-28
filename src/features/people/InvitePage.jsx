@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, AlertTriangle, UserPlus } from 'lucide-react'
+import { Check, AlertTriangle, UserPlus, Mail, MailWarning } from 'lucide-react'
 import { FormPage, FormSection } from '@/components/ui/FormPage'
 import { Spinner } from '@/components/ui/Spinner'
 import { usePeople, ROLES, inviteLink } from '@/hooks/usePeople'
@@ -8,8 +8,12 @@ import { Field } from '@/features/audits/parts'
 import { CopyButton } from './PeoplePage'
 import { tx } from '@/lib/i18n'
 
-/* /app/people/invite — invite people by email. RISYS does not send email yet,
- * so each invitation produces a single-use link to copy and send by hand. */
+/* /app/people/invite — invite people by email.
+ *
+ * Each invitation is emailed from no-reply@risysgrc.com by the send-email
+ * function. The copy-link stays beside every one regardless: corporate mail
+ * filters do sometimes hold a message carrying a sign-in link, and an admin who
+ * cannot get a colleague in has no other way round it. */
 export function InvitePage() {
   const navigate = useNavigate()
   const { inviteMany } = usePeople()
@@ -33,26 +37,40 @@ export function InvitePage() {
   if (results) {
     const ok = results.filter((r) => r.ok)
     const bad = results.filter((r) => !r.ok)
+    const notSent = ok.filter((r) => !r.emailed)
     const all = ok.map((r) => `${r.email}: ${inviteLink(r.invitation)}`).join('\n')
     return (
-      <FormPage title={tx('Invitations created')} description={tx('Copy each link and send it to the person. Links are single-use, valid for 7 days and locked to that email address.')}
+      <FormPage title={tx('Invitations created')} description={tx('Links are single-use, valid for 7 days and locked to that email address.')}
         back={back}
         footer={<>
           <button className="btn-secondary" onClick={() => { setResults(null); setEmailsRaw('') }}>{tx('Invite more people')}</button>
           <button className="btn-primary" onClick={back.onClick}>{tx('Done')}</button>
         </>}>
         {ok.length > 0 && (
-          <FormSection title={`${ok.length} ${tx('invitation(s) created')}`} description={tx('RISYS does not send email yet — send these links yourself from your own mailbox.')}
-        tips={[
-          tx('Send each link from your own mailbox, to the address it was issued for.'),
-          tx('Links are single-use, expire after 7 days, and let the person set their own password — you never see it.'),
-          tx('Someone lost their link, or it expired? Issue a new one from the People page rather than sharing another person’s.'),
-        ]}>
+          <FormSection
+            title={`${ok.length} ${tx('invitation(s) created')}`}
+            description={notSent.length === 0
+              ? tx('Each person has been emailed their invitation. The link is here too, in case their mail filter holds it up.')
+              : tx('The invitations are valid. Some could not be emailed — send those links yourself.')}
+            tips={[
+              tx('Mail comes from no-reply@risysgrc.com. Ask people to check their junk folder if nothing arrives within a few minutes.'),
+              tx('Links are single-use, expire after 7 days, and let the person set their own password — you never see it.'),
+              tx('Someone lost their link, or it expired? Issue a new one from the People page rather than sharing another person’s.'),
+            ]}>
             {ok.length > 1 && <div><CopyButton text={all} label={tx('Copy all links')} /></div>}
             {ok.map((r) => (
               <div key={r.email} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 'var(--r)', background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                <Check size={13} style={{ color: 'var(--low)', flexShrink: 0 }} />
-                <span style={{ fontSize: 'var(--t-sm)', color: 'var(--text)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.email}</span>
+                {r.emailed
+                  ? <Mail size={13} style={{ color: 'var(--low)', flexShrink: 0 }} />
+                  : <MailWarning size={13} style={{ color: 'var(--medium)', flexShrink: 0 }} />}
+                <span style={{ minWidth: 0, flex: 1 }}>
+                  <span style={{ display: 'block', fontSize: 'var(--t-sm)', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.email}</span>
+                  {!r.emailed && (
+                    <span style={{ display: 'block', fontSize: 'var(--t-meta)', color: 'var(--medium)' }}>
+                      {tx('Not emailed')}{r.emailError ? ` — ${r.emailError}` : ''}. {tx('Send this link yourself.')}
+                    </span>
+                  )}
+                </span>
                 <CopyButton text={inviteLink(r.invitation)} />
               </div>
             ))}
@@ -75,7 +93,7 @@ export function InvitePage() {
   return (
     <FormPage
       title={tx('Invite people')}
-      description={tx('Each person gets a single-use link, valid for 7 days and locked to their email address.')}
+      description={tx('Each person is emailed a single-use link, valid for 7 days and locked to their email address.')}
       back={back}
       onSubmit={send}
       error={error}
@@ -83,7 +101,7 @@ export function InvitePage() {
         <button className="btn-secondary" disabled={sending} onClick={back.onClick}>{tx('Cancel')}</button>
         <button className="btn-primary" disabled={sending || !unique.length} onClick={send}>
           {sending ? <Spinner size="sm" /> : <UserPlus size={13} />}
-          {unique.length > 1 ? `${tx('Invite')} ${unique.length} ${tx('people')}` : tx('Invite')}
+          {unique.length > 1 ? `${tx('Invite')} ${unique.length} ${tx('people')}` : tx('Send invitation')}
         </button>
       </>}
     >

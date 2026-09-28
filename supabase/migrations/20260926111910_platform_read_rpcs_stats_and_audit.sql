@@ -135,4 +135,4 @@ begin
       'last_action_at', (select max(l.created_at) from platform_audit_log l where l.actor_id = a.user_id)
     ) order by a.created_at)
     from platform_admins a join profiles p on p.id = a.user_id), '[]'::json);
-end $$;;
+end $$;

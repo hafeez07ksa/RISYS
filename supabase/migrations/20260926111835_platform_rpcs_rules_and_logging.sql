@@ -308,4 +308,4 @@ begin
   delete from platform_admins where user_id = p_user_id;
   if not found then raise exception 'That person does not have console access'; end if;
   perform platform_log('staff.revoked', null, null, p_user_id, v_email, null, '{}'::jsonb);
-end $$;;
+end $$;

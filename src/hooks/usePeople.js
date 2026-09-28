@@ -70,6 +70,24 @@ export function usePeople() {
   }
 
   // Bulk invite — resolves each email independently, returns successes + failures
+  /* Emails one invitation. The function takes only the invitation id: it
+   * re-reads the invitation and checks the caller administers that workspace,
+   * so the browser can never choose the recipient or the message. A failure
+   * here is reported but does not fail the invitation itself — the link is
+   * still valid and the UI offers it to copy. */
+  const sendInvitationEmail = async (invitationId) => {
+    const { data, error } = await supabase.functions.invoke('send-email', {
+      body: { template: 'invitation', invitation_id: invitationId },
+    })
+    if (error) {
+      // Edge function errors carry the useful text in the response body.
+      let detail = error.message
+      try { detail = (await error.context?.json())?.error ?? detail } catch { /* keep message */ }
+      throw new Error(detail)
+    }
+    return data
+  }
+
   const inviteMany = async (emails, role) => {
     const results = []
     for (const raw of emails) {
@@ -77,7 +95,15 @@ export function usePeople() {
       if (!email) continue
       try {
         const inv = await inviteMember({ email, role })
-        results.push({ email, ok: true, invitation: inv })
+        let emailed = false
+        let emailError = null
+        try {
+          await sendInvitationEmail(inv.id)
+          emailed = true
+        } catch (err) {
+          emailError = err.message
+        }
+        results.push({ email, ok: true, invitation: inv, emailed, emailError })
       } catch (err) {
         results.push({ email, ok: false, error: err.message })
       }
@@ -138,7 +164,7 @@ export function usePeople() {
 
   return {
     members, invitations, loading, isAdmin, currentUserId: user?.id,
-    inviteMember, inviteMany, revokeInvitation, deleteInvitation, regenerateInvitation, deleteAccount,
+    inviteMember, inviteMany, sendInvitationEmail, revokeInvitation, deleteInvitation, regenerateInvitation, deleteAccount,
     updateMemberRole, updateMemberTitle, updateMemberGroup, removeMember,
     refetch: () => { fetchMembers(); fetchInvitations() },
   }

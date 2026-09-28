@@ -1,5 +1,8 @@
 -- Newly created functions carry a default EXECUTE grant to PUBLIC, which anon
--- inherits; revoking from anon alone leaves that grant in place.
+-- inherits; revoking from anon alone leaves that grant in place. Nothing in the
+-- console should be reachable before signing in — the functions already check
+-- is_platform_admin(), but an unauthenticated caller should not be able to
+-- reach the check and learn which functions exist.
 do $$
 declare f record;
 begin
@@ -14,4 +17,4 @@ begin
       execute format('grant execute on function %s to authenticated', f.sig);
     end if;
   end loop;
-end $$;;
+end $$;

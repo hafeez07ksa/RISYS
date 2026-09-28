@@ -1,3 +1,6 @@
+-- Separate ingest tokens per channel so rotating one never breaks another.
+-- Applied to project cfyjfmlhquyxgwrekswe on 2026-09-15.
+
 create or replace function public.issue_ingest_token(p_org uuid, p_connector text, p_actor uuid default null)
 returns text
 language plpgsql
@@ -41,4 +44,3 @@ begin
 end $$;
 revoke all on function public.rotate_ingest_token(uuid, text) from public, anon;
 grant execute on function public.rotate_ingest_token(uuid, text) to authenticated;
-;
