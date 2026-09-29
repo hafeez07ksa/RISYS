@@ -101,8 +101,13 @@ serveWithCors(async (req) => {
     // ── 1. Tenant sharing policy ─────────────────────────────────────────────
     const fullRunFindings: Json[] = []
     const completeFullSources = new Set<string>()
+    // Snapshot of the settings the compliance signals grade (compute_signals_findings).
+    // Findings are raised only for readable, bad values, so the signals need the
+    // values themselves: a missing finding cannot tell "fine" from "not read".
+    let tenantSettings: Json | null = null
     try {
       const settings = await graphGet(`${GRAPH}/admin/sharepoint/settings`, token)
+      tenantSettings = tenantSettingsSnapshot(settings)
       const tf = tenantFindings(org_id, settings, adminCenterUrl, now)
       fullRunFindings.push(...tf)
       completeFullSources.add('tenant')
@@ -185,6 +190,7 @@ serveWithCors(async (req) => {
       open_total: (openRows ?? []).length,
       libraries: { total: sharingStats.drives, scanned: sharingStats.drivesDone },
       items_checked: sharingStats.itemsChecked,
+      tenant_settings: tenantSettings,
     }
 
     const states = Object.values(sources).map(s => s.state)
@@ -247,6 +253,19 @@ function baseRow(orgId: string, now: string) {
 }
 
 // ── 1. Tenant policy ──────────────────────────────────────────────────────────
+
+// Only the settings a signal grades. null means Microsoft did not report it,
+// which the signal shows as unknown rather than as a pass.
+function tenantSettingsSnapshot(s: Json): Json {
+  const bool = (v: unknown) => (typeof v === 'boolean' ? v : null)
+  return {
+    sharingCapability: typeof s?.sharingCapability === 'string' ? s.sharingCapability : null,
+    sharingDomainRestrictionMode: typeof s?.sharingDomainRestrictionMode === 'string' ? s.sharingDomainRestrictionMode : null,
+    isResharingByExternalUsersEnabled: bool(s?.isResharingByExternalUsersEnabled),
+    isUnmanagedSyncAppForTenantRestricted: bool(s?.isUnmanagedSyncAppForTenantRestricted),
+    idleSessionSignOut: s?.idleSessionSignOut ? { isEnabled: bool(s.idleSessionSignOut.isEnabled) } : null,
+  }
+}
 
 function tenantFindings(orgId: string, s: Json, adminUrl: string | null, now: string): Json[] {
   const out: Json[] = []

@@ -10,8 +10,9 @@
  * -------------------------------------------------------------------------- */
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const SRC = new URL('../src/', import.meta.url).pathname
+const SRC = fileURLToPath(new URL('../src/', import.meta.url))
 const ar = JSON.parse(readFileSync(join(SRC, 'locales/ar.json'), 'utf8'))
 const CALL = /\btx\(\s*(['"])((?:\\.|(?!\1).)*)\1/g
 

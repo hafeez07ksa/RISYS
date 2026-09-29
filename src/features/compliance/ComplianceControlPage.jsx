@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Zap, ShieldCheck, BookOpen, FileText, Link2, Info, ChevronRight, ClipboardList,
-  CheckCircle2, XCircle, MinusCircle, HelpCircle, AlertTriangle, Clock,
+  CheckCircle2, XCircle, MinusCircle, HelpCircle, AlertTriangle, Clock, ScanSearch,
 } from 'lucide-react'
 import { usePermissions } from '@/hooks/usePermissions'
 import { SelectField } from '@/components/ui/Combobox'
@@ -10,7 +11,7 @@ import { BackLink } from '@/components/ui/BackLink'
 import {
   getFramework, STATUS_CONFIG, STATUS_OPTIONS,
   useFrameworkRequirements, useComplianceStatuses, useFrameworkMappings,
-  useRequirementAutomation,
+  useRequirementAutomation, useRequirementFindings, hasFindingsWarning,
   computeEffectiveStatus, isSubControl,
   isAutomated, hasAutomatedResult, isOverridingEvidence,
 } from '@/hooks/useCompliance'
@@ -74,6 +75,21 @@ const SIGNAL_TONES = {
   not_applicable: { color: 'var(--text-3)',   bg: 'var(--surface)',     label: 'N/A',          Icon: MinusCircle },
   unknown:        { color: 'var(--text-3)',   bg: 'var(--surface)',     label: tx('Not measured'), Icon: HelpCircle },
 }
+
+const FINDING_TONES = {
+  critical: { color: 'var(--critical)', label: tx('Critical') },
+  warning:  { color: 'var(--medium)',   label: tx('Warning') },
+  info:     { color: 'var(--text-3)',   label: tx('Info') },
+}
+
+const FINDING_CONNECTORS = {
+  m365:       tx('Microsoft 365'),
+  defender:   tx('Microsoft Defender'),
+  sharepoint: tx('SharePoint'),
+}
+
+// How many open findings the rail lists before pointing to the Findings page.
+const FINDINGS_SHOWN = 6
 
 /* ── Building blocks ─────────────────────────────────────────────────────── */
 
@@ -218,6 +234,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
   const { statuses, setStatus, refetch: refetchStatuses } = useComplianceStatuses(frameworkId)
   const { controls, mappingsFor, controlsFor, linkControl, unlinkControl } = useFrameworkMappings(frameworkId)
   const { automation } = useRequirementAutomation(frameworkId)
+  const { findings: reqFindings } = useRequirementFindings(frameworkId)
 
   const [guidance, setGuidance] = useState(null)
   const [guidanceError, setGuidanceError] = useState(false)
@@ -266,6 +283,8 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
   const mapped    = controlsFor(requirementId)
   const effective = computeEffectiveStatus(statusRow?.status, mapped, auto)
   const conflict  = isOverridingEvidence(statusRow?.status, auto)
+  const openFindings = reqFindings[requirementId]
+  const findingsWarning = hasFindingsWarning(effective, openFindings)
 
   useEffect(() => { setNotes(statusRow?.notes || '') }, [statusRow?.notes, requirementId])
 
@@ -683,6 +702,79 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                 </>
               )}
             </RailCard>
+
+            {/* Open findings — evidence of gaps, shown beside the status, never folded into it */}
+            {isEcc && (
+              <RailCard icon={ScanSearch} title={tx('Open findings')}>
+                {!openFindings?.open_count ? (
+                  <RailEmpty>{tx(
+                    'No open connector finding points to this control.'
+                  )}</RailEmpty>
+                ) : (
+                  <>
+                    {findingsWarning && (
+                      <div style={{
+                        display: 'flex', gap: 8, alignItems: 'flex-start',
+                        padding: '8px 9px', margin: '0 -9px 10px',
+                        borderRadius: 'var(--r)', background: 'var(--medium-bg)',
+                      }}>
+                        <AlertTriangle size={13} style={{ color: 'var(--medium)', flexShrink: 0, marginTop: 1 }} />
+                        <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-2)', lineHeight: 1.5, margin: 0 }}>
+                          {tx('Measured as compliant, but open findings point to this control. They do not change the status; review them before relying on it.')}
+                        </p>
+                      </div>
+                    )}
+
+                    <p className="tnum" style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', margin: '0 0 8px', lineHeight: 1.55 }}>
+                      {[
+                        openFindings.open_critical > 0 && `${openFindings.open_critical} ${tx('critical')}`,
+                        openFindings.open_warning > 0 && `${openFindings.open_warning} ${tx('warning')}`,
+                        openFindings.open_info > 0 && `${openFindings.open_info} ${tx('info')}`,
+                      ].filter(Boolean).join(', ')}
+                    </p>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {(openFindings.findings || []).slice(0, FINDINGS_SHOWN).map(f => {
+                        const tone = FINDING_TONES[f.severity] || FINDING_TONES.info
+                        return (
+                          <Link key={`${f.connector}:${f.finding_id}`} to={`/app/findings/${f.connector}`}
+                            style={{
+                              display: 'flex', gap: 9, alignItems: 'flex-start',
+                              padding: '7px 9px', margin: '0 -9px',
+                              borderRadius: 'var(--r)', textDecoration: 'none',
+                            }}>
+                            <span aria-hidden style={{
+                              width: 7, height: 7, borderRadius: '50%', background: tone.color,
+                              flexShrink: 0, marginTop: 6,
+                            }} />
+                            <span style={{ flex: 1, minWidth: 0 }}>
+                              <span style={{ display: 'block', fontSize: 'var(--t-sm)', color: 'var(--text-2)', lineHeight: 1.45 }}>
+                                {f.title}
+                                {!f.direct && (
+                                  <span title={tx('Raised against a subcontrol')} style={{ color: 'var(--text-3)' }}> ↳</span>
+                                )}
+                              </span>
+                              <span style={{ display: 'block', fontSize: 'var(--t-meta)', color: 'var(--text-3)', marginTop: 2 }}>
+                                {FINDING_CONNECTORS[f.connector] || f.connector} · {tone.label}
+                              </span>
+                            </span>
+                          </Link>
+                        )
+                      })}
+                    </div>
+
+                    {openFindings.open_count > FINDINGS_SHOWN && (
+                      <Link to="/app/findings" style={{
+                        display: 'inline-block', marginTop: 8,
+                        fontSize: 'var(--t-meta)', color: 'var(--text-2)',
+                      }}>
+                        {openFindings.open_count - FINDINGS_SHOWN} {tx('more in Findings')}
+                      </Link>
+                    )}
+                  </>
+                )}
+              </RailCard>
+            )}
 
             {/* Assessed position */}
             <RailCard title={tx('Assessed status')}>

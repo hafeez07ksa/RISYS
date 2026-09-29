@@ -12,3 +12,7 @@ ProjectA/
 dist/
 *.zip
 .claude/
+
+# per-mode env files (Supabase URL and keys)
+.env.app
+.env.console

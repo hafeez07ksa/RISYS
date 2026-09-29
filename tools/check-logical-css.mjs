@@ -16,8 +16,9 @@
  * -------------------------------------------------------------------------- */
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const ROOT = new URL('../src/', import.meta.url).pathname
+const ROOT = fileURLToPath(new URL('../src/', import.meta.url))
 const SKIP = /[\\/]lib[\\/]reports[\\/]/
 const RULES = [
   [/(?<![\w-])-?(?:ml|mr|pl|pr)-(?:\d|px|auto|\[)/, 'Tailwind physical margin/padding — use ms-/me-/ps-/pe-'],

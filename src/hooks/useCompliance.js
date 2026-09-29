@@ -420,6 +420,49 @@ export function useRequirementAutomation(frameworkId) {
   return { automation, loading, refetch: fetchAutomation, refresh }
 }
 
+// ── HOOK: open findings per requirement ──────────────────────────────────────
+//
+// Reads v_requirement_findings: connector findings keyed to framework
+// requirements (finding_control_refs), rolled up from subcontrol to main
+// control like the signals are.
+//
+// Findings never change the effective status. A finding is evidence of a gap,
+// not a verdict; the page shows them beside the status as a warning so an
+// assessor sees what is open against a control that otherwise measures well.
+//
+// Returns a map keyed by requirement_id:
+//   { open_count, open_critical, open_warning, open_info, needs_attention,
+//     resolved_count, connectors: [...], findings: [...] }
+export function useRequirementFindings(frameworkId) {
+  const { organization } = useAuth()
+  const [findings, setFindings] = useState({})
+  const [loading, setLoading] = useState(false)
+
+  const fetchFindings = useCallback(async () => {
+    if (!organization?.id || !frameworkId) return
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('v_requirement_findings')
+      .select('*')
+      .eq('org_id', organization.id)
+      .eq('framework', frameworkId)
+    const map = {}
+    if (!error) for (const row of (data || [])) map[row.requirement_id] = row
+    setFindings(map)
+    setLoading(false)
+  }, [organization?.id, frameworkId])
+
+  useEffect(() => { fetchFindings() }, [fetchFindings])
+
+  return { findings, loading, refetch: fetchFindings }
+}
+
+// True when open critical or warning findings point at a requirement whose
+// effective status reads as compliant. Shown as a warning, never as a downgrade.
+export function hasFindingsWarning(effectiveStatus, reqFindings) {
+  return effectiveStatus === 'compliant' && !!reqFindings?.needs_attention
+}
+
 // Is this requirement covered by at least one signal that has actually run?
 export function isAutomated(auto) {
   return !!auto && auto.signal_count > 0
