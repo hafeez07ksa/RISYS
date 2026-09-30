@@ -157,15 +157,22 @@ function LeaveBar({ onStay, onLeave }) {
     return () => document.removeEventListener('keydown', onKey)
   }, [onStay])
 
+  // Centred by a full-width flex row, not by translateX(-50%) on the bar: the
+  // entrance animation sets `transform`, which would replace the centring
+  // while it runs and make the bar start off to one side and then jump.
   return (
+    <div style={{
+      position: 'fixed', insetInline: 0, bottom: 24, zIndex: 'var(--z-popover)',
+      display: 'flex', justifyContent: 'center', padding: '0 16px', pointerEvents: 'none',
+    }}>
     <div
       role="alertdialog"
       aria-live="assertive"
       aria-label={tx('Unsaved changes')}
       className="anim-pop"
       style={{
-        position: 'fixed', left: '50%', bottom: 24, transform: 'translateX(-50%)',
-        zIndex: 'var(--z-popover)', width: 'min(620px, calc(100vw - 32px))',
+        pointerEvents: 'auto', transformOrigin: 'bottom center',
+        width: 'min(620px, 100%)',
         display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
         padding: '14px 16px', borderRadius: 12,
         background: '#1f1718', color: '#f6eeec',
@@ -194,6 +201,7 @@ function LeaveBar({ onStay, onLeave }) {
           background: '#f6eeec', color: '#1f1718', border: 'none',
         }}>{tx('Stay and keep editing')}</button>
       </div>
+    </div>
     </div>
   )
 }
