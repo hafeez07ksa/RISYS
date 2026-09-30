@@ -42,17 +42,21 @@ export function ReviewCalendarPage() {
   const { organization } = useAuth()
   const { members } = usePeople()
   const { rows, loading } = useReviewSchedule()
-  const [view, setView] = useState('attention')
+  // null until someone picks a tab: then the page opens on the first tab that
+  // has something in it, so a new workspace does not land on an empty table.
+  const [picked, setPicked] = useState(null)
   const [search, setSearch] = useState('')
 
   const stats = useMemo(() => summariseReviews(rows), [rows])
+  const attention = stats.overdue + stats.dueSoon + stats.unscheduled
+  const view = picked ?? (attention > 0 ? 'attention' : stats.never > 0 ? 'never_reviewed' : 'all')
   const nameOf = useMemo(() => {
     const map = Object.fromEntries(members.map(m => [m.user_id, m.full_name || m.email]))
     return (id) => (id && map[id]) || null
   }, [members])
 
   const VIEWS = [
-    { value: 'attention', label: 'Needs attention', count: stats.overdue + stats.dueSoon + stats.unscheduled },
+    { value: 'attention', label: 'Needs attention', count: attention },
     { value: 'never_reviewed', label: 'Not yet reviewed', count: stats.never },
     { value: 'scheduled', label: 'Scheduled', count: stats.scheduled },
     { value: 'all', label: 'All', count: stats.total },
@@ -149,7 +153,7 @@ export function ReviewCalendarPage() {
             searchPlaceholder={tx('Search by control or owner…')}
             views={VIEWS}
             activeView={view}
-            onViewChange={setView}
+            onViewChange={setPicked}
           />
         </div>
 
