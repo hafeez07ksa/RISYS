@@ -42,6 +42,7 @@ const SEGMENT_LABELS = {
   frameworks: 'Frameworks', new: 'New', tolerances: 'Tolerances', edit: 'Edit', assess: 'Assessment', triage: 'Triage',
   scope: 'Scope & testing', requests: 'Evidence requests', opinion: 'Opinion', report: 'Audit report', record: 'Record presentation',
   invite: 'Invite', escalate: 'Escalate', limits: 'Limits', activation: 'Activation link', companies: 'Companies',
+  reviews: 'Review calendar',
 }
 
 /* A dotted requirement id encodes its own ancestry: 1-5-3-1 is a child of

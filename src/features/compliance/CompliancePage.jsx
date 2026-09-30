@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { BookCheck, ChevronRight, TrendingUp, Zap } from 'lucide-react'
+import { BookCheck, CalendarClock, ChevronRight, TrendingUp, Zap } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
 import {
@@ -10,6 +10,8 @@ import {
   useFrameworkMappings,
   useRequirementAutomation,
   computeFrameworkScore,
+  useReviewSchedule,
+  summariseReviews,
 } from '@/hooks/useCompliance'
 import { tx } from '@/lib/i18n'
 
@@ -134,6 +136,36 @@ function FrameworkCard({ fw, onSelect }) {
   )
 }
 
+// ── Review calendar entry ─────────────────────────────────────────────────────
+// A single line, not a card: it points at the calendar and says whether
+// anything there needs attention. Tone only when something is overdue.
+function ReviewCalendarLink({ onOpen }) {
+  const { rows, loading } = useReviewSchedule()
+  const s = summariseReviews(rows)
+  const parts = [
+    s.overdue > 0 && tx('{{n}} overdue', { n: s.overdue }),
+    s.dueSoon > 0 && tx('{{n}} due in 30 days', { n: s.dueSoon }),
+    s.never > 0 && tx('{{n}} not yet reviewed', { n: s.never }),
+  ].filter(Boolean)
+  const summary = loading ? '' : (parts.length ? parts.join(' · ') : tx('All reviews on schedule'))
+
+  return (
+    <button onClick={onOpen} style={{
+      display: 'flex', alignItems: 'center', gap: 12, width: '100%', maxWidth: 856,
+      padding: '11px 14px', marginBottom: 16, textAlign: 'start', cursor: 'pointer',
+      background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
+    }}>
+      <CalendarClock size={16} style={{ color: s.overdue > 0 ? 'var(--critical)' : 'var(--text-3)', flexShrink: 0 }} />
+      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flexShrink: 0 }}>{tx('Review calendar')}</span>
+      <span className="tnum" style={{
+        fontSize: 12.5, flex: 1, minWidth: 0,
+        color: s.overdue > 0 ? 'var(--critical)' : 'var(--text-3)',
+      }}>{summary}</span>
+      <ChevronRight size={14} className="rtl-flip" style={{ color: 'var(--text-3)', flexShrink: 0 }} />
+    </button>
+  )
+}
+
 // ── Main Compliance Page ──────────────────────────────────────────────────────
 export function CompliancePage() {
   const { organization } = useAuth()
@@ -157,6 +189,8 @@ export function CompliancePage() {
             'Your active framework. Requirements covered by a connector signal score themselves from measured data; the rest are assessed manually. Select the framework to map controls, set statuses, and view gap analysis.'
           )}</p>
         </div>
+
+        <ReviewCalendarLink onOpen={() => navigate('/app/compliance/reviews')} />
 
         {/* Framework grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 420px))', gap: 16 }}>

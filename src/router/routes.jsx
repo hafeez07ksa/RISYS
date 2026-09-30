@@ -33,6 +33,7 @@ import { ControlsPage } from '@/features/controls/ControlsPage'
 import { ControlDetailPage } from '@/features/controls/ControlDetailPage'
 import { CompliancePage } from '@/features/compliance/CompliancePage'
 import { ComplianceFrameworkRoute, ComplianceControlRoute } from '@/features/compliance/ComplianceRoutes'
+import { ReviewCalendarPage } from '@/features/compliance/ReviewCalendarPage'
 import { FrameworksPage } from '@/features/frameworks/FrameworksPage'
 import { AuditsPage } from '@/features/audits/AuditsPage'
 import { AuditDetailPage } from '@/features/audits/AuditDetailPage'
@@ -107,6 +108,7 @@ const appRoutes = [
       { path: 'controls/:id', element: <ControlDetailPage /> },
       { path: 'controls/:id/edit', element: <ControlFormPage /> },
       { path: 'compliance',   element: <CompliancePage /> },
+      { path: 'compliance/reviews', element: <ReviewCalendarPage /> },
       // Framework and control are addressable so an assessment can be linked to
       { path: 'compliance/:frameworkId',                 element: <ComplianceFrameworkRoute /> },
       { path: 'compliance/:frameworkId/:requirementId',  element: <ComplianceControlRoute /> },

@@ -463,6 +463,66 @@ export function hasFindingsWarning(effectiveStatus, reqFindings) {
   return effectiveStatus === 'compliant' && !!reqFindings?.needs_attention
 }
 
+// ── HOOK: periodic review schedule ──────────────────────────────────────────
+//
+// Reads v_review_schedule: the 24 ECC controls that are themselves a periodic
+// review, plus every other requirement with a next review date on record.
+// state is decided in the database (Asia/Riyadh dates) so the page, the
+// reminders and the reports agree:
+//   overdue · due_soon (30 days) · scheduled · unscheduled · never_reviewed
+export const REVIEW_STATES = {
+  overdue:        { label: 'Overdue',          tone: 'critical', rank: 0 },
+  due_soon:       { label: 'Due soon',         tone: 'medium',   rank: 1 },
+  unscheduled:    { label: 'No next date',     tone: 'medium',   rank: 2 },
+  never_reviewed: { label: 'Not yet reviewed', tone: 'neutral',  rank: 3 },
+  scheduled:      { label: 'Scheduled',        tone: 'low',      rank: 4 },
+}
+
+export function useReviewSchedule() {
+  const { organization } = useAuth()
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const fetchSchedule = useCallback(async () => {
+    if (!organization?.id) { setLoading(false); return }
+    setLoading(true)
+    const { data, error: err } = await supabase
+      .from('v_review_schedule')
+      .select('*')
+      .eq('org_id', organization.id)
+    setError(err || null)
+    setRows(err ? [] : sortReviewRows(data || []))
+    setLoading(false)
+  }, [organization?.id])
+
+  useEffect(() => { fetchSchedule() }, [fetchSchedule])
+
+  return { rows, loading, error, refetch: fetchSchedule }
+}
+
+// Most urgent first: most overdue, then soonest due, then gaps, then the rest by date.
+export function sortReviewRows(rows) {
+  const rank = r => REVIEW_STATES[r.state]?.rank ?? 9
+  const idKey = id => String(id).split('-').map(n => String(n).padStart(3, '0')).join('-')
+  return [...rows].sort((a, b) =>
+    rank(a) - rank(b)
+    || (a.days_until_due ?? 1e9) - (b.days_until_due ?? 1e9)
+    || idKey(a.requirement_id).localeCompare(idKey(b.requirement_id)))
+}
+
+export function summariseReviews(rows) {
+  const count = s => rows.filter(r => r.state === s).length
+  return {
+    overdue: count('overdue'),
+    dueSoon: count('due_soon'),
+    never: count('never_reviewed'),
+    unscheduled: count('unscheduled'),
+    scheduled: count('scheduled'),
+    total: rows.length,
+  }
+}
+
 // Is this requirement covered by at least one signal that has actually run?
 export function isAutomated(auto) {
   return !!auto && auto.signal_count > 0
