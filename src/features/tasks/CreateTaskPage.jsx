@@ -10,6 +10,14 @@ import { FormPage, FormSection } from '@/components/ui/FormPage'
 import { Field, SubmitButton } from '@/features/audits/parts'
 import { logAudit, AUDIT } from '@/lib/audit'
 import { tx } from '@/lib/i18n'
+import { DateTimeField } from '@/components/ui/DateTimeField'
+
+// Local "yyyy-mm-ddThh:mm" for now — a reminder cannot be set in the past.
+// The pickers hold local wall-clock time ("2026-10-01T09:00"). Sent as-is,
+// Postgres reads it as UTC and every date lands 3 hours late in Riyadh, so
+// convert to an instant in the browser, which knows the user's time zone.
+const toInstant = (v) => (v ? new Date(v).toISOString() : null)
+const nowLocal = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16) }
 
 /* /app/tasks/new[?incident=<id>|?risk=<id>] — create a task, optionally tied
  * to the incident or risk it came from. Returns to where it was opened from. */
@@ -43,7 +51,7 @@ export function CreateTaskPage() {
       const task = await createTask({
         title: form.title.trim(), description: form.description.trim() || null, priority: form.priority,
         assigned_to: form.assigned_to || null, created_by: user?.id,
-        due_at: form.due_at || null, reminder_at: form.reminder_at || null,
+        due_at: toInstant(form.due_at), reminder_at: toInstant(form.reminder_at),
         incident_id: incidentId || null, risk_id: riskId || null, status: 'todo',
       })
       await logAudit(organization.id, AUDIT.TASK_CREATED, 'task', task?.id, form.title.trim(), {
@@ -94,8 +102,8 @@ export function CreateTaskPage() {
             <SelectField className="w-full" value={form.assigned_to} onChange={set('assigned_to')}
               options={[{ value: '', label: tx('Unassigned') }, ...members.map((m) => ({ value: m.user_id, label: m.full_name || m.email || m.user_id?.slice(0, 8), description: m.role }))]} />
           </Field>
-          <Field label={tx('Due')}><input type="datetime-local" className="risys-input" value={form.due_at} onChange={set('due_at')} /></Field>
-          <Field label={tx('Reminder')}><input type="datetime-local" className="risys-input" value={form.reminder_at} onChange={set('reminder_at')} /></Field>
+          <Field label={tx('Due')}><DateTimeField value={form.due_at} onChange={set('due_at')} aria-label={tx('Due')} /></Field>
+          <Field label={tx('Reminder')}><DateTimeField value={form.reminder_at} onChange={set('reminder_at')} min={nowLocal()} placeholder="No reminder" aria-label={tx('Reminder')} /></Field>
         </div>
       </FormSection>
     </FormPage>

@@ -49,9 +49,77 @@ async function sendViaResend(to: string, subject: string, html: string, text: st
 const escape = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
-/* Plain, single-column HTML. No images, no external CSS, no tracking pixel:
- * this lands in corporate mailboxes that strip most of that, and a message
- * about a security tool should not be loading remote content. */
+// ── Email layout ──────────────────────────────────────────────────────────────
+//
+// One layout for everything RISYS sends. Table-based, inline styles only,
+// 600px — the shape Outlook, Gmail and Apple Mail all render the same. The only
+// image is the RISYS mark, served from APP_URL; when a client blocks images the
+// wordmark beside it still reads "RISYS", so nothing depends on it loading.
+// No tracking pixel and no other remote content.
+
+const LOGO_URL = `${APP_URL}/email/risys-mark-light.png`
+const C = {
+  page: '#f3eeed', card: '#ffffff', ink: '#1f1718', text: '#3d3233', muted: '#8b7b79',
+  line: '#ece3e1', band: '#1f1718', crimson: '#5d0f0f', rose: '#f6ecea',
+}
+const FONT = `-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif`
+const SERIF = `Georgia,'Times New Roman',serif`
+
+function button(href: string, label: string) {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+    <td style="border-radius:8px;background:${C.crimson};">
+      <a href="${escape(href)}" style="display:inline-block;padding:12px 22px;font-family:${FONT};font-size:14px;font-weight:600;line-height:1;color:#ffffff;text-decoration:none;border-radius:8px;">${escape(label)}</a>
+    </td></tr></table>`
+}
+
+function layout(opts: { preheader: string; orgName: string; body: string; footer: string }) {
+  const { preheader, orgName, body, footer } = opts
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">
+<title>RISYS</title></head>
+<body style="margin:0;padding:0;background:${C.page};-webkit-text-size-adjust:100%;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${escape(preheader)}&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.page};">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
+
+        <!-- Header band -->
+        <tr><td style="background:${C.band};border-radius:14px 14px 0 0;padding:20px 28px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td valign="middle">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                <td valign="middle" style="padding-right:12px;">
+                  <img src="${LOGO_URL}" width="28" height="29" alt="" style="display:block;border:0;outline:none;width:28px;height:29px;">
+                </td>
+                <td valign="middle" style="font-family:${FONT};font-size:15px;font-weight:600;letter-spacing:0.22em;color:#f6eeec;">RISYS</td>
+              </tr></table>
+            </td>
+            <td valign="middle" align="right" style="font-family:${FONT};font-size:12px;color:#b9a9a6;">${escape(orgName)}</td>
+          </tr></table>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="background:${C.card};border-left:1px solid ${C.line};border-right:1px solid ${C.line};padding:32px 28px 28px;">
+          ${body}
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="background:${C.card};border:1px solid ${C.line};border-top:1px solid ${C.line};border-radius:0 0 14px 14px;padding:18px 28px 22px;">
+          <p style="margin:0;font-family:${FONT};font-size:12px;line-height:1.65;color:${C.muted};">${footer}</p>
+        </td></tr>
+
+        <tr><td align="center" style="padding:18px 8px 0;font-family:${FONT};font-size:11.5px;line-height:1.6;color:${C.muted};">
+          RISYS &middot; Governance, risk and compliance &middot; <a href="${escape(APP_URL)}" style="color:${C.muted};text-decoration:underline;">${escape(APP_URL.replace(/^https?:\/\//, ''))}</a>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body></html>`
+}
+
 function invitationEmail(opts: {
   orgName: string; inviterName: string; link: string; role: string; expiresAt: string;
 }) {
@@ -59,7 +127,7 @@ function invitationEmail(opts: {
   const expires = new Date(expiresAt).toLocaleDateString('en-GB', {
     day: 'numeric', month: 'long', year: 'numeric',
   })
-  const roleLabel = role === 'admin' ? 'an administrator' : `a ${role}`
+  const roleLabel = role === 'admin' ? 'an administrator' : `a ${role.replace(/_/g, ' ')}`
 
   const subject = `${inviterName} has invited you to ${orgName} on RISYS`
 
@@ -75,40 +143,25 @@ function invitationEmail(opts: {
     'If you were not expecting this invitation, you can ignore this message — the link is tied to your email address and does nothing until it is opened.',
   ].join('\n')
 
-  const html = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"></head>
-<body style="margin:0;padding:24px;background:#f6eeec;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#292021;">
-  <table role="presentation" cellpadding="0" cellspacing="0" style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e9dad7;border-radius:12px;">
-    <tr><td style="padding:28px 28px 8px;">
-      <p style="margin:0 0 18px;font-size:13px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#5D0F0F;">RISYS</p>
-      <p style="margin:0 0 14px;font-size:17px;font-weight:600;line-height:1.4;">
-        ${escape(inviterName)} has invited you to ${escape(orgName)}
-      </p>
-      <p style="margin:0 0 20px;font-size:14px;line-height:1.65;color:#4d3e3e;">
-        You have been added as ${escape(roleLabel)}. Open the link below to set your own password and sign in.
-      </p>
-      <p style="margin:0 0 20px;">
-        <a href="${escape(link)}" style="display:inline-block;padding:11px 20px;background:#5D0F0F;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">
-          Accept invitation
-        </a>
-      </p>
-      <p style="margin:0 0 20px;font-size:12.5px;line-height:1.6;color:#97817d;">
-        The link works once and expires on ${escape(expires)}. If the button does not work, copy this address into your browser:<br>
-        <span style="word-break:break-all;color:#4d3e3e;">${escape(link)}</span>
-      </p>
-    </td></tr>
-    <tr><td style="padding:16px 28px 24px;border-top:1px solid #e9dad7;">
-      <p style="margin:0;font-size:12px;line-height:1.6;color:#97817d;">
-        RISYS is the governance, risk and compliance platform used by your organisation.
-        If you were not expecting this invitation you can ignore this message — the link is tied
-        to your email address and does nothing until it is opened.
-      </p>
-    </td></tr>
-  </table>
-</body></html>`
+  const body = `
+    <p style="margin:0 0 10px;font-family:${FONT};font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:${C.crimson};">Invitation</p>
+    <h1 style="margin:0 0 14px;font-family:${SERIF};font-size:24px;font-weight:400;line-height:1.3;color:${C.ink};">
+      ${escape(inviterName)} has invited you to ${escape(orgName)}
+    </h1>
+    <p style="margin:0 0 24px;font-family:${FONT};font-size:15px;line-height:1.65;color:${C.text};">
+      You have been added as ${escape(roleLabel)}. Set your own password to sign in — nobody else, including the person who invited you, ever sees it.
+    </p>
+    ${button(link, 'Accept invitation')}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:26px;">
+      <tr><td style="background:${C.rose};border-radius:10px;padding:14px 16px;font-family:${FONT};font-size:12.5px;line-height:1.6;color:${C.text};">
+        The link works once and expires on <strong>${escape(expires)}</strong>. If the button does not work, copy this address into your browser:<br>
+        <span style="word-break:break-all;color:${C.crimson};">${escape(link)}</span>
+      </td></tr>
+    </table>`
 
-  return { subject, html, text }
+  const footer = `RISYS is the governance, risk and compliance platform used by ${escape(orgName)}. If you were not expecting this invitation you can ignore this message — the link is tied to your email address and does nothing until it is opened.`
+
+  return { subject, html: layout({ preheader: `Join ${orgName} on RISYS — the link expires on ${expires}.`, orgName, body, footer }), text }
 }
 
 // ── Notification copies ───────────────────────────────────────────────────────
@@ -126,6 +179,18 @@ type Note = { id: string; org_id: string; user_id: string; type: string | null; 
 function appLink(link: string | null): string {
   const l = String(link ?? '')
   return l.startsWith('/') && !l.startsWith('//') ? `${APP_URL}${l}` : `${APP_URL}/app`
+}
+
+// What kind of record a notification points at, from its in-app link.
+function kindOf(link: string | null): string {
+  const l = String(link ?? '')
+  if (l.startsWith('/app/tasks')) return 'Task'
+  if (l.startsWith('/app/risks')) return 'Risk'
+  if (l.startsWith('/app/audits')) return 'Audit'
+  if (l.startsWith('/app/compliance')) return 'Compliance'
+  if (l.startsWith('/app/incidents')) return 'Incident'
+  if (l.startsWith('/app/findings')) return 'Finding'
+  return 'Update'
 }
 
 function notificationEmail(orgName: string, notes: Note[]) {
@@ -150,36 +215,38 @@ function notificationEmail(orgName: string, notes: Note[]) {
     'To stop these emails, open the notification bell in RISYS and turn off "Email me".',
   ].join('\n')
 
-  const item = (n: Note) => `
-      <tr><td style="padding:14px 0;border-top:1px solid #efe3e1;">
-        <p style="margin:0 0 4px;font-size:14.5px;font-weight:600;line-height:1.4;color:#292021;">${escape(n.title)}</p>
-        ${n.body ? `<p style="margin:0 0 8px;font-size:13.5px;line-height:1.6;color:#4d3e3e;">${escape(n.body)}</p>` : ''}
-        <a href="${escape(appLink(n.link))}" style="font-size:13px;font-weight:600;color:#5D0F0F;text-decoration:none;">Open in RISYS &rarr;</a>
-      </td></tr>`
+  const pill = (n: Note) =>
+    `<span style="display:inline-block;padding:3px 9px;border-radius:999px;background:${C.rose};font-family:${FONT};font-size:11px;font-weight:600;letter-spacing:0.04em;color:${C.crimson};">${escape(kindOf(n.link))}</span>`
 
-  const html = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"></head>
-<body style="margin:0;padding:24px;background:#f6eeec;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#292021;">
-  <table role="presentation" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;margin:0 auto;background:#ffffff;border:1px solid #e9dad7;border-radius:12px;">
-    <tr><td style="padding:26px 28px 6px;">
-      <p style="margin:0 0 6px;font-size:13px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#5D0F0F;">RISYS</p>
-      <p style="margin:0 0 6px;font-size:12.5px;color:#97817d;">${escape(orgName)}</p>
-      ${single ? '' : `<p style="margin:10px 0 4px;font-size:16px;font-weight:600;">${notes.length} updates for you</p>`}
-      <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;">${shown.map(item).join('')}
-      </table>
-      ${more > 0 ? `<p style="margin:6px 0 14px;font-size:13px;color:#4d3e3e;">…and ${more} more. <a href="${escape(APP_URL)}/app" style="color:#5D0F0F;">Open RISYS</a></p>` : ''}
-    </td></tr>
-    <tr><td style="padding:14px 28px 22px;border-top:1px solid #e9dad7;">
-      <p style="margin:0;font-size:12px;line-height:1.6;color:#97817d;">
-        You receive these because you are a member of ${escape(orgName)} on RISYS.
-        To stop them, open the notification bell in RISYS and turn off &ldquo;Email me&rdquo;.
-      </p>
-    </td></tr>
-  </table>
-</body></html>`
+  let body: string
+  if (single) {
+    const n = notes[0]
+    body = `
+      <p style="margin:0 0 14px;">${pill(n)}</p>
+      <h1 style="margin:0 0 12px;font-family:${SERIF};font-size:23px;font-weight:400;line-height:1.3;color:${C.ink};">${escape(n.title)}</h1>
+      ${n.body ? `<p style="margin:0 0 26px;font-family:${FONT};font-size:15px;line-height:1.65;color:${C.text};">${escape(n.body)}</p>` : '<div style="height:14px;"></div>'}
+      ${button(appLink(n.link), 'Open in RISYS')}`
+  } else {
+    const rows = shown.map((n, i) => `
+      <tr><td style="padding:16px 0;${i ? `border-top:1px solid ${C.line};` : ''}">
+        <p style="margin:0 0 8px;">${pill(n)}</p>
+        <p style="margin:0 0 5px;font-family:${FONT};font-size:15px;font-weight:600;line-height:1.4;color:${C.ink};">${escape(n.title)}</p>
+        ${n.body ? `<p style="margin:0 0 8px;font-family:${FONT};font-size:14px;line-height:1.6;color:${C.text};">${escape(n.body)}</p>` : ''}
+        <a href="${escape(appLink(n.link))}" style="font-family:${FONT};font-size:13px;font-weight:600;color:${C.crimson};text-decoration:none;">Open &rarr;</a>
+      </td></tr>`).join('')
+    body = `
+      <p style="margin:0 0 10px;font-family:${FONT};font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:${C.crimson};">Your updates</p>
+      <h1 style="margin:0 0 8px;font-family:${SERIF};font-size:23px;font-weight:400;line-height:1.3;color:${C.ink};">${notes.length} things need your attention</h1>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;">${rows}</table>
+      ${more > 0 ? `<p style="margin:6px 0 0;font-family:${FONT};font-size:13.5px;color:${C.text};">…and ${more} more waiting in RISYS.</p>` : ''}
+      <div style="height:22px;"></div>
+      ${button(`${APP_URL}/app`, 'Open RISYS')}`
+  }
 
-  return { subject, html, text }
+  const footer = `You receive this because you are a member of <strong style="color:${C.text};font-weight:600;">${escape(orgName)}</strong> on RISYS. To stop these emails, open the notification bell in RISYS and turn off &ldquo;Email me these notifications&rdquo;.`
+  const preheader = single ? (notes[0].body || notes[0].title) : notes.slice(0, 3).map(n => n.title).join(' · ')
+
+  return { subject, html: layout({ preheader, orgName, body, footer }), text }
 }
 
 async function sendQueuedNotifications(admin: ReturnType<typeof adminClient>) {

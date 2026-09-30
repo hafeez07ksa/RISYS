@@ -42,7 +42,7 @@ export function NotificationSettings() {
       render: r => <span className="tnum" style={{ color: 'var(--text-2)' }}>{fmtDateTime(r.created_at)}</span> },
     { key: 'template', header: tx('Type'), width: 120,
       render: r => <span style={{ color: 'var(--text-2)' }}>{tx(TEMPLATE_LABEL[r.template] || r.template)}</span> },
-    { key: 'to_email', header: tx('To'), width: 230,
+    { key: 'to_email', header: tx('To'), width: 280,
       render: r => <span style={{ color: 'var(--text-2)' }}>{r.to_email}</span> },
     { key: 'subject', header: tx('Subject'), hideBelow: 1100,
       render: r => <span style={{ color: 'var(--text)' }}>{r.subject}</span> },
@@ -55,7 +55,7 @@ export function NotificationSettings() {
   ], [])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 22, maxWidth: 1100 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 22, width: '100%' }}>
       <section style={{
         background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '16px 18px',
       }}>
@@ -65,7 +65,7 @@ export function NotificationSettings() {
             <span style={{ display: 'block', fontSize: 13.5, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>
               {tx('Email me my notifications')}
             </span>
-            <span style={{ display: 'block', fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.6, maxWidth: 680 }}>{tx(
+            <span style={{ display: 'block', fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.6, maxWidth: 820 }}>{tx(
               'Everything that reaches your notification bell — review reminders, risk workflow, tasks, audit requests — is also sent to your email, grouped into one message every few minutes. Anything you have already read in RISYS is not emailed. This setting is yours alone; each person chooses for themselves.'
             )}</span>
           </span>

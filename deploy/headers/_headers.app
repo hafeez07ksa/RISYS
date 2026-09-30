@@ -21,3 +21,8 @@
 # Filenames are content-hashed by Vite, so they can be cached permanently.
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Logo and images used by RISYS emails. Loaded by mail clients from other
+# origins, so no hashed filename: cache for a day, not forever.
+/email/*
+  Cache-Control: public, max-age=86400

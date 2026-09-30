@@ -77,3 +77,18 @@ fragments may still appear in Arabic mode.
   is sent twice.
 
 All of these reach email through the notification outbox.
+
+## Polish (no database change)
+
+- **Email design** — `send-email` now has one `layout()` for invitations and
+  notifications: dark header band with the RISYS mark and wordmark, serif
+  headline, type pill, crimson button, footer, preheader. The mark is served
+  from `public/email/risys-mark-light.png` (→ `app.risysgrc.com/email/…`,
+  cached a day via `_headers.app`). **Redeploy `send-email` and the app.**
+- **Date-time picker** — `src/components/ui/DateTimeField.jsx` replaces the
+  native `datetime-local` on the task form: calendar, 15-minute times, quick
+  picks, past times blocked for reminders.
+- **Time-zone fix** — the task form sent local wall-clock times without a zone,
+  so Postgres stored them as UTC and every due date and reminder landed 3 hours
+  late in Riyadh. It now sends `new Date(v).toISOString()`.
+- **Settings → Notifications** uses the full page width.
