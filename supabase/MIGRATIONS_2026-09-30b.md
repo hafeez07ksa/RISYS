@@ -61,3 +61,19 @@ The checker only sees literal `tx('…')` strings. Text built at runtime
 (values from the database, statuses passed through `labelFor`) and English
 typed directly into JSX without `tx()` are not counted, so a few English
 fragments may still appear in Arabic mode.
+
+## Task notifications and reminders — 20260930005101 (applied)
+
+`task_notifications_and_reminders` moves task notifications into the database:
+
+- **Creating a task notifies the assignee, including yourself.** Self-assigned
+  tasks arrive as "Task on your list: …" — a record in your bell and mailbox.
+- **Reassigning a task notifies the new assignee** (previously nobody was told).
+- **The Reminder field now works.** At the reminder time the assignee gets
+  "Reminder: …" (checked every minute; `reminded_at` records it). Changing the
+  reminder time re-arms it. Done and cancelled tasks are not reminded.
+  Reminders already in the past when this shipped were not sent.
+- `src/hooks/useTasks.js` no longer inserts its own notification, so nothing
+  is sent twice.
+
+All of these reach email through the notification outbox.

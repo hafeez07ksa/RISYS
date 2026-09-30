@@ -38,17 +38,9 @@ export function useTasks(filters = {}) {
       .select().single()
     if (error) throw error
 
-    // Notify the assignee if different from creator
-    if (data.assigned_to && data.assigned_to !== data.created_by) {
-      await supabase.from('notifications').insert({
-        org_id:  organization.id,
-        user_id: data.assigned_to,
-        type:    'task_assigned',
-        title:   `Task assigned: ${data.title}`,
-        body:    `You have been assigned a ${data.priority || 'medium'} priority task.`,
-        link:    `/app/tasks/${task.id}`,
-      })
-    }
+    // The assignee is notified by the database (trigger task_notify) — also
+    // when you assign yourself, as a record — and reminded at reminder_at by
+    // send_task_reminders. Nothing to send from here.
 
     await fetchTasks()
     return task
