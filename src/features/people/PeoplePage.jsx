@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
   UserPlus, Search, Copy, Check, RotateCw, Ban, Trash2, Mail,
@@ -8,7 +9,6 @@ import {
 } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { Spinner } from '@/components/ui/Spinner'
-import { InlineConfirm } from '@/components/ui/InlineConfirm'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { usePeople, ROLES, roleLabel, invitationState, inviteLink } from '@/hooks/usePeople'
@@ -70,61 +70,169 @@ export function CopyButton({ text, label = 'Copy link' }) {
 }
 
 // ── Custom role dropdown (replaces native <select>) ───────────────────────────
+// The menu is portalled to <body> with fixed positioning. Rendered inside the
+// row it was clipped by the table's rounded, overflow-hidden wrapper — on the
+// last rows it was invisible. It opens upward when there is no room below,
+// stays inside the viewport, and closes on outside click, Escape and scroll.
+const MENU_W = 360
 function RoleDropdown({ value, onChange, disabled }) {
   const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState(null)
+  const btnRef = useRef(null)
+  const menuRef = useRef(null)
   const pill = ROLE_PILL[value] || ROLE_PILL.viewer
   // roleLabel, not a lookup in the assignable list: `owner` is a real role
   // that is never offered in the dropdown, and it still has to render.
   const currentLabel = roleLabel(value)
 
+  const place = useCallback(() => {
+    const r = btnRef.current?.getBoundingClientRect()
+    if (!r) return
+    const M = 8
+    const want = Math.min(ROLES.length * 58 + 8, 420)
+    const below = window.innerHeight - r.bottom - M
+    const above = r.top - M
+    const up = below < want && above > below
+    const maxH = Math.max(160, Math.min(want, up ? above - 4 : below - 4))
+    const rtl = document.documentElement.dir === 'rtl'
+    const anchor = rtl ? r.right - MENU_W : r.left
+    setPos({
+      top: up ? Math.max(M, r.top - 4 - maxH) : r.bottom + 4,
+      left: Math.max(M, Math.min(anchor, window.innerWidth - MENU_W - M)),
+      maxH,
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    place()
+    const onDown = (e) => {
+      if (btnRef.current?.contains(e.target) || menuRef.current?.contains(e.target)) return
+      setOpen(false)
+    }
+    const onKey = (e) => { if (e.key === 'Escape') { setOpen(false); btnRef.current?.focus() } }
+    // Scrolling the page would leave the menu floating away from its row.
+    const onScroll = (e) => { if (!menuRef.current?.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    window.addEventListener('scroll', onScroll, true)
+    window.addEventListener('resize', place)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+      window.removeEventListener('scroll', onScroll, true)
+      window.removeEventListener('resize', place)
+    }
+  }, [open, place])
+
   return (
     <div style={{ position: 'relative' }}>
       <button
+        ref={btnRef}
         onClick={() => !disabled && setOpen(o => !o)}
         disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
           fontSize: 11, fontWeight: 500, padding: '4px 10px 4px 9px',
           borderRadius: 20, cursor: disabled ? 'default' : 'pointer',
           background: pill.bg, color: pill.color,
-          border: `1px solid ${pill.border}`, outline: 'none',
+          border: `1px solid ${open ? '#5D0F0F' : pill.border}`, outline: 'none',
           whiteSpace: 'nowrap',
         }}>
         {currentLabel}
-        {!disabled && <ChevronDown size={10} style={{ opacity: 0.6 }} />}
+        {!disabled && <ChevronDown size={10} style={{ opacity: 0.6, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 120ms' }} />}
       </button>
 
-      {open && (
-        <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setOpen(false)} />
-          <div style={{
-            position: 'absolute', top: 'calc(100% + 4px)', insetInlineStart: 0, zIndex: 50,
+      {open && pos && createPortal(
+        <div
+          ref={menuRef}
+          role="listbox"
+          aria-label={tx('Role')}
+          className="anim-pop"
+          style={{
+            position: 'fixed', top: pos.top, left: pos.left, width: MENU_W, maxHeight: pos.maxH,
+            overflowY: 'auto', zIndex: 'var(--z-popover)',
             background: '#fff', border: '1px solid #e5e0e0', borderRadius: 10,
-            boxShadow: '0 4px 16px rgba(41,32,33,0.1)', minWidth: 200, overflow: 'hidden',
+            boxShadow: '0 10px 30px rgba(41,32,33,0.16)',
           }}>
-            {ROLES.map(r => {
-              const p = ROLE_PILL[r.value] || ROLE_PILL.viewer
-              return (
-                <button key={r.value}
-                  onClick={() => { onChange(r.value); setOpen(false) }}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'flex-start', gap: 10,
-                    padding: '10px 12px', cursor: 'pointer', border: 'none', textAlign: 'start',
-                    background: value === r.value ? '#f8f7f7' : '#fff',
-                    borderBottom: '1px solid #f5f3f3',
-                  }}>
-                  <span style={{
-                    marginTop: 2, flexShrink: 0, display: 'inline-block',
-                    padding: '2px 8px', borderRadius: 20, fontSize: 10.5, fontWeight: 600,
-                    background: p.bg, color: p.color, border: `1px solid ${p.border}`,
-                  }}>{r.label}</span>
-                  <span style={{ fontSize: 11.5, color: '#8a7070', lineHeight: 1.4 }}>{r.desc}</span>
-                </button>
-              )
-            })}
-          </div>
-        </>
+          {ROLES.map((r, i) => {
+            const p = ROLE_PILL[r.value] || ROLE_PILL.viewer
+            const on = value === r.value
+            return (
+              <button key={r.value}
+                role="option"
+                aria-selected={on}
+                onClick={() => { if (!on) onChange(r.value); setOpen(false) }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'flex-start', gap: 10,
+                  padding: '10px 12px', cursor: 'pointer', border: 'none', textAlign: 'start',
+                  background: on ? '#f8f4f3' : '#fff',
+                  borderTop: i ? '1px solid #f5f3f3' : 'none',
+                }}
+                onMouseEnter={(e) => { if (!on) e.currentTarget.style.background = '#fbf8f8' }}
+                onMouseLeave={(e) => { if (!on) e.currentTarget.style.background = '#fff' }}>
+                <span style={{
+                  marginTop: 2, flexShrink: 0, display: 'inline-block', width: 122, textAlign: 'center', boxSizing: 'border-box', whiteSpace: 'nowrap',
+                  padding: '2px 8px', borderRadius: 20, fontSize: 10.5, fontWeight: 600,
+                  background: p.bg, color: p.color, border: `1px solid ${p.border}`,
+                }}>{r.label}</span>
+                <span style={{ flex: 1, fontSize: 11.5, color: '#8a7070', lineHeight: 1.45 }}>{r.desc}</span>
+                {on && <Check size={13} style={{ color: '#5D0F0F', flexShrink: 0, marginTop: 3 }} />}
+              </button>
+            )
+          })}
+        </div>,
+        document.body
       )}
+    </div>
+  )
+}
+
+// ── Remove-member confirmation ────────────────────────────────────────────────
+// Opens under the member's row across the full width, so the question has room
+// to say who is being removed, from where, and what happens — instead of being
+// squeezed into the narrow action column.
+function RemoveMemberStrip({ member, orgName, busy, error, onCancel, onConfirm }) {
+  const name = member.full_name || member.email
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onCancel() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onCancel])
+
+  return (
+    <div role="alert" className="anim-pop" style={{
+      display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
+      margin: '0 16px 14px', padding: '12px 14px',
+      background: '#fdf3f2', border: '1px solid #f1d2cf', borderRadius: 10,
+    }}>
+      <div style={{
+        width: 30, height: 30, borderRadius: '50%', background: '#fbe3e1', color: '#b91c1c',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      }}>
+        <AlertTriangle size={14} />
+      </div>
+      <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#1a1314' }}>
+          {tx('Remove {{name}} from {{org}}?', { name, org: orgName || tx('this workspace') })}
+        </p>
+        <p style={{ margin: '3px 0 0', fontSize: 12, color: '#6b5b5b', lineHeight: 1.5 }}>
+          {error
+            ? <span style={{ color: '#b91c1c' }}>{error}</span>
+            : tx('They lose access immediately. Their name stays on the records they created, and you can invite them again later.')}
+        </p>
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginInlineStart: 'auto' }}>
+        <button type="button" className="btn-secondary" onClick={onCancel} disabled={busy}
+          style={{ fontSize: 12.5, padding: '7px 14px' }}>{tx('Keep access')}</button>
+        <button type="button" className="btn-danger" onClick={onConfirm} disabled={busy}
+          style={{ fontSize: 12.5, padding: '7px 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          {busy ? <Spinner size="sm" /> : <Trash2 size={12} />}
+          {tx('Remove access')}
+        </button>
+      </div>
     </div>
   )
 }
@@ -294,22 +402,27 @@ export function PeoplePage() {
     finally { setBusyId(null) }
   }
 
+  // Which member row has its removal question open (one at a time).
+  const [confirmRemoveId, setConfirmRemoveId] = useState(null)
+  const [removeError, setRemoveError] = useState('')
+
   const handleRemove = async (m) => {
     // Guard: cannot remove the last admin/owner
     const isAdminOrOwner = isAdminRole(m.role)
     if (isAdminOrOwner) {
       const adminCount = members.filter(x => isAdminRole(x.role)).length
       if (adminCount <= 1) {
-        setError(tx('Cannot remove the last admin. Promote another member to admin first.'))
-        return
+        setRemoveError(tx('Cannot remove the last admin. Promote another member to admin first.'))
+        return false
       }
     }
     setBusyId(m.id); setError('')
     try {
       await removeMember(m.id)
       await logAudit(organization?.id, AUDIT.MEMBER_REMOVED, 'member', m.id, m.full_name || m.email, { role: m.role })
+      return true
     }
-    catch (err) { setError(err.message) }
+    catch (err) { setRemoveError(err.message || tx('That did not work.')); return false }
     finally { setBusyId(null) }
   }
 
@@ -442,9 +555,11 @@ export function PeoplePage() {
                 <div style={{ background: '#fff' }}>
                   {filteredMembers.map((m, i) => {
                     const isSelf = m.user_id === currentUserId
+                    const confirming = confirmRemoveId === m.id
                     return (
-                      <div key={m.id} className="row-hover grid items-center px-4 py-3"
-                        style={{ gridTemplateColumns: '2.2fr 1.4fr 1.4fr 1fr 1fr 80px', borderTop: i > 0 ? '1px solid #e5e0e0' : 'none' }}>
+                      <div key={m.id} style={{ borderTop: i > 0 ? '1px solid #e5e0e0' : 'none' }}>
+                      <div className="row-hover grid items-center px-4 py-3"
+                        style={{ gridTemplateColumns: '2.2fr 1.4fr 1.4fr 1fr 1fr 80px', background: confirming ? '#fdf7f6' : undefined }}>
 
                         {/* Avatar + name */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
@@ -481,13 +596,32 @@ export function PeoplePage() {
                         <span style={{ fontSize: 12, color: '#8a7070' }}>{m.last_active ? new Date(m.last_active).toLocaleDateString(appLocale()) : '—'}</span>
                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                           {isAdmin && !isSelf && (
-                            <InlineConfirm triggerTitle={tx('Remove from workspace')} triggerStyle={{ padding: 5 }}
-                              message={`${tx('Remove')} ${m.full_name || m.email}? ${tx('Access is revoked immediately.')}`}
-                              confirmLabel={tx('Remove access')} onConfirm={() => handleRemove(m)}>
+                            <button type="button" className="btn-ghost" title={tx('Remove from workspace')}
+                              aria-expanded={confirming}
+                              onClick={() => { setRemoveError(''); setConfirmRemoveId(confirming ? null : m.id) }}
+                              style={{ padding: 5, color: confirming ? '#b91c1c' : undefined, background: confirming ? '#fbeaea' : undefined }}>
                               <Trash2 size={13} />
-                            </InlineConfirm>
+                            </button>
                           )}
                         </div>
+                      </div>
+
+                      {/* The question opens under the row, full width — not squeezed
+                          into the action column. */}
+                      {confirming && (
+                        <RemoveMemberStrip
+                          member={m}
+                          orgName={organization?.name}
+                          busy={busyId === m.id}
+                          error={removeError}
+                          onCancel={() => { setConfirmRemoveId(null); setRemoveError('') }}
+                          onConfirm={async () => {
+                            setRemoveError('')
+                            const ok = await handleRemove(m)
+                            if (ok) setConfirmRemoveId(null)
+                          }}
+                        />
+                      )}
                       </div>
                     )
                   })}

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useUnsavedChanges } from '@/components/layout/LeaveGuard'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Trash2, ChevronDown, ChevronRight, ShieldAlert, Save, Info, UserPlus, X, Scale } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
@@ -124,6 +125,8 @@ function CategoryCard({ category, tolerance, risks, matrix, canEdit, onSave }) {
   }).length, [current, categoryRisks, matrix])
 
   const update = (patch) => setDraft({ ...current, ...patch })
+  // An edited tolerance that has not been saved makes leaving the page ask first.
+  useUnsavedChanges(canEdit && !!draft)
 
   const save = async () => {
     setSaving(true); setError('')

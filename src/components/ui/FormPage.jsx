@@ -3,6 +3,7 @@ import { Lightbulb } from 'lucide-react'
 import { BackLink } from '@/components/ui/BackLink'
 import { Spinner } from '@/components/ui/Spinner'
 import { tx } from '@/lib/i18n'
+import { LeaveGuardRegion, useLeaveGuard } from '@/components/layout/LeaveGuard'
 
 /* ── Full-page forms ──────────────────────────────────────────────────────────
  *
@@ -21,17 +22,20 @@ import { tx } from '@/lib/i18n'
  * -------------------------------------------------------------------------- */
 
 export function FormPage({ title, description, meta, back, onSubmit, footer, note, error, children, width }) {
+  const guard = useLeaveGuard()
   useEffect(() => {
     if (!onSubmit) return
     const onKey = (e) => {
-      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); onSubmit() }
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); guard?.allowLeave(); onSubmit() }
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [onSubmit])
+  }, [onSubmit, guard])
 
+  // The whole form is a leave-guard region: once someone starts entering
+  // something, leaving by any route other than Save / Cancel / Back asks first.
   return (
-    <div className="fp-root">
+    <LeaveGuardRegion className="fp-root">
       <PageHead title={title} description={description} meta={meta} back={back} />
       <div className="fp-body">
         <div className="fp-inner" style={width ? { maxWidth: width } : undefined}>{children}</div>
@@ -44,7 +48,7 @@ export function FormPage({ title, description, meta, back, onSubmit, footer, not
           {footer}
         </div>
       )}
-    </div>
+    </LeaveGuardRegion>
   )
 }
 

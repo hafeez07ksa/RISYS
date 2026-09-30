@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Outlet, Navigate } from 'react-router-dom'
+import { LeaveGuardProvider } from '@/components/layout/LeaveGuard'
 import { ShieldAlert, LogOut } from 'lucide-react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { AppTopbar } from '@/components/layout/Topbar'
@@ -67,6 +68,7 @@ export function AppLayout() {
   if (!organization) return <AccessGate />
 
   return (
+    <LeaveGuardProvider>
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
@@ -81,5 +83,6 @@ export function AppLayout() {
       </main>
       <CommandSearch open={search.open} onClose={() => search.setOpen(false)} />
     </div>
+    </LeaveGuardProvider>
   )
 }

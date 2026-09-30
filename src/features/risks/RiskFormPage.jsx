@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { LeaveGuardRegion } from '@/components/layout/LeaveGuard'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Info, Check, AlertTriangle, Lightbulb } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -216,9 +217,9 @@ export function RiskFormPage() {
   }
 
   return (
-    <div className="h-full flex flex-col" style={{ background: 'var(--bg)' }}>
+    <LeaveGuardRegion className="h-full flex flex-col" style={{ background: 'var(--bg)' }}>
       {/* Header */}
-      <header style={{
+      <header data-guard-allow style={{
         padding: 'var(--s-4) var(--gutter)', borderBottom: '1px solid var(--border)',
         background: 'var(--bg-2)', flexShrink: 0,
       }}>
@@ -500,7 +501,7 @@ export function RiskFormPage() {
               )}</p>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <div data-guard-allow style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
               <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: 'var(--t-sm)', padding: '9px' }}
                 onClick={save} disabled={saving}>
                 {saving ? <Spinner size="sm" /> : (isEdit ? tx('Save changes') : tx('Add to register'))}
@@ -511,6 +512,6 @@ export function RiskFormPage() {
           </aside>
         </div>
       </div>
-    </div>
+    </LeaveGuardRegion>
   )
 }

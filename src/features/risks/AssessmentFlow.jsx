@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { LeaveGuardRegion } from '@/components/layout/LeaveGuard'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowRight, ArrowLeft, Plus, Trash2, ShieldCheck, ShieldAlert, AlertTriangle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -221,7 +222,7 @@ export function AssessmentFlow({ risk, onClose, onSaved }) {
           padding: 'var(--s-4) var(--gutter)', borderBottom: '1px solid var(--border)',
           background: 'var(--bg-2)', flexShrink: 0,
         }}>
-          <button onClick={onClose}
+          <button data-guard-allow onClick={onClose}
             style={{
               display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--t-meta)', color: 'var(--text-3)',
               background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 7,
@@ -501,7 +502,7 @@ export function AssessmentFlow({ risk, onClose, onSaved }) {
           </span>
 
           {step === STEPS.length - 1 ? (
-            <button className="btn-primary" style={{ fontSize: 'var(--t-sm)' }} onClick={() => { onSaved?.(); onClose() }}>{tx('Done')}</button>
+            <button data-guard-allow className="btn-primary" style={{ fontSize: 'var(--t-sm)' }} onClick={() => { onSaved?.(); onClose() }}>{tx('Done')}</button>
           ) : (
             <button className="btn-primary" style={{ fontSize: 'var(--t-sm)', opacity: canAdvance() && !saving ? 1 : 0.5 }}
               onClick={next} disabled={!canAdvance() || saving}>
@@ -545,11 +546,15 @@ export function AssessmentPage() {
     )
   }
 
+  // The assessment is a guarded region: leaving mid-way by the sidebar or the
+  // browser asks first; its own Back and Done buttons do not.
   return (
-    <AssessmentFlow
-      risk={risk}
-      onClose={() => navigate(`/app/risks/${id}`)}
-      onSaved={() => supabase.from('risks').select('*').eq('id', id).single().then(({ data }) => data && setRisk(data))}
-    />
+    <LeaveGuardRegion style={{ height: '100%' }}>
+      <AssessmentFlow
+        risk={risk}
+        onClose={() => navigate(`/app/risks/${id}`)}
+        onSaved={() => supabase.from('risks').select('*').eq('id', id).single().then(({ data }) => data && setRisk(data))}
+      />
+    </LeaveGuardRegion>
   )
 }
