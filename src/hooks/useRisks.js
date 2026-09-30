@@ -748,6 +748,47 @@ export function useControlTests(controlId) {
   return { tests, loading, logTest, refetch: fetchTests }
 }
 
+// ── EMAIL COPIES OF NOTIFICATIONS ─────────────────────────────
+// One switch per person per workspace (notification_email_prefs). No row
+// means on: everything that reaches the bell is also emailed, grouped into one
+// message per few minutes, by send-email from the database outbox.
+export function useEmailPreference() {
+  const { organization, user } = useAuth()
+  const [enabled, setEnabled] = useState(true)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    let live = true
+    if (!organization?.id || !user?.id) { setLoading(false); return }
+    supabase.from('notification_email_prefs')
+      .select('email_enabled')
+      .eq('org_id', organization.id).eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!live) return
+        setEnabled(data ? data.email_enabled !== false : true)
+        setLoading(false)
+      })
+    return () => { live = false }
+  }, [organization?.id, user?.id])
+
+  const setEmail = async (next) => {
+    if (!organization?.id || !user?.id) return
+    const prev = enabled
+    setEnabled(next)
+    setSaving(true)
+    const { error } = await supabase.from('notification_email_prefs').upsert(
+      { org_id: organization.id, user_id: user.id, email_enabled: next, updated_at: new Date().toISOString() },
+      { onConflict: 'org_id,user_id' })
+    if (error) setEnabled(prev)
+    setSaving(false)
+    return !error
+  }
+
+  return { enabled, loading, saving, setEmail }
+}
+
 // ── NOTIFICATIONS ─────────────────────────────────────────────
 export function useNotifications() {
   const { organization, user } = useAuth()

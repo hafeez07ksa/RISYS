@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Topbar } from '@/components/layout/Topbar'
 import { IntegrationsPage } from './integrations/IntegrationsPage'
 import { MembersSettings } from './MembersSettings'
+import { NotificationSettings } from './NotificationSettings'
 import { useAuth } from '@/hooks/useAuth'
 import clsx from 'clsx'
 import { tx } from '@/lib/i18n'
@@ -28,7 +29,7 @@ export function SettingsPage() {
     integrations:  <IntegrationsPage />,
     organization:  <Stub text={tx('Organization settings')} />,
     members:       <MembersSettings />,
-    notifications: <Stub text={tx('Notification preferences')} />,
+    notifications: <NotificationSettings />,
   }
 
   return (

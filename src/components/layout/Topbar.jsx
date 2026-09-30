@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
-import { Bell, CheckCheck, Search, HelpCircle, ChevronDown, LogOut, Settings } from 'lucide-react'
-import { useNotifications } from '@/hooks/useRisks'
+import { Bell, CheckCheck, Search, HelpCircle, ChevronDown, LogOut, Settings, Mail } from 'lucide-react'
+import { useNotifications, useEmailPreference } from '@/hooks/useRisks'
 import { useAuth } from '@/hooks/useAuth'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -131,6 +131,7 @@ function IconButton({ children, title, onClick, badge }) {
 function NotificationsBell() {
   const navigate = useNavigate()
   const { notifications, unread, markRead, markAllRead } = useNotifications()
+  const email = useEmailPreference()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -216,6 +217,23 @@ function NotificationsBell() {
               </button>
             ))}
           </div>
+
+          {/* Email copies: one switch, in the place people look at notifications. */}
+          <label style={{
+            display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+            borderTop: '1px solid var(--border)', cursor: email.loading ? 'default' : 'pointer',
+            fontSize: 'var(--t-meta)', color: 'var(--text-2)', background: 'var(--bg-2)',
+          }}>
+            <Mail size={12} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
+            <span style={{ flex: 1 }}>{tx('Email me these notifications')}</span>
+            <input
+              type="checkbox"
+              checked={email.enabled}
+              disabled={email.loading || email.saving}
+              onChange={(e) => email.setEmail(e.target.checked)}
+              aria-label={tx('Email me these notifications')}
+            />
+          </label>
         </div>
       )}
     </div>
