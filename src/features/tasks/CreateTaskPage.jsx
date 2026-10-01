@@ -32,7 +32,14 @@ export function CreateTaskPage() {
   const [linked, setLinked] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [form, setForm] = useState({ title: '', description: '', priority: 'medium', assigned_to: '', due_at: '', reminder_at: '' })
+  // Pre-filled when opened from elsewhere (e.g. a risk's Recommended actions:
+  // ?risk=<id>&title=…&description=…&priority=high).
+  const [form, setForm] = useState(() => ({
+    title: params.get('title') || '',
+    description: params.get('description') || '',
+    priority: ['low', 'medium', 'high', 'critical'].includes(params.get('priority')) ? params.get('priority') : 'medium',
+    assigned_to: '', due_at: '', reminder_at: '',
+  }))
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
   useEffect(() => {

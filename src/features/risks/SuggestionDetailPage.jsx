@@ -174,6 +174,11 @@ export function SuggestionDetailPage() {
           {' '}{(s.connectors || []).map(c => CONNECTOR[c] || c).join(', ')}
         </p>
         <Evidence items={items} />
+        {pending && (
+          <p style={{ fontSize: 11.5, color: 'var(--text-3)', margin: '8px 0 0', lineHeight: 1.5 }}>
+            {tx('Once approved, these become the risk\'s Recommended actions: each with its fix, ticked off automatically when the next scan no longer reports it.')}
+          </p>
+        )}
       </section>
 
       {pending && perms.canApprove && (

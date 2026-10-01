@@ -35,6 +35,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { SelectField } from '@/components/ui/Combobox'
 import { EvidenceFileLink } from '@/components/ui/EvidenceFileLink'
 import { tx, appLocale } from '@/lib/i18n'
+import { RecommendedActions } from './RecommendedActions'
 
 const EVIDENCE_ICONS = {
   Document: FileText, Screenshot: Image, Log: ClipboardList, Attestation: PenLine,
@@ -411,6 +412,12 @@ function OverviewTab({ risk, member, iScore, perms, riskWithCollabs, organizatio
               </div>
             )}
           </Card>
+        )}
+
+        {/* Risks RISYS raised itself: what it found, as a to-do list that
+            ticks itself off as the connected systems report fixes. */}
+        {risk.source === 'Automated detection' && (
+          <RecommendedActions risk={risk} canCreateTasks={!!perms?.canComment} />
         )}
 
         {risk.treatment_notes && (

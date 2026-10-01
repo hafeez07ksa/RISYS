@@ -69,3 +69,34 @@ Suggestion text (title, cause …) is generated in English.
 
 Nothing to deploy server-side. The first suggestions appear after the next
 scan, the nightly run, or **Check now** on the page.
+
+## Recommended actions — 20261001150310 (applied)
+
+`risk_suggestions_recommended_actions`:
+
+- Each finding in a suggestion's evidence now carries its `recommendation`
+  (the fix, e.g. "SharePoint admin center → Policies → Sharing …") and its
+  link; each failing measurement carries its target ("Target: SharePoint and
+  OneDrive do not allow links that open without signing in.").
+- `risk_suggestions.evidence_at_approval` — the evidence when the suggestion
+  was approved: the baseline for the risk's to-do list.
+- Approved suggestions keep being refreshed; when the area has nothing open
+  any more their evidence empties.
+- People who can read a risk can read the suggestion behind it (new select
+  policy), so the risk owner sees the actions even without a risk-manager role.
+
+Front end:
+
+- `src/features/risks/RecommendedActions.jsx` — on the Overview tab of any risk
+  with source "Automated detection": progress ("1 of 5 done"), open actions
+  with their fix, critical first, "New since approval" for problems found
+  later, links to the finding / control / Microsoft, **Create task** (opens
+  New task linked to the risk with title, fix and priority pre-filled), and
+  the actions fixed since approval. Nothing is ticked by hand: an action is
+  done when the next scan no longer reports it.
+- `CreateTaskPage.jsx` accepts `?title=&description=&priority=` as well as
+  `?risk=`.
+- The suggestion page says the evidence becomes the risk's Recommended actions.
+
+Tested in a rolled-back transaction: approve 2-7 → RSK-0009 with 10 actions;
+resolve the "Anyone links allowed" finding and refresh → 9 open, 1 done.
