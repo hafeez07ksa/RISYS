@@ -162,6 +162,8 @@ export const NAV_ITEMS = [
   { id: 'incidents',  label: tx('Incidents'),      icon: 'AlertTriangle',   section: 'workspace' },
   { id: 'findings',   label: tx('Findings'),       icon: 'FileWarning',     section: 'workspace' },
   { id: 'risks',      label: tx('Risk Register'),  icon: 'ShieldAlert',     section: 'workspace' },
+  // Risks RISYS raised itself from connector findings, waiting for approval.
+  { id: 'risks/suggestions', label: tx('Suggested risks'), icon: 'Sparkles', section: 'workspace', sub: true },
   { id: 'controls',   label: tx('Controls'),       icon: 'CheckSquare',     section: 'workspace' },
   { id: 'compliance', label: tx('Compliance'),     icon: 'BookCheck',       section: 'workspace' },
   { id: 'tasks',      label: tx('Tasks'),          icon: 'CheckSquare2',    section: 'workspace' },

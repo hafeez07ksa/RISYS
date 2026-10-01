@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, ShieldAlert, AlertTriangle, CheckSquare,
   BookCheck, ScrollText, Settings, ChevronDown, LogOut, Users, Users2, CheckSquare2, FileWarning,
-  Library, PanelLeftClose, PanelLeftOpen, Check, ClipboardCheck, FileText,
+  Library, PanelLeftClose, PanelLeftOpen, Check, ClipboardCheck, FileText, Sparkles,
 } from 'lucide-react'
+import { usePendingSuggestionCount } from '@/hooks/useRiskSuggestions'
 import { RisysLogo } from '@/components/ui/RisysLogo'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { useAuth } from '@/hooks/useAuth'
@@ -32,7 +33,7 @@ import { tx } from '@/lib/i18n'
 const ICONS = {
   LayoutDashboard, ShieldAlert, AlertTriangle, CheckSquare,
   BookCheck, ScrollText, Settings, Users, Users2, CheckSquare2, FileWarning, Library,
-  ClipboardCheck, FileText,
+  ClipboardCheck, FileText, Sparkles,
 }
 
 /* Which capability a nav item needs. Anything not listed is open to every
@@ -43,20 +44,37 @@ const NAV_GATE = {
   people:   (p) => p.canManagePeople,
   settings: (p) => p.canEditOrgSettings,
   audit:    (p) => p.canViewAudit,
+  'risks/suggestions': (p) => p.canTriageFindings || p.isAuditor,
 }
 const COLLAPSE_KEY = 'risys.sidebar.collapsed'
 
-function NavItem({ to, icon: iconName, label, collapsed }) {
+// Pages that live under another item's path but have their own nav entry, so
+// the parent does not light up with them (Risk Register vs Suggested risks).
+const OWN_ENTRIES = ['/app/risks/suggestions']
+
+function NavItem({ to, icon: iconName, label, collapsed, sub, badge }) {
   const Icon = ICONS[iconName]
+  const { pathname } = useLocation()
+  const stolen = OWN_ENTRIES.some(p => p !== to && p.startsWith(`${to}/`) && pathname.startsWith(p))
   const link = (
     <NavLink
       to={to}
-      className={({ isActive }) => clsx('nav-item', isActive && 'active')}
-      style={collapsed ? { justifyContent: 'center', padding: '7px 0' } : undefined}
+      className={({ isActive }) => clsx('nav-item', isActive && !stolen && 'active')}
+      style={collapsed ? { justifyContent: 'center', padding: '7px 0', position: 'relative' }
+        : sub ? { paddingInlineStart: 30 } : undefined}
       aria-label={collapsed ? label : undefined}
     >
-      {Icon && <Icon size={15} strokeWidth={1.6} style={{ flexShrink: 0 }} />}
-      {!collapsed && <span className="truncate">{label}</span>}
+      {Icon && <Icon size={sub ? 13 : 15} strokeWidth={1.6} style={{ flexShrink: 0 }} />}
+      {!collapsed && <span className="truncate" style={{ flex: 1, fontSize: sub ? 12.5 : undefined }}>{label}</span>}
+      {badge > 0 && (
+        <span className="tnum" aria-label={tx('{{n}} waiting', { n: badge })} style={collapsed ? {
+          position: 'absolute', top: 2, insetInlineEnd: 6, minWidth: 14, height: 14, padding: '0 3px', borderRadius: 7,
+          background: '#c2410c', color: '#fff', fontSize: 9, fontWeight: 600, lineHeight: '14px', textAlign: 'center',
+        } : {
+          minWidth: 18, height: 18, padding: '0 5px', borderRadius: 9, flexShrink: 0,
+          background: '#c2410c', color: '#fff', fontSize: 10.5, fontWeight: 600, lineHeight: '18px', textAlign: 'center',
+        }}>{badge}</span>
+      )}
     </NavLink>
   )
   // §5 — the label has to come back somehow once the icon is all that is left.
@@ -64,6 +82,12 @@ function NavItem({ to, icon: iconName, label, collapsed }) {
 }
 
 function Section({ title, items, collapsed }) {
+  const perms = usePermissions()
+  const { pathname } = useLocation()
+  const showsSuggestions = items.some(i => i.id === 'risks/suggestions')
+  const { count: suggestions, refetch } = usePendingSuggestionCount(showsSuggestions && (perms.canTriageFindings || perms.isAuditor))
+  // Re-count when the person moves around, so approving clears the badge.
+  useEffect(() => { if (showsSuggestions) refetch() }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
   if (items.length === 0) return null
   return (
     <div>
@@ -71,7 +95,8 @@ function Section({ title, items, collapsed }) {
       {collapsed && <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '10px 8px' }} />}
       <div className="flex flex-col gap-0.5">
         {items.map((i) => (
-          <NavItem key={i.id} to={`/app/${i.id}`} icon={i.icon} label={i.label} collapsed={collapsed} />
+          <NavItem key={i.id} to={`/app/${i.id}`} icon={i.icon} label={i.label} collapsed={collapsed}
+            sub={i.sub} badge={i.id === 'risks/suggestions' ? suggestions : 0} />
         ))}
       </div>
     </div>

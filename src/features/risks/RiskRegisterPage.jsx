@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Plus, Search, ShieldAlert, RefreshCw, LayoutGrid, List, Filter,
-  Download, Trash2, ChevronUp, ChevronDown, AlertTriangle, User, SlidersHorizontal
+  Download, Trash2, ChevronUp, ChevronDown, AlertTriangle, User, SlidersHorizontal, Sparkles,
 } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
@@ -23,6 +23,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { InlineConfirm } from '@/components/ui/InlineConfirm'
 import { SelectField } from '@/components/ui/Combobox'
 import { tx, appLocale } from '@/lib/i18n'
+import { usePendingSuggestionCount } from '@/hooks/useRiskSuggestions'
 
 function RiskBadge({ score }) {
   const l = getRiskLevel(score)
@@ -86,6 +87,7 @@ export function RiskRegisterPage() {
   // showing counts for every state while one is selected.
   const [stateFilter, setStateFilter] = useState('')
   const perms = usePermissions()
+  const { count: suggested } = usePendingSuggestionCount(perms.canTriageFindings || perms.isAuditor)
   const [view, setView] = useState('list')
   const [sortKey, setSortKey] = useState('inherent')
   const [sortAsc, setSortAsc] = useState(false)
@@ -239,6 +241,26 @@ export function RiskRegisterPage() {
       />
 
       <div className="flex-1 overflow-y-auto page-content">
+        {/* Risks RISYS raised itself from connector findings, waiting for a decision */}
+        {suggested > 0 && (
+          <button type="button" onClick={() => navigate('/app/risks/suggestions')} style={{
+            display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'start', cursor: 'pointer',
+            padding: '12px 16px', marginBottom: 16, borderRadius: 'var(--r-md)',
+            background: '#1f1718', color: '#f6eeec', border: 'none',
+          }}>
+            <Sparkles size={16} style={{ color: '#f4c27a', flexShrink: 0 }} />
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontSize: 13.5, fontWeight: 600 }}>
+                {suggested === 1 ? tx('RISYS found 1 new risk in your connected systems') : tx('RISYS found {{n}} new risks in your connected systems', { n: suggested })}
+              </span>
+              <span style={{ display: 'block', fontSize: 12, color: '#cdbdb9', marginTop: 2 }}>
+                {tx('Already written, scored and mapped to NCA ECC. Review and approve them for the register.')}
+              </span>
+            </span>
+            <span style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap' }}>{tx('Review')} →</span>
+          </button>
+        )}
+
         {/* How much risk, is any of it outside the line, and what needs doing */}
         <PostureOverview risks={risks} matrix={matrix} quickFilter={quickFilter} onQuickFilter={setQuickFilter} />
 

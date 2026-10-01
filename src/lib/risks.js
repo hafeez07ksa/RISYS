@@ -258,7 +258,9 @@ export function calculateResidualScore(inherentScore, controlEffectiveness) {
 
 export const RISK_SOURCES = [
   'Manual', 'RCSA / Self-Assessment', 'Internal Audit', 'External Audit',
-  'Incident', 'Regulatory Finding', 'Penetration Test', 'Vendor Assessment', 'Threat Intelligence'
+  'Incident', 'Regulatory Finding', 'Penetration Test', 'Vendor Assessment', 'Threat Intelligence',
+  // Raised by RISYS from connector findings (risk_suggestions), then approved.
+  'Automated detection',
 ]
 
 // Workflow state machine — the MANUAL transitions only.

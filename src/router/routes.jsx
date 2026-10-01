@@ -53,6 +53,7 @@ import { RequestFormPage } from '@/features/audits/RequestFormPage'
 import { RequestPage } from '@/features/audits/RequestPage'
 import { FindingFormPage } from '@/features/audits/FindingFormPage'
 import { FindingPage } from '@/features/audits/FindingPage'
+import { SuggestedRisksPage } from '@/features/risks/SuggestedRisksPage'
 
 /* The breadcrumb links every segment of the URL, so /app/audits/:id/findings
  * has to go somewhere: to the engagement, on that tab. */
@@ -99,6 +100,7 @@ const appRoutes = [
       ) },
       // Literal segments come before ':id' so they are not swallowed by the param.
       { path: 'risks/triage',     element: <RequireRole roles={ROLE_SETS.findingsReader}><TriagePage /></RequireRole> },
+      { path: 'risks/suggestions', element: <RequireRole roles={ROLE_SETS.findingsReader}><SuggestedRisksPage /></RequireRole> },
       { path: 'risks/new',        element: <RiskFormPage /> },
       { path: 'risks/:id',        element: <RiskDetailPage /> },
       { path: 'risks/:id/edit',   element: <RiskFormPage /> },
