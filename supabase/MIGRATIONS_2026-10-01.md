@@ -6,7 +6,9 @@
 |---|---|---|
 | 20261001104603 | risk_suggestions | `risk_suggestion_templates` (wording per ECC area), `risk_suggestions`, `refresh_risk_suggestions(org)` (the generator), `request_risk_suggestions(org)` ("Check now"), `update_risk_suggestion`, `accept_risk_suggestion`, `dismiss_risk_suggestion`, `restore_risk_suggestion`; generator wired into the after-scan trigger and the nightly refresh |
 
-Do not run it again with `db push`.
+| 20261001113156 | risk_suggestions_tidy_cause | Generator joins detected items without their own closing full stop ("achieved; Advanced…" instead of "achieved.; Advanced…"). Existing unedited suggestions were refreshed. |
+
+Do not run these again with `db push`.
 
 ## How it works
 
@@ -47,10 +49,14 @@ second run created nothing and sent no second notification; dismiss worked.
 ## Front end
 
 - `src/features/risks/SuggestedRisksPage.jsx` — `/app/risks/suggestions`:
-  awaiting approval / approved / dismissed / fixed before approval; each
-  suggestion expands into an editable form (title, cause, event, impact,
-  category, subcategory, L×I, owner, business unit) beside the evidence that
-  raised it, with Approve to register / Add as draft / Save / Dismiss.
+  awaiting approval / approved / dismissed / fixed before approval; each row
+  has a one-click Approve to register and opens its own page.
+- `src/features/risks/SuggestionDetailPage.jsx` — `/app/risks/suggestions/:id`:
+  the risk on its own page (record layout): editable risk, classification and
+  score, ownership on the left; inherent score, possible duplicate, the
+  evidence that raised it and Dismiss on the right; Save / Add as draft /
+  Approve to register in the header. Leave guard on unsaved edits.
+- `src/features/risks/suggestionParts.jsx` — shared score badge, scale, evidence list.
 - `src/hooks/useRiskSuggestions.js` — data and actions; `usePendingSuggestionCount`.
 - Sidebar: **Suggested risks** under Risk Register with a count badge.
 - Risk Register: a banner when suggestions are waiting.
