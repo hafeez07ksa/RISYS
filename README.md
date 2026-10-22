@@ -1,4 +1,4 @@
-# Sentrix — GRC Platform
+# RISYS - GRC Platform
 
 A multi-tenant Governance, Risk & Compliance (GRC) platform built with Vite + React + Supabase.
 
