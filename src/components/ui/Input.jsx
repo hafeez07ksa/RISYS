@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { PasswordInput } from './PasswordInput'
 
 /* Input keeps its own markup — a text field has no reason to be anything but
  * a native <input>. Only the label and error treatment changed, to the shared
@@ -11,11 +12,16 @@ export function Input({ label, error, help, required, className, ...props }) {
           {label}{required && <span className="field-req">*</span>}
         </label>
       )}
-      <input
-        className={clsx('risys-input', className)}
-        aria-invalid={error ? 'true' : undefined}
-        {...props}
-      />
+      {props.type === 'password' ? (
+        // Password fields get a show/hide toggle everywhere they appear.
+        <PasswordInput className={className} aria-invalid={error ? 'true' : undefined} {...props} />
+      ) : (
+        <input
+          className={clsx('risys-input', className)}
+          aria-invalid={error ? 'true' : undefined}
+          {...props}
+        />
+      )}
       {help && !error && <p className="field-help">{help}</p>}
       {error && <p className="field-error">{error}</p>}
     </div>

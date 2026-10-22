@@ -37,7 +37,15 @@ export const useAuthStore = create(
         }
         set({ loading: false })
 
-        supabase.auth.onAuthStateChange(async (_event, session) => {
+        supabase.auth.onAuthStateChange(async (event, session) => {
+          // A reset link that lands anywhere other than /reset-password (for
+          // example on the site root, if that page is missing from the
+          // project's allowed redirect URLs) still carries a recovery session.
+          // Send it to the page that can use it rather than straight into the app.
+          if (event === 'PASSWORD_RECOVERY' && !window.location.pathname.startsWith('/reset-password')) {
+            window.location.replace('/reset-password')
+            return
+          }
           set({ session, user: session?.user ?? null })
           if (session?.user) {
             await get().fetchOrganization(session.user.id)

@@ -1,0 +1,30 @@
+/* ── Chart primitives ─────────────────────────────────────────────────────────
+ * Shared by the dashboard and the platform console (components/ui/charts.jsx).
+ * Logical properties only, so bars fill from the inline start in Arabic. */
+:root { --chart-track: #F1E8E6; }
+
+.chart-donut { position: relative; flex-shrink: 0; }
+.chart-donut svg { transform: rotate(-90deg); display: block; }
+.chart-donut-seg { transition: stroke-dasharray 0.9s var(--ease), stroke-dashoffset 0.9s var(--ease); }
+.chart-donut-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center;
+}
+.chart-big { font-size: 28px; font-weight: 600; color: var(--text); line-height: 1; letter-spacing: -0.02em; }
+.chart-small { font-size: 10.5px; color: var(--text-3); margin-block-start: 4px; }
+.chart-ring-text { font-size: 14px; font-weight: 600; color: var(--text); }
+
+.chart-stack {
+  display: flex;
+  gap: 2px;
+  overflow: hidden;
+  width: 100%;
+  height: 8px;
+  border-radius: 8px;
+  background: var(--chart-track);
+}
+.chart-stack > span { height: 100%; transition: width 0.8s var(--ease); }
+.chart-meter { width: 100%; overflow: hidden; background: var(--chart-track); }
+.chart-meter > span { display: block; height: 100%; border-radius: inherit; transition: width 0.9s var(--ease); }
+

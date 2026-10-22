@@ -1,37 +1,40 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
-import { Check, AlertTriangle, Trash2, Pause } from 'lucide-react'
+import { Check, AlertTriangle, Trash2, Pause, Building2, UserRound, StickyNote, KeyRound, Mail, ShieldCheck, ArrowUpRight } from 'lucide-react'
 import { usePlatform, useCompany, activationLink } from '@/hooks/usePlatform'
 import { Spinner } from '@/components/ui/Spinner'
-import { PlatformShell, Card, CopyBtn, ErrorNote, PLANS, StatusChip, bytes, fmtDate } from './shared'
+import { PlatformShell, Card, CopyBtn, ErrorNote, StatusChip, Avatar, bytes, fmtDate, plural } from './shared'
 
-/* Console forms. No guidance panels: the console is operated by RISYS staff,
- * and the rules that matter are enforced in the database, which returns the
- * reason when it refuses. Layout is a single column of labelled fields, the
- * way internal tools are used — fast, dense, keyboard-first. */
+/* Console forms. Short: the console is operated by RISYS staff, and the rules
+ * that matter are enforced in the database, which returns the reason when it
+ * refuses. Ctrl/⌘+Enter submits everywhere. */
 
 // ── Field primitives ─────────────────────────────────────────────────────────
-function Field({ label, hint, required, children, span }) {
+function Field({ label, hint, required, children }) {
   return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 0, gridColumn: span ? `span ${span}` : undefined }}>
-      <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-2)' }}>
-        {label}{required && <span style={{ color: 'var(--crimson)' }}> *</span>}
-      </span>
+    <label className="pc-field">
+      <span className="pc-label">{label}{required && <i> *</i>}</span>
       {children}
-      {hint && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{hint}</span>}
+      {hint && <span className="pc-hint">{hint}</span>}
     </label>
   )
 }
 
-const Grid = ({ cols = 2, children }) => (
-  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: 14 }}>{children}</div>
-)
+function Section({ title, desc, children }) {
+  return (
+    <div className="pc-section">
+      {title && <p className="pc-section-title">{title}</p>}
+      {desc && <p className="pc-section-desc">{desc}</p>}
+      {children}
+    </div>
+  )
+}
 
-const inputStyle = { fontSize: 12.5, width: '100%' }
+const inputStyle = { fontSize: 13, width: '100%', borderRadius: 9, padding: '9px 11px' }
 
 function FormActions({ busy, onCancel, submitLabel, onSubmit, danger, disabled }) {
   return (
-    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+    <div className="pc-form-actions">
       <button className="btn-secondary" onClick={onCancel} disabled={busy}>Cancel</button>
       <button className={danger ? 'btn-danger' : 'btn-primary'} onClick={onSubmit} disabled={busy || disabled}>
         {busy && <Spinner size="sm" />}{submitLabel}
@@ -39,6 +42,8 @@ function FormActions({ busy, onCancel, submitLabel, onSubmit, danger, disabled }
     </div>
   )
 }
+
+const Loading = () => <PlatformShell><div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><Spinner size="lg" /></div></PlatformShell>
 
 /* Ctrl/⌘+Enter submits, as everywhere else in RISYS. */
 function useSubmitShortcut(fn, enabled = true) {
@@ -53,13 +58,30 @@ function useSubmitShortcut(fn, enabled = true) {
 function LinkPanel({ email, token, expires }) {
   const link = activationLink(token)
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-2)' }}>
-        Send to <strong style={{ color: 'var(--text)' }}>{email}</strong> — single use, expires {fmtDate(expires)}.
-      </p>
-      <p className="mono" style={{ margin: 0, fontSize: 11.5, color: 'var(--text-2)', wordBreak: 'break-all', padding: '10px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)' }}>{link}</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span className="pc-kpi-icon pc-tone-blue" style={{ width: 32, height: 32, borderRadius: 10 }}><Mail size={15} /></span>
+        <div style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5 }}>
+          For <strong style={{ color: 'var(--text)' }}>{email}</strong>
+          <div className="pc-sub">Works once · expires {fmtDate(expires)}</div>
+        </div>
+      </div>
+      <p className="pc-linkbox" style={{ margin: 0 }}>{link}</p>
       <div><CopyBtn text={link} label="Copy activation link" /></div>
     </div>
+  )
+}
+
+/* What happens after a company is provisioned — the same three steps every time. */
+function NextSteps() {
+  return (
+    <Card title="What happens next" icon={ShieldCheck} pad={false}>
+      <div className="pc-steps">
+        <div className="pc-step"><span className="pc-step-n">1</span><p><b>Send the activation link</b>Share it with the client's administrator. It works once and expires in 14 days.</p></div>
+        <div className="pc-step"><span className="pc-step-n">2</span><p><b>They set their own password</b>Nobody at RISYS ever sees it. They confirm their email from a RISYS message.</p></div>
+        <div className="pc-step"><span className="pc-step-n">3</span><p><b>They invite their team</b>People are managed inside the client's workspace, not from the console.</p></div>
+      </div>
+    </Card>
   )
 }
 
@@ -67,72 +89,81 @@ function LinkPanel({ email, token, expires }) {
 export function CreateCompanyPage() {
   const navigate = useNavigate()
   const platform = usePlatform()
-  const [f, setF] = useState({ name: '', adminEmail: '', plan: 'standard', maxMembers: 25, storageGb: 5, industry: '', size: '', primaryContact: '', notes: '' })
+  const [f, setF] = useState({ name: '', adminEmail: '', industry: '', primaryContact: '', notes: '' })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
   const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.value }))
+  const ready = f.name.trim().length >= 2 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.adminEmail.trim())
 
   const create = async () => {
+    if (!ready) return
     setBusy(true); setError('')
-    try {
-      setResult(await platform.createCompany({ ...f, maxMembers: parseInt(f.maxMembers) || 25, storageGb: parseInt(f.storageGb) || 5 }))
-    } catch (e) { setError(e.message) } finally { setBusy(false) }
+    try { setResult(await platform.createCompany({ ...f, name: f.name.trim(), adminEmail: f.adminEmail.trim() })) }
+    catch (e) { setError(e.message) } finally { setBusy(false) }
   }
   useSubmitShortcut(create, !result)
 
   if (result) {
     return (
-      <PlatformShell title={`${result.org.name} provisioned`} back={{ to: '/platform/companies', label: 'All companies' }} width={860}>
-        <Card title="Admin activation link">
-          <div style={{ display: 'flex', gap: 9, alignItems: 'center', marginBottom: 12 }}>
-            <Check size={16} style={{ color: '#2F6B3C' }} />
-            <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
-              {result.org.plan} plan · {result.org.max_members} seats · {result.org.storage_quota_gb} GB
-            </span>
-          </div>
-          <LinkPanel email={result.admin_email} token={result.activation_token} expires={result.expires_at} />
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-            <Link to="/platform/companies" className="btn-secondary" style={{ textDecoration: 'none' }}>All companies</Link>
-            <Link to={`/platform/companies/${result.org.id}`} className="btn-primary" style={{ textDecoration: 'none' }}>Open company</Link>
-          </div>
-        </Card>
+      <PlatformShell back={{ to: '/platform/companies', label: 'All companies' }} width={1040}
+        eyebrow="Company provisioned" title={result.org.name}
+        description="The workspace is ready. It stays empty until the administrator below activates it.">
+        <div className="pc-form-layout">
+          <Card title="Administrator activation link" icon={KeyRound}
+            footer={<div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <Link to="/platform/companies" className="btn-secondary" style={{ textDecoration: 'none' }}>All companies</Link>
+              <Link to={`/platform/companies/${result.org.id}`} className="btn-primary" style={{ textDecoration: 'none' }}>Open company <ArrowUpRight size={13} /></Link>
+            </div>}>
+            <div className="pc-banner pc-banner--green" style={{ marginBlockEnd: 16 }}>
+              <Check size={15} style={{ flexShrink: 0, marginTop: 2 }} />
+              <span><strong>{result.org.name}</strong> was created and recorded in the console activity log.</span>
+            </div>
+            <LinkPanel email={result.admin_email} token={result.activation_token} expires={result.expires_at} />
+          </Card>
+          <NextSteps />
+        </div>
       </PlatformShell>
     )
   }
 
   return (
-    <PlatformShell title="Provision a new company" back={{ to: '/platform/companies', label: 'All companies' }} width={860}
-      description="Creates the tenant and a 14-day activation link for its first administrator.">
+    <PlatformShell back={{ to: '/platform/companies', label: 'All companies' }} width={1040}
+      title="Provision a new company"
+      description="Creates the client's workspace and a 14-day activation link for its first administrator.">
       <ErrorNote>{error}</ErrorNote>
-      <Card>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <Field label="Company name" required hint="Must be unique across the platform.">
-            <input className="risys-input" style={inputStyle} value={f.name} onChange={set('name')} autoFocus placeholder="Al Rajhi Trading Co." />
-          </Field>
-          <Field label="Admin email" required hint="They receive the activation link and set their own password.">
-            <input type="email" className="risys-input" style={inputStyle} value={f.adminEmail} onChange={set('adminEmail')} placeholder="it.manager@client.com" />
-          </Field>
-          <Grid cols={3}>
-            <Field label="Plan">
-              <select className="risys-input" style={inputStyle} value={f.plan} onChange={set('plan')}>
-                {PLANS.map((p) => <option key={p} value={p}>{p[0].toUpperCase() + p.slice(1)}</option>)}
-              </select>
+      <div className="pc-form-layout">
+        <section className="pc-card">
+          <Section title="Company" desc="How the client appears in their workspace and on their reports.">
+            <div className="pc-fields">
+              <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                <span style={{ marginBlockStart: 22 }}><Avatar name={f.name || '?'} size={40} /></span>
+                <div style={{ flex: 1 }}>
+                  <Field label="Company name" required hint="Must be unique across the platform.">
+                    <input className="risys-input" style={inputStyle} value={f.name} onChange={set('name')} autoFocus placeholder="Al Rajhi Trading Co." />
+                  </Field>
+                </div>
+              </div>
+              <div className="pc-fields-2">
+                <Field label="Industry"><input className="risys-input" style={inputStyle} value={f.industry} onChange={set('industry')} placeholder="Financial services" /></Field>
+                <Field label="Primary contact" hint="Commercial contact at the client."><input className="risys-input" style={inputStyle} value={f.primaryContact} onChange={set('primaryContact')} placeholder="Name, phone or email" /></Field>
+              </div>
+            </div>
+          </Section>
+          <Section title="First administrator" desc="They receive the activation link, set their own password and invite the rest of their team.">
+            <Field label="Administrator email" required>
+              <input type="email" className="risys-input" style={inputStyle} value={f.adminEmail} onChange={set('adminEmail')} placeholder="it.manager@client.com" />
             </Field>
-            <Field label="Max users"><input type="number" min="1" className="risys-input" style={inputStyle} value={f.maxMembers} onChange={set('maxMembers')} /></Field>
-            <Field label="Storage (GB)"><input type="number" min="1" className="risys-input" style={inputStyle} value={f.storageGb} onChange={set('storageGb')} /></Field>
-          </Grid>
-          <Grid cols={3}>
-            <Field label="Industry"><input className="risys-input" style={inputStyle} value={f.industry} onChange={set('industry')} placeholder="Logistics" /></Field>
-            <Field label="Size"><input className="risys-input" style={inputStyle} value={f.size} onChange={set('size')} placeholder="200–500" /></Field>
-            <Field label="Primary contact"><input className="risys-input" style={inputStyle} value={f.primaryContact} onChange={set('primaryContact')} placeholder="Commercial contact" /></Field>
-          </Grid>
-          <Field label="Internal notes" hint="Visible only in the console, never to the client.">
-            <textarea className="risys-input" rows={3} style={inputStyle} value={f.notes} onChange={set('notes')} />
-          </Field>
-        </div>
-        <FormActions busy={busy} onCancel={() => navigate('/platform/companies')} onSubmit={create} submitLabel="Provision company" />
-      </Card>
+          </Section>
+          <Section title="Internal notes" desc="Visible only in the console, never to the client.">
+            <textarea className="risys-input" rows={3} style={inputStyle} value={f.notes} onChange={set('notes')}
+              placeholder="Contract start, renewal date, who referred them…" />
+          </Section>
+          <FormActions busy={busy} onCancel={() => navigate('/platform/companies')} onSubmit={create}
+            submitLabel={<><Building2 size={13} /> Provision company</>} disabled={!ready} />
+        </section>
+        <NextSteps />
+      </div>
     </PlatformShell>
   )
 }
@@ -150,7 +181,7 @@ export function CompanyProfilePage() {
 
   useEffect(() => {
     if (detail && !f) setF({
-      name: detail.org.name, industry: detail.org.industry || '', size: detail.org.size || '',
+      name: detail.org.name, industry: detail.org.industry || '',
       primaryContact: detail.org.primary_contact || '', notes: detail.org.notes || '',
     })
   }, [detail, f])
@@ -161,83 +192,31 @@ export function CompanyProfilePage() {
   }
   useSubmitShortcut(save, !!f)
 
-  if (loading || !f) return <PlatformShell><div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><Spinner size="lg" /></div></PlatformShell>
   if (loadError) return <PlatformShell title="Company not found" back={{ to: '/platform/companies', label: 'All companies' }}><ErrorNote>{loadError}</ErrorNote></PlatformShell>
+  if (loading || !f) return <Loading />
 
   const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.value }))
   return (
-    <PlatformShell title={`${detail.org.name} — profile`} back={{ to: `/platform/companies/${id}`, label: detail.org.name }} width={860}>
+    <PlatformShell title="Edit profile" description={detail.org.name} back={{ to: `/platform/companies/${id}`, label: detail.org.name }} width={860}>
       <ErrorNote>{error}</ErrorNote>
-      <Card>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <Field label="Company name" required hint="Renaming changes what the client sees in their workspace and on their reports.">
-            <input className="risys-input" style={inputStyle} value={f.name} onChange={set('name')} autoFocus />
-          </Field>
-          <Grid cols={3}>
-            <Field label="Industry"><input className="risys-input" style={inputStyle} value={f.industry} onChange={set('industry')} /></Field>
-            <Field label="Size"><input className="risys-input" style={inputStyle} value={f.size} onChange={set('size')} /></Field>
-            <Field label="Primary contact"><input className="risys-input" style={inputStyle} value={f.primaryContact} onChange={set('primaryContact')} /></Field>
-          </Grid>
-          <Field label="Internal notes" hint="Visible only in the console.">
-            <textarea className="risys-input" rows={6} style={inputStyle} value={f.notes} onChange={set('notes')}
-              placeholder="Renewal dates, escalation history, who to call…" />
-          </Field>
-        </div>
-        <FormActions busy={busy} onCancel={back} onSubmit={save} submitLabel="Save" />
-      </Card>
-    </PlatformShell>
-  )
-}
-
-// ── Plan and limits ──────────────────────────────────────────────────────────
-export function CompanyLimitsPage() {
-  const { id } = useParams()
-  const navigate = useNavigate()
-  const platform = usePlatform()
-  const { detail, loading, error: loadError } = useCompany(id)
-  const [f, setF] = useState(null)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const back = () => navigate(`/platform/companies/${id}`)
-
-  useEffect(() => {
-    if (detail && !f) setF({ plan: detail.org.plan, maxMembers: detail.org.max_members, storageGb: detail.org.storage_quota_gb })
-  }, [detail, f])
-
-  const save = async () => {
-    setBusy(true); setError('')
-    try {
-      await platform.updateLimits(id, { plan: f.plan, maxMembers: parseInt(f.maxMembers), storageGb: parseInt(f.storageGb) })
-      back()
-    } catch (e) { setError(e.message); setBusy(false) }
-  }
-  useSubmitShortcut(save, !!f)
-
-  if (loading || !f) return <PlatformShell><div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><Spinner size="lg" /></div></PlatformShell>
-  if (loadError) return <PlatformShell title="Company not found" back={{ to: '/platform/companies', label: 'All companies' }}><ErrorNote>{loadError}</ErrorNote></PlatformShell>
-
-  const used = detail.member_count
-  return (
-    <PlatformShell title={`${detail.org.name} — plan and limits`} back={{ to: `/platform/companies/${id}`, label: detail.org.name }} width={860}>
-      <ErrorNote>{error}</ErrorNote>
-      <Card>
-        <Grid cols={3}>
-          <Field label="Plan">
-            <select className="risys-input" style={inputStyle} value={f.plan} onChange={(e) => setF({ ...f, plan: e.target.value })}>
-              {PLANS.map((p) => <option key={p} value={p}>{p[0].toUpperCase() + p.slice(1)}</option>)}
-            </select>
-          </Field>
-          <Field label="Max users" hint={`${used} in use — the limit cannot go below this.`}>
-            <input type="number" min={used || 1} className="risys-input" style={inputStyle} value={f.maxMembers}
-              onChange={(e) => setF({ ...f, maxMembers: e.target.value })} />
-          </Field>
-          <Field label="Storage (GB)" hint={`${bytes(detail.storage_bytes)} stored today.`}>
-            <input type="number" min="1" className="risys-input" style={inputStyle} value={f.storageGb}
-              onChange={(e) => setF({ ...f, storageGb: e.target.value })} />
-          </Field>
-        </Grid>
-        <FormActions busy={busy} onCancel={back} onSubmit={save} submitLabel="Save" />
-      </Card>
+      <section className="pc-card">
+        <Section title="Company">
+          <div className="pc-fields">
+            <Field label="Company name" required hint="Renaming changes what the client sees in their workspace and on their reports.">
+              <input className="risys-input" style={inputStyle} value={f.name} onChange={set('name')} autoFocus />
+            </Field>
+            <div className="pc-fields-2">
+              <Field label="Industry"><input className="risys-input" style={inputStyle} value={f.industry} onChange={set('industry')} /></Field>
+              <Field label="Primary contact"><input className="risys-input" style={inputStyle} value={f.primaryContact} onChange={set('primaryContact')} /></Field>
+            </div>
+          </div>
+        </Section>
+        <Section title="Internal notes" desc="Visible only in the console.">
+          <textarea className="risys-input" rows={6} style={inputStyle} value={f.notes} onChange={set('notes')}
+            placeholder="Renewal dates, escalation history, who to call…" />
+        </Section>
+        <FormActions busy={busy} onCancel={back} onSubmit={save} submitLabel="Save changes" />
+      </section>
     </PlatformShell>
   )
 }
@@ -406,8 +385,8 @@ export function CompanyDeletePage() {
           <div style={{ padding: '12px 14px', marginBottom: 16, background: '#FBEAEA', border: '1px solid #F0CECE', borderRadius: 'var(--r)' }}>
             <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: '#8C1616' }}>This erases everything, permanently. There is no undo and no backup restore.</p>
             <ul style={{ margin: '8px 0 0', paddingInlineStart: 18, fontSize: 12.5, color: '#8C1616', lineHeight: 1.75 }}>
-              <li>{detail.risk_count} risks with their controls, evidence, assessments and history</li>
-              <li>{detail.incident_count} incidents, {detail.task_count} tasks, {detail.evidence_count} evidence files ({bytes(detail.storage_bytes)})</li>
+              <li>Everything the client has recorded in RISYS, with its full history</li>
+              <li>Every stored file ({bytes(detail.storage_bytes)})</li>
               <li>{detail.member_count} membership{detail.member_count === 1 ? '' : 's'}; accounts that exist only here are destroyed and signed out everywhere</li>
               <li>All invitations, connectors and settings</li>
             </ul>

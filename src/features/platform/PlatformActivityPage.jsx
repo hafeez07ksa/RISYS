@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { History } from 'lucide-react'
 import { usePlatform } from '@/hooks/usePlatform'
 import { Spinner } from '@/components/ui/Spinner'
 import {
@@ -36,11 +37,11 @@ export function PlatformActivityPage() {
   return (
     <PlatformShell title="Console activity" description="Every action taken in the platform console. Append-only — entries cannot be edited or removed.">
       <ErrorNote>{error}</ErrorNote>
-      <Card pad={false}>
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+      <Card pad={false} title="Audit trail" icon={History} caption="append-only">
+        <div className="pc-toolbar">
           <SearchInput value={q} onChange={setQ} placeholder="Company, staff member, reason…" width={300} />
           <select className="risys-input" value={action} onChange={(e) => setAction(e.target.value)}
-            style={{ fontSize: 12.5, width: 'auto', minWidth: 190 }}>
+            style={{ fontSize: 12.5, width: 'auto', minWidth: 190, borderRadius: 9 }}>
             <option value="">All actions</option>
             {Object.entries(ACTION_LABELS).map(([value, [label]]) => <option key={value} value={value}>{label}</option>)}
           </select>
@@ -56,7 +57,7 @@ export function PlatformActivityPage() {
               <tr key={r.id}>
                 <Td style={{ whiteSpace: 'nowrap' }}>
                   <div style={{ color: 'var(--text)' }}>{ago(r.created_at)}</div>
-                  <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>{fmtDateTime(r.created_at)}</div>
+                  <div className="pc-sub">{fmtDateTime(r.created_at)}</div>
                 </Td>
                 <Td><ActionChip action={r.action} /></Td>
                 <Td>

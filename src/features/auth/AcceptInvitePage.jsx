@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ShieldCheck, AlertTriangle, LogOut, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
@@ -8,6 +8,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { roleLabel } from '@/hooks/usePeople'
 import { tx } from '@/lib/i18n'
 import { LanguageSwitch } from '@/components/ui/LanguageSwitch'
+import { PasswordInput } from '@/components/ui/PasswordInput'
 
 // Top-level component: defining this inside AcceptInvitePage caused a remount
 // on every keystroke (focus jumped from password back to the autoFocus field).
@@ -240,9 +241,16 @@ export function AcceptInvitePage() {
         )}
         <div>
           <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>{tx('Password')}</label>
-          <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+          <PasswordInput value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
             onKeyDown={e => e.key === 'Enter' && submitAuth()}
-            placeholder={mode === 'signup' ? tx('At least 8 characters') : tx('Your password')} className="risys-input" autoFocus={mode === 'login'} />
+            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+            placeholder={mode === 'signup' ? tx('At least 8 characters') : tx('Your password')} autoFocus={mode === 'login'} />
+          {mode === 'login' && (
+            <Link to="/forgot-password" state={{ email: invite.email }}
+              style={{ display: 'inline-block', marginTop: 6, fontSize: 12, color: 'var(--crimson)' }}>
+              {tx('Forgot password?')}
+            </Link>
+          )}
         </div>
 
         {error && <p style={{ fontSize: 12, color: '#8C1616', background: '#FBEAEA', padding: '9px 12px', borderRadius: 8 }}>{error}</p>}

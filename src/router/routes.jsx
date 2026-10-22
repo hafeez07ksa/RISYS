@@ -7,6 +7,8 @@ import { ROLE_SETS } from '@/lib/roles'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { OAuthCallbackPage } from '@/features/auth/OAuthCallbackPage'
 import { AcceptInvitePage } from '@/features/auth/AcceptInvitePage'
+import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage'
+import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { IncidentsPage } from '@/features/incidents/IncidentsPage'
 import { IncidentDetailPage } from '@/features/incidents/IncidentDetailPage'
@@ -76,6 +78,8 @@ const ROOT = WITH_APP
 
 const appRoutes = [
   { path: '/login', element: <LoginPage /> },
+  { path: '/forgot-password', element: <ForgotPasswordPage /> },
+  { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/signup', element: <Navigate to="/login" replace /> },
   { path: '/onboarding', element: <Navigate to="/login" replace /> },
   { path: '/oauth/callback', element: <OAuthCallbackPage /> },

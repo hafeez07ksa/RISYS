@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
 import { Spinner } from '@/components/ui/Spinner'
 import { RisysLogo } from '@/components/ui/RisysLogo'
+import { PasswordInput } from '@/components/ui/PasswordInput'
 
 /*
  * The vendor door. Same Supabase auth underneath, but:
@@ -63,9 +64,9 @@ export function PlatformLoginPage() {
           </div>
           <div>
             <label className="eyebrow" style={{ display: 'block', marginBottom: 5 }}>Password</label>
-            <input type="password" required value={form.password}
+            <PasswordInput required value={form.password} autoComplete="current-password"
               onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-              placeholder="••••••••" className="risys-input" />
+              placeholder="••••••••" />
           </div>
 
           {error && (

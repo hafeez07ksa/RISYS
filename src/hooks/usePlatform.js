@@ -7,10 +7,11 @@ import { inviteUrl } from '@/lib/env'
  *
  * Every rule these calls depend on is enforced in the database, not here:
  * is_platform_admin() gates each RPC, a company must be suspended before it
- * can be deleted, suspension and deletion require a written reason, seat
- * limits cannot drop below the members already inside, and every call writes
+ * can be deleted, suspension and deletion require a written reason, and every call writes
  * a row to platform_audit_log that nobody can edit or delete afterwards.
  * The console surfaces those rules; it does not implement them. */
+
+const SEAT_CEILING = 10000
 
 const call = async (fn, args) => {
   const { data, error } = await supabase.rpc(fn, args)
@@ -63,22 +64,19 @@ export function usePlatform() {
     isPlatformAdmin, orgs, admins, stats, loading, error, refetch: fetchAll,
 
     // Companies
-    createCompany: async ({ name, adminEmail, plan, maxMembers, storageGb, industry, size, primaryContact, notes }) =>
+    // Plans, seat limits and storage quotas are not product concepts. The
+    // database still checks membership against max_members when someone is
+    // invited or joins, so every company gets the ceiling it accepts (10000)
+    // and that check can never be why someone cannot join.
+    createCompany: async ({ name, adminEmail, industry, primaryContact, notes }) =>
       after(await call('platform_create_organization', {
-        p_name: name, p_admin_email: adminEmail, p_plan: plan,
-        p_max_members: maxMembers, p_storage_gb: storageGb,
-        p_industry: industry || null, p_size: size || null,
-        p_primary_contact: primaryContact || null, p_notes: notes || null,
+        p_name: name, p_admin_email: adminEmail, p_max_members: SEAT_CEILING,
+        p_industry: industry || null, p_primary_contact: primaryContact || null, p_notes: notes || null,
       })),
 
-    updateLimits: async (orgId, { plan, maxMembers, storageGb }) =>
-      after(await call('platform_update_organization', {
-        p_org: orgId, p_plan: plan ?? null, p_max_members: maxMembers ?? null, p_storage_gb: storageGb ?? null,
-      })),
-
-    updateProfile: async (orgId, { name, industry, size, primaryContact, notes }) =>
+    updateProfile: async (orgId, { name, industry, primaryContact, notes }) =>
       after(await call('platform_update_org_profile', {
-        p_org: orgId, p_name: name ?? null, p_industry: industry ?? null, p_size: size ?? null,
+        p_org: orgId, p_name: name ?? null, p_industry: industry ?? null,
         p_primary_contact: primaryContact ?? null, p_notes: notes ?? null,
       })),
 

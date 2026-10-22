@@ -1,3 +1,4 @@
+import { Navigate, useParams } from 'react-router-dom'
 import { PlatformLoginPage } from '@/features/platform/PlatformLoginPage'
 import { PlatformOverviewPage } from '@/features/platform/PlatformOverviewPage'
 import { PlatformCompaniesPage } from '@/features/platform/PlatformCompaniesPage'
@@ -5,7 +6,7 @@ import { PlatformStaffPage } from '@/features/platform/PlatformStaffPage'
 import { PlatformActivityPage } from '@/features/platform/PlatformActivityPage'
 import { PlatformCompanyPage } from '@/features/platform/PlatformCompanyPage'
 import {
-  CreateCompanyPage, CompanyProfilePage, CompanyLimitsPage,
+  CreateCompanyPage, CompanyProfilePage,
   CompanyActivationPage, CompanySuspendPage, CompanyDeletePage,
 } from '@/features/platform/PlatformFormPages'
 /* Routes for the platform console build (VITE_APP_MODE=console).
@@ -28,10 +29,16 @@ export const consoleRoutes = [
   { path: '/platform/companies/new', element: <CreateCompanyPage /> },
   { path: '/platform/companies/:id', element: <PlatformCompanyPage /> },
   { path: '/platform/companies/:id/edit',       element: <CompanyProfilePage /> },
-  { path: '/platform/companies/:id/limits',     element: <CompanyLimitsPage /> },
+  // Old link: plans and limits were removed from the console (22 Oct 2026).
+  { path: '/platform/companies/:id/limits',     element: <LimitsRedirect /> },
   { path: '/platform/companies/:id/activation', element: <CompanyActivationPage /> },
   { path: '/platform/companies/:id/suspend',    element: <CompanySuspendPage /> },
   { path: '/platform/companies/:id/delete',     element: <CompanyDeletePage /> },
   { path: '/platform/staff',      element: <PlatformStaffPage /> },
   { path: '/platform/activity',   element: <PlatformActivityPage /> },
 ]
+
+function LimitsRedirect() {
+  const { id } = useParams()
+  return <Navigate to={`/platform/companies/${id}`} replace />
+}

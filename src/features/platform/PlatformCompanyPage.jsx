@@ -1,19 +1,22 @@
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { Pencil, KeyRound, Pause, Play, Trash2, SlidersHorizontal, ExternalLink } from 'lucide-react'
+import {
+  Pencil, KeyRound, Pause, Play, Trash2, ExternalLink, Users, AlertTriangle,
+  Plug, Building2, StickyNote, ShieldX, History, HardDrive, Clock, Lock,
+} from 'lucide-react'
 import { usePlatform, useCompany, activationLink } from '@/hooks/usePlatform'
 import { Spinner } from '@/components/ui/Spinner'
 import { InlineConfirm } from '@/components/ui/InlineConfirm'
 import {
-  PlatformShell, Card, Table, Td, Empty, Stat, StatRow, Chip, StatusChip, PlanChip,
-  SeatBar, CopyBtn, ActionChip, MetaSummary, ErrorNote, ago, bytes, fmtDate, fmtDateTime,
+  PlatformShell, Card, Table, Td, Empty, Stat, StatRow, Chip, LifecycleChip, Avatar,
+  CopyBtn, ActionChip, MetaSummary, ErrorNote, ago, bytes, fmtDate, fmtDateTime, plural,
 } from './shared'
 
 /* /platform/companies/:id — one tenant.
  *
- * Everything staff need before acting on a client: what they are paying for,
- * who is inside, what is outstanding, and what the console has already done to
- * them. Destructive actions live at the bottom, behind the rules the database
+ * Everything staff need before acting on a client: who is inside, what is
+ * outstanding, and what the console has already done to them. Never what the
+ * client has recorded — their risks, incidents and evidence are theirs. Destructive actions live at the bottom, behind the rules the database
  * enforces (suspend before delete; a written reason for both). */
 
 const TABS = [
@@ -47,7 +50,8 @@ export function PlatformCompanyPage() {
   const invitations = detail.invitations || []
   const pending = invitations.filter((i) => i.status === 'pending' && !i.expired)
   const suspended = org.status === 'suspended'
-  const seatsFull = members.length >= org.max_members
+  // The list RPC's shape, so the lifecycle chip reads the same as on the list.
+  const lifeOrg = { ...org, member_count: members.length, pending_invites: pending.length, last_activity: detail.last_risk_activity }
   // The database refuses deletion until 15 minutes after suspension.
   const cooling = suspended && org.suspended_at && (Date.now() - new Date(org.suspended_at).getTime()) < 15 * 60 * 1000
 
@@ -56,52 +60,49 @@ export function PlatformCompanyPage() {
   return (
     <PlatformShell
       back={{ to: '/platform/companies', label: 'All companies' }}
-      title={org.name}
-      description={[org.industry, org.size, org.primary_contact].filter(Boolean).join(' · ') || 'No profile details recorded'}
-      actions={<>
-        <Link to={`/platform/companies/${id}/edit`} className="btn-secondary" style={{ textDecoration: 'none' }}><Pencil size={13} /> Edit profile</Link>
-        <Link to={`/platform/companies/${id}/limits`} className="btn-secondary" style={{ textDecoration: 'none' }}><SlidersHorizontal size={13} /> Plan &amp; limits</Link>
-        <Link to={`/platform/companies/${id}/activation`} className="btn-secondary" style={{ textDecoration: 'none' }}><KeyRound size={13} /> Activation link</Link>
-      </>}
     >
       <ErrorNote>{actionError}</ErrorNote>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-        <StatusChip status={org.status} />
-        <PlanChip plan={org.plan} />
-        {seatsFull && <Chip tone="red">Seat limit reached</Chip>}
-        {members.length === 0 && <Chip tone="amber">Never activated</Chip>}
-        {pending.length > 0 && <Chip tone="amber">{pending.length} invite{pending.length > 1 ? 's' : ''} pending</Chip>}
-        <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Created {fmtDate(org.created_at)}</span>
+      <div className="pc-hero">
+        <Avatar name={org.name} size={56} />
+        <div className="pc-hero-main">
+          <h1 className="pc-hero-name">{org.name}</h1>
+          <div className="pc-hero-meta">
+            <LifecycleChip org={lifeOrg} />
+            {pending.length > 0 && <Chip tone="amber">{plural(pending.length, 'invitation')} pending</Chip>}
+            <span>{[org.industry, org.primary_contact].filter(Boolean).join(' · ') || 'No profile details recorded'}</span>
+            <span>· Provisioned {fmtDate(org.created_at)}</span>
+          </div>
+        </div>
+        <div className="pc-actions">
+          <Link to={`/platform/companies/${id}/edit`} className="btn-secondary" style={{ textDecoration: 'none' }}><Pencil size={13} /> Edit profile</Link>
+          <Link to={`/platform/companies/${id}/activation`} className="btn-primary" style={{ textDecoration: 'none' }}><KeyRound size={13} /> Activation link</Link>
+        </div>
       </div>
 
       {suspended && (
-        <div style={{ padding: '12px 14px', marginBottom: 16, background: '#FBEAEA', border: '1px solid #F0CECE', borderRadius: 'var(--r-lg)' }}>
-          <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: '#8C1616' }}>
-            Suspended {org.suspended_at ? ago(org.suspended_at) : ''} — all {members.length} member{members.length === 1 ? '' : 's'} are locked out.
-          </p>
-          {org.suspension_reason && <p style={{ margin: '3px 0 0', fontSize: 12.5, color: '#8C1616' }}>Reason: {org.suspension_reason}</p>}
+        <div className="pc-banner pc-banner--red">
+          <ShieldX size={15} style={{ flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <strong>Suspended {org.suspended_at ? ago(org.suspended_at) : ''} — all {plural(members.length, 'member')} are locked out.</strong>
+            {org.suspension_reason && <div>Reason: {org.suspension_reason}</div>}
+          </div>
         </div>
       )}
 
-      <nav style={{ display: 'flex', gap: 2, borderBottom: '1px solid var(--border)', marginBottom: 16 }}>
+      <nav className="pc-tabs">
         {TABS.map((t) => {
-          const on = tab === t.key
           const count = t.key === 'members' ? members.length : t.key === 'invitations' ? invitations.length : null
           return (
-            <button key={t.key} onClick={() => setParams(t.key === 'overview' ? {} : { tab: t.key })} style={{
-              fontSize: 12.5, fontWeight: on ? 600 : 500, padding: '8px 14px', cursor: 'pointer',
-              background: 'none', border: 'none', borderBottom: `2px solid ${on ? 'var(--crimson)' : 'transparent'}`,
-              color: on ? 'var(--text)' : 'var(--text-3)',
-            }}>
-              {t.label}{count != null && <span className="tnum" style={{ opacity: 0.6 }}> {count}</span>}
+            <button key={t.key} className={tab === t.key ? 'is-on' : ''} onClick={() => setParams(t.key === 'overview' ? {} : { tab: t.key })}>
+              {t.label}{count != null && <span className="tnum" style={{ opacity: 0.55, marginInlineStart: 4 }}>{count}</span>}
             </button>
           )
         })}
       </nav>
 
       {tab === 'overview' && <Overview detail={detail} org={org} members={members} />}
-      {tab === 'members' && <Members members={members} max={org.max_members} />}
+      {tab === 'members' && <Members members={members} />}
       {tab === 'invitations' && (
         <Invitations invitations={invitations} orgId={id}
           onRevoke={(invId) => run(() => platform.revokeInvitation(invId))} />
@@ -110,7 +111,7 @@ export function PlatformCompanyPage() {
 
       {/* ── Danger zone ── */}
       <div id="danger" style={{ marginTop: 26, scrollMarginTop: 16 }}>
-        <Card title="Danger zone">
+        <Card title="Danger zone" icon={AlertTriangle}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <DangerRow
               title={suspended ? 'Reactivate this company' : 'Suspend this company'}
@@ -137,7 +138,7 @@ export function PlatformCompanyPage() {
             <DangerRow
               title="Delete this company permanently"
               body={suspended
-                ? `Erases the workspace and everything in it: ${detail.risk_count} risks, ${detail.incident_count} incidents, ${detail.task_count} tasks, ${detail.evidence_count} evidence files. Member accounts that exist only here are destroyed. No undo.`
+                ? 'Erases the workspace and everything the client has recorded in it, including every evidence file. Member accounts that exist only here are destroyed. No undo.'
                 : 'A live workspace cannot be deleted. Suspend it first — the database refuses deletion until then.'}
               tone="red"
             >
@@ -169,51 +170,52 @@ const DangerRow = ({ title, body, children, tone }) => (
 )
 
 function Overview({ detail, org, members }) {
+  const admins = members.filter((m) => ['owner', 'admin'].includes(m.role))
+  const pendingInvites = (detail.invitations || []).filter((i) => i.status === 'pending' && !i.expired).length
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <StatRow>
-        <Stat label="Seats" value={`${members.length}/${org.max_members}`} sub={`${org.plan} plan`} />
-        <Stat label="Risks" value={detail.risk_count} />
-        <Stat label="Incidents" value={detail.incident_count} />
-        <Stat label="Controls" value={detail.control_count} />
-        <Stat label="Evidence" value={detail.evidence_count} sub={bytes(detail.storage_bytes)} />
-        <Stat label="Connectors" value={detail.connector_count} sub="connected" />
+    <div className="pc-stack">
+      <StatRow min={170}>
+        <Stat icon={Users} tone="blue" label="People" value={members.length} sub={plural(admins.length, 'administrator')} />
+        <Stat icon={KeyRound} tone="amber" label="Invitations pending" value={pendingInvites} sub="not yet accepted" />
+        <Stat icon={Plug} tone="green" label="Connectors" value={detail.connector_count} sub="connected" />
+        <Stat icon={HardDrive} tone="neutral" label="Storage used" value={bytes(detail.storage_bytes)} sub="files held for this client" />
+        <Stat icon={Clock} tone="wine" label="Last activity" value={detail.last_risk_activity ? ago(detail.last_risk_activity) : 'never'} sub="anyone in the workspace" />
       </StatRow>
+      <p className="pc-hint" style={{ margin: '-4px 0 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Lock size={12} /> The console never shows what a client records in RISYS — risks, incidents, controls, evidence or reports stay inside their workspace.
+      </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 16, alignItems: 'start' }} className="pf-two-col">
-        <Card title="Account">
-          <dl style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', rowGap: 10, columnGap: 16, margin: 0, fontSize: 12.5 }}>
-            <F k="Workspace ID" v={<span className="mono" style={{ fontSize: 11 }}>{org.id}</span>} />
-            <F k="Slug" v={<span className="mono" style={{ fontSize: 11 }}>{org.slug}</span>} />
-            <F k="Plan" v={<PlanChip plan={org.plan} />} />
-            <F k="Seats" v={<SeatBar used={members.length} max={org.max_members} />} />
-            <F k="Storage quota" v={`${bytes(detail.storage_bytes)} of ${org.storage_quota_gb} GB used`} />
+      <div className="pc-grid">
+        <Card className="pc-span-6" title="Account" icon={Building2}>
+          <dl className="pc-dl">
             <F k="Primary contact" v={org.primary_contact || '—'} />
+            <F k="Industry" v={org.industry || '—'} />
+            <F k="Administrators" v={admins.length ? admins.map((a) => a.email).join(', ') : '—'} />
             <F k="Provisioned" v={fmtDateTime(org.created_at)} />
-            <F k="Last tenant activity" v={detail.last_risk_activity ? ago(detail.last_risk_activity) : 'never'} />
+            <F k="Workspace ID" v={<span className="mono" style={{ fontSize: 11 }}>{org.id}</span>} />
           </dl>
         </Card>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Card title="Internal notes"
-            action={<Link to={`/platform/companies/${org.id}/edit`} style={{ fontSize: 11.5, color: 'var(--crimson)', textDecoration: 'none' }}>Edit ›</Link>}>
+        <div className="pc-span-6 pc-stack" style={{ gap: 14 }}>
+          <Card title="Internal notes" icon={StickyNote}
+            action={<Link to={`/platform/companies/${org.id}/edit`} className="pc-link">Edit</Link>}>
             <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.6, whiteSpace: 'pre-wrap', color: org.notes ? 'var(--text-2)' : 'var(--text-3)' }}>
               {org.notes || 'No notes. These are visible only to platform staff, never to the client.'}
             </p>
           </Card>
-          <Card title="Connectors" pad={false}>
+          <Card title="Connectors" icon={Plug} pad={false}>
             {(detail.connectors || []).length === 0 ? <Empty>No connectors configured.</Empty> : (
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              <div className="pc-rows" style={{ paddingBlockEnd: 4 }}>
                 {detail.connectors.map((c) => (
-                  <li key={c.connector_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 16px', borderBottom: '1px solid var(--border-3)', fontSize: 12.5 }}>
-                    <span style={{ color: 'var(--text)', textTransform: 'capitalize' }}>{c.connector_id}</span>
-                    <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.last_sync_at ? `synced ${ago(c.last_sync_at)}` : 'never synced'}</span>
-                      <Chip tone={c.status === 'active' ? 'green' : 'neutral'}>{c.status}</Chip>
+                  <div key={c.connector_id} className="pc-row">
+                    <span className="pc-row-main">
+                      <span className="pc-row-title" style={{ textTransform: 'capitalize' }}>{c.connector_id}</span>
+                      <span className="pc-row-sub">{c.last_sync_at ? `synced ${ago(c.last_sync_at)}` : 'never synced'}</span>
                     </span>
-                  </li>
+                    <Chip dot tone={c.status === 'active' ? 'green' : 'neutral'}>{c.status}</Chip>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </Card>
         </div>
@@ -224,14 +226,14 @@ function Overview({ detail, org, members }) {
 
 const F = ({ k, v }) => (
   <>
-    <dt style={{ color: 'var(--text-3)', whiteSpace: 'nowrap' }}>{k}</dt>
-    <dd style={{ margin: 0, color: 'var(--text)', minWidth: 0, overflowWrap: 'anywhere' }}>{v}</dd>
+    <dt>{k}</dt>
+    <dd>{v}</dd>
   </>
 )
 
-function Members({ members, max }) {
+function Members({ members }) {
   return (
-    <Card pad={false} title={`Members (${members.length} of ${max} seats)`}>
+    <Card pad={false} title="Members" icon={Users} caption={plural(members.length, 'person', 'people')}>
       <Table
         columns={[{ label: 'Person' }, { label: 'Role', width: 130 }, { label: 'Title' }, { label: 'Joined', width: 130 }, { label: 'Last active', width: 130 }]}
         empty={members.length === 0 ? <Empty>Nobody has joined this workspace yet.</Empty> : null}
@@ -239,11 +241,16 @@ function Members({ members, max }) {
         {members.map((m) => (
           <tr key={m.id}>
             <Td>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ fontWeight: 500, color: 'var(--text)' }}>{m.name || '—'}</span>
-                {m.is_platform_staff && <Chip tone="blue">Platform staff</Chip>}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Avatar name={m.name || m.email || ''} size={30} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--text)' }}>{m.name || '—'}</span>
+                    {m.is_platform_staff && <Chip tone="blue">Platform staff</Chip>}
+                  </div>
+                  <div className="pc-sub">{m.email}</div>
+                </div>
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{m.email}</div>
             </Td>
             <Td><Chip tone={['owner', 'admin'].includes(m.role) ? 'amber' : 'neutral'}>{m.role}</Chip></Td>
             <Td>{m.title || '—'}</Td>
@@ -252,7 +259,7 @@ function Members({ members, max }) {
           </tr>
         ))}
       </Table>
-      <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', fontSize: 11.5, color: 'var(--text-3)' }}>
+      <div className="pc-card-foot">
         Members are managed by the client's own administrator inside their workspace. The console does not add or remove people.
       </div>
     </Card>
@@ -261,7 +268,7 @@ function Members({ members, max }) {
 
 function Invitations({ invitations, onRevoke }) {
   return (
-    <Card pad={false} title={`Invitations (${invitations.length})`}>
+    <Card pad={false} title="Invitations" icon={KeyRound} caption={plural(invitations.length, 'invitation')}>
       <Table
         columns={[{ label: 'Email' }, { label: 'Role', width: 110 }, { label: 'Status', width: 130 }, { label: 'Expires', width: 150 }, { label: '', align: 'right', width: 230 }]}
         empty={invitations.length === 0 ? <Empty>No invitations.</Empty> : null}
@@ -303,9 +310,8 @@ function Invitations({ invitations, onRevoke }) {
 
 function Activity({ rows }) {
   return (
-    <Card pad={false} title="Console actions against this company"
-      action={<Link to="/platform/activity" style={{ fontSize: 11.5, color: 'var(--crimson)', textDecoration: 'none' }}>
-        All activity <ExternalLink size={10} style={{ display: 'inline', verticalAlign: -1 }} /></Link>}>
+    <Card pad={false} title="Console actions against this company" icon={History}
+      action={<Link to="/platform/activity" className="pc-link">All activity <ExternalLink size={10} /></Link>}>
       <Table
         columns={[{ label: 'When', width: 160 }, { label: 'Action', width: 200 }, { label: 'Detail' }, { label: 'By', width: 200 }]}
         empty={rows.length === 0 ? <Empty>Nothing has been done to this company from the console.</Empty> : null}
@@ -314,7 +320,7 @@ function Activity({ rows }) {
           <tr key={r.id}>
             <Td style={{ whiteSpace: 'nowrap' }}>
               <div style={{ color: 'var(--text)' }}>{ago(r.created_at)}</div>
-              <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>{fmtDateTime(r.created_at)}</div>
+              <div className="pc-sub">{fmtDateTime(r.created_at)}</div>
             </Td>
             <Td><ActionChip action={r.action} /></Td>
             <Td>

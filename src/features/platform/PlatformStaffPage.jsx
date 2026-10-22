@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { UserPlus, ShieldCheck, Trash2 } from 'lucide-react'
+import { UserPlus, ShieldCheck, Trash2, Users, KeyRound } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { usePlatform } from '@/hooks/usePlatform'
 import { Spinner } from '@/components/ui/Spinner'
 import { InlineConfirm } from '@/components/ui/InlineConfirm'
-import { PlatformShell, Card, Table, Td, Empty, Chip, ErrorNote, fmtDate, ago } from './shared'
+import { PlatformShell, Card, Table, Td, Empty, Chip, Avatar, ErrorNote, fmtDate, ago, plural } from './shared'
 
 /* /platform/staff — who can operate the console.
  *
@@ -30,7 +30,7 @@ export function PlatformStaffPage() {
     <PlatformShell title="Platform staff" description="RISYS employees with console access — entirely separate from tenant roles." width={1100}>
       <ErrorNote>{error}</ErrorNote>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <Card pad={false}>
+        <Card pad={false} title="Console access" icon={Users} caption={plural(admins.length, 'person', 'people')}>
           {loading ? <div style={{ display: 'flex', justifyContent: 'center', padding: 50 }}><Spinner size="lg" /></div> : (
             <Table
               columns={[{ label: 'Person' }, { label: 'Granted', width: 170 }, { label: 'Last console action', width: 170 }, { label: '', width: 130, align: 'right' }]}
@@ -41,11 +41,16 @@ export function PlatformStaffPage() {
                 return (
                   <tr key={a.user_id}>
                     <Td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 600, color: 'var(--text)' }}>{a.name || a.email}</span>
-                        {isSelf && <Chip tone="blue">You</Chip>}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <Avatar name={a.name || a.email || ''} size={32} />
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--text)' }}>{a.name || a.email}</span>
+                            {isSelf && <Chip tone="blue">You</Chip>}
+                          </div>
+                          <div className="pc-sub">{a.email}</div>
+                        </div>
                       </div>
-                      <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{a.email}</div>
                     </Td>
                     <Td>
                       {fmtDate(a.created_at)}
@@ -75,7 +80,7 @@ export function PlatformStaffPage() {
           )}
         </Card>
 
-        <Card title="Grant console access">
+        <Card title="Grant console access" icon={KeyRound}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             <input className="risys-input" style={{ flex: 1, minWidth: 260, fontSize: 12.5 }}
               value={email} onChange={(e) => setEmail(e.target.value)}

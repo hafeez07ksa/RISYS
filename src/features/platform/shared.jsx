@@ -1,22 +1,23 @@
 import { useState } from 'react'
 import { useNavigate, Navigate, useLocation, Link } from 'react-router-dom'
-import { TowerControl, LogOut, Check, Copy, Search, AlertTriangle } from 'lucide-react'
+import {
+  LogOut, Check, Copy, Search, AlertTriangle, LayoutDashboard, Building2, Users, History, Plus, ChevronLeft,
+} from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { Spinner } from '@/components/ui/Spinner'
 import { usePlatform } from '@/hooks/usePlatform'
 import { RisysLogo } from '@/components/ui/RisysLogo'
+import './console.css'
 
-/* Platform console chrome.
+/* Platform console chrome and building blocks.
  *
- * The console is an internal tool for RISYS staff, deliberately unlike the
- * tenant app: dark header, dense tables, no guidance panels. It is operated by
- * people who know the product. It is also the only place in RISYS that can
- * destroy a customer, so the surfaces here lead with facts — seats, activity,
- * who did what — rather than with prose.
+ * The console is an internal tool for RISYS staff. It shares the tenant
+ * dashboard's visual language (cards, icon chips, rings and bars) but keeps a
+ * dark header, so nobody mistakes it for a client workspace. It is also the
+ * only place in RISYS that can destroy a customer, so every surface leads with
+ * facts: who is inside, what they hold, and what the console has done.
  *
- * This file is not translated: the console is English-only. */
-
-export const PLANS = ['standard', 'professional', 'enterprise']
+ * English only, by design. */
 
 // ── Formatting ───────────────────────────────────────────────────────────────
 export const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—')
@@ -40,6 +41,22 @@ export function bytes(n) {
   return mb < 1024 ? `${mb.toFixed(mb < 10 ? 1 : 0)} MB` : `${(mb / 1024).toFixed(2)} GB`
 }
 
+export const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
+
+// ── Company state ────────────────────────────────────────────────────────────
+/* Where a company is in its life: the one question staff ask most. Derived
+ * from the list RPC's counts, so it needs no extra query. */
+export function lifecycle(o) {
+  if (o.status === 'suspended') return { key: 'suspended', label: 'Suspended', tone: 'red' }
+  if (!o.member_count) return o.pending_invites > 0
+    ? { key: 'pending', label: 'Awaiting activation', tone: 'amber' }
+    : { key: 'expired', label: 'Activation link expired', tone: 'red' }
+  const last = o.last_activity || o.last_seen
+  if (!last || Date.now() - new Date(last).getTime() > 30 * 86400 * 1000)
+    return { key: 'quiet', label: 'Quiet 30+ days', tone: 'neutral' }
+  return { key: 'active', label: 'Active', tone: 'green' }
+}
+
 // ── Chips ────────────────────────────────────────────────────────────────────
 const TONES = {
   green:   { bg: '#ECF4EE', bd: '#C8DECD', fg: '#2F6B3C' },
@@ -49,31 +66,43 @@ const TONES = {
   neutral: { bg: 'var(--surface)', bd: 'var(--border)', fg: 'var(--text-2)' },
 }
 
-export function Chip({ children, tone = 'neutral', title }) {
+export function Chip({ children, tone = 'neutral', title, dot = false }) {
   const t = TONES[tone] ?? TONES.neutral
   return (
-    <span title={title} style={{
-      display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap',
-      fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-      background: t.bg, border: `1px solid ${t.bd}`, color: t.fg,
-    }}>{children}</span>
+    <span title={title} className="pc-chip" style={{ background: t.bg, borderColor: t.bd, color: t.fg }}>
+      {dot && <span className="pc-dot" />}{children}
+    </span>
   )
 }
 
 export const StatusChip = ({ status }) =>
-  <Chip tone={status === 'active' ? 'green' : 'red'}>{status === 'active' ? 'Active' : 'Suspended'}</Chip>
+  <Chip dot tone={status === 'active' ? 'green' : 'red'}>{status === 'active' ? 'Active' : 'Suspended'}</Chip>
 
-export const PlanChip = ({ plan }) =>
-  <Chip tone={plan === 'enterprise' ? 'blue' : plan === 'professional' ? 'amber' : 'neutral'}>
-    {plan ? plan[0].toUpperCase() + plan.slice(1) : '—'}
-  </Chip>
+export const LifecycleChip = ({ org }) => {
+  const l = lifecycle(org)
+  return <Chip dot tone={l.tone}>{l.label}</Chip>
+}
+
+// ── Avatar ───────────────────────────────────────────────────────────────────
+const AVATAR_COLOURS = ['#5D0F0F', '#7A3E2B', '#2F6B4E', '#3D5F86', '#6B4A86', '#8A5A12', '#4C0C25', '#2B5D63']
+export function Avatar({ name = '', size = 36 }) {
+  const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?'
+  let h = 0
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0
+  const bg = AVATAR_COLOURS[h % AVATAR_COLOURS.length]
+  return (
+    <span className="pc-avatar" style={{ width: size, height: size, borderRadius: size * 0.3, fontSize: size * 0.38, background: `linear-gradient(145deg, ${bg}, ${bg}cc)` }}>
+      {initials}
+    </span>
+  )
+}
 
 // ── Header and navigation ────────────────────────────────────────────────────
 const NAV = [
-  { to: '/platform',           label: 'Overview',  end: true },
-  { to: '/platform/companies', label: 'Companies' },
-  { to: '/platform/staff',     label: 'Staff' },
-  { to: '/platform/activity',  label: 'Activity' },
+  { to: '/platform',           label: 'Overview',  icon: LayoutDashboard, end: true },
+  { to: '/platform/companies', label: 'Companies', icon: Building2 },
+  { to: '/platform/staff',     label: 'Staff',     icon: Users },
+  { to: '/platform/activity',  label: 'Activity',  icon: History },
 ]
 
 export function PlatformHeader() {
@@ -81,110 +110,121 @@ export function PlatformHeader() {
   const { pathname } = useLocation()
   const { user, signOut } = useAuthStore()
   const active = (item) => (item.end ? pathname === item.to : pathname.startsWith(item.to))
+  const name = user?.user_metadata?.full_name || user?.email || ''
 
   return (
-    <header style={{ background: '#292021', position: 'sticky', top: 0, zIndex: 20 }}>
-      <div style={{ padding: '0 28px', height: 54, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button onClick={() => navigate('/platform')} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 7, background: '#5D0F0F', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <TowerControl size={14} style={{ color: '#F3E7E4' }} />
-          </div>
+    <header className="pc-header">
+      <div className="pc-header-inner">
+        <button className="pc-brand" onClick={() => navigate('/platform')}>
           <RisysLogo size="sm" tone="light" />
-          <span style={{ fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#A98D8C', padding: '3px 8px', border: '1px solid #3a2f30', borderRadius: 20 }}>
-            Platform Console
-          </span>
+          <span className="pc-brand-badge">Console</span>
         </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <span style={{ fontSize: 12, color: '#b9a5a2' }}>{user?.email}</span>
-          <button onClick={async () => { await signOut(); navigate('/platform/login') }}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: '#b9a5a2', background: 'none', border: '1px solid #3a2f30', borderRadius: 7, padding: '5px 10px', cursor: 'pointer' }}>
-            <LogOut size={12} className="rtl-flip" /> Sign out
+        <nav className="pc-nav">
+          {NAV.map((item) => {
+            const Icon = item.icon
+            return (
+              <Link key={item.to} to={item.to} className={active(item) ? 'is-on' : ''}>
+                <Icon size={14} strokeWidth={1.9} /> {item.label}
+              </Link>
+            )
+          })}
+        </nav>
+        <div className="pc-user">
+          <Link to="/platform/companies/new" className="pc-new-btn"><Plus size={13} /> New company</Link>
+          <span className="pc-user-chip" title={user?.email}>
+            <Avatar name={name} size={24} />
+            <span className="pc-user-email">{user?.email}</span>
+          </span>
+          <button className="pc-icon-btn" title="Sign out" onClick={async () => { await signOut(); navigate('/platform/login') }}>
+            <LogOut size={13} />
           </button>
         </div>
       </div>
-      <nav style={{ padding: '0 28px', display: 'flex', gap: 2, borderTop: '1px solid #3a2f30' }}>
-        {NAV.map((item) => {
-          const on = active(item)
-          return (
-            <Link key={item.to} to={item.to} style={{
-              fontSize: 12.5, fontWeight: on ? 600 : 500, padding: '10px 14px', textDecoration: 'none',
-              color: on ? '#F3E7E4' : '#A98D8C', borderBottom: `2px solid ${on ? '#8C2D2D' : 'transparent'}`,
-            }}>{item.label}</Link>
-          )
-        })}
-      </nav>
     </header>
   )
 }
 
-/* Shared shell: header, platform-admin gate, and a consistent page frame.
- * Anyone who is not platform staff is sent to the console sign-in; every RPC
- * behind these pages checks again in the database. */
-export function PlatformShell({ children, title, description, actions, back, width = 1560 }) {
+/* Shared shell: header, platform-admin gate, and the page frame. Anyone who is
+ * not platform staff is sent to the console sign-in; every RPC behind these
+ * pages checks again in the database. */
+export function PlatformShell({ children, title, eyebrow, description, actions, back, width = 1440, display = false }) {
   const { user } = useAuthStore()
   const { isPlatformAdmin } = usePlatform()
   if (!user || isPlatformAdmin === false) return <Navigate to="/platform/login" replace />
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+    <div className="pc">
       <PlatformHeader />
       {isPlatformAdmin === null ? (
         <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 120 }}><Spinner size="lg" /></div>
       ) : (
-        <div style={{ flex: 1, width: '100%', maxWidth: width, margin: '0 auto', padding: '24px 28px 70px' }}>
-          {(title || back) && (
-            <div style={{ marginBottom: 20 }}>
-              {back && (
-                <Link to={back.to} style={{ fontSize: 12, color: 'var(--text-3)', textDecoration: 'none', display: 'inline-block', marginBottom: 8 }}>
-                  ‹ {back.label}
-                </Link>
-              )}
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-                <div style={{ minWidth: 0 }}>
-                  <h1 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text)', margin: 0 }}>{title}</h1>
-                  {description && <p style={{ fontSize: 12.5, color: 'var(--text-3)', margin: '4px 0 0' }}>{description}</p>}
-                </div>
-                {actions && <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>{actions}</div>}
+        <main className="pc-main" style={{ maxWidth: width }}>
+          {back && <Link to={back.to} className="pc-back"><ChevronLeft size={13} /> {back.label}</Link>}
+          {(title || actions) && (
+            <div className="pc-titlebar">
+              <div style={{ minWidth: 0 }}>
+                {eyebrow && <p className="pc-eyebrow">{eyebrow}</p>}
+                {title && <h1 className={`pc-title${display ? '' : ' pc-title--sm'}`}>{title}</h1>}
+                {description && <p className="pc-desc">{description}</p>}
               </div>
+              {actions && <div className="pc-actions">{actions}</div>}
             </div>
           )}
-          {children}
-        </div>
+          <div className="pc-rise">{children}</div>
+        </main>
       )}
     </div>
   )
 }
 
 // ── Layout primitives ────────────────────────────────────────────────────────
-export function Card({ title, action, children, pad = true, footer }) {
+export function Card({ title, icon: Icon, caption, action, children, pad = true, footer, className = '', style }) {
   return (
-    <section style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
-      {title && (
-        <div style={{ padding: '11px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <h2 style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text)', margin: 0 }}>{title}</h2>
+    <section className={`pc-card ${className}`} style={style}>
+      {(title || action) && (
+        <div className="pc-card-head">
+          <div className="pc-card-title">
+            {Icon && <span className="pc-card-icon"><Icon size={14} strokeWidth={1.8} /></span>}
+            {title && <h2>{title}</h2>}
+            {caption && <span className="pc-card-caption">{caption}</span>}
+          </div>
           {action}
         </div>
       )}
-      <div style={pad ? { padding: 16 } : undefined}>{children}</div>
-      {footer && <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>{footer}</div>}
+      <div className={pad ? 'pc-card-body' : 'pc-card-body pc-card-body--flush'}>{children}</div>
+      {footer && <div className="pc-card-foot">{footer}</div>}
     </section>
   )
 }
 
-export function Stat({ label, value, sub, tone, to }) {
-  const colour = tone === 'red' ? '#8C1616' : tone === 'amber' ? '#8A5A12' : tone === 'green' ? '#2F6B3C' : 'var(--text)'
+export function Kpi({ icon: Icon, tone = 'wine', label, value, sub, to, alert, children }) {
   const inner = (
     <>
-      <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', margin: 0 }}>{label}</p>
-      <p className="tnum" style={{ fontSize: 26, fontWeight: 300, color: colour, margin: '5px 0 0', lineHeight: 1 }}>{value}</p>
-      {sub && <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '5px 0 0' }}>{sub}</p>}
+      <div className="pc-kpi-top">
+        <span className={`pc-kpi-icon pc-tone-${tone}`}><Icon size={17} strokeWidth={1.8} /></span>
+        <span className="pc-kpi-label">{label}</span>
+      </div>
+      <div className="pc-kpi-value tnum">{value}</div>
+      <p className="pc-kpi-sub">{sub}</p>
+      {children && <div className="pc-kpi-foot">{children}</div>}
     </>
   )
-  const style = {
-    background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)',
-    padding: '14px 16px', display: 'block', textDecoration: 'none', minWidth: 0,
-  }
-  return to ? <Link to={to} style={{ ...style, cursor: 'pointer' }}>{inner}</Link> : <div style={style}>{inner}</div>
+  const cls = `pc-kpi${alert ? ' pc-kpi--alert' : ''}`
+  return to ? <Link to={to} className={cls}>{inner}</Link> : <div className={cls}>{inner}</div>
+}
+
+/* Small figure tile used on the company page. */
+export function Stat({ label, value, sub, icon: Icon, tone = 'neutral' }) {
+  return (
+    <div className="pc-kpi" style={{ padding: '14px 16px' }}>
+      <div className="pc-kpi-top">
+        {Icon && <span className={`pc-kpi-icon pc-tone-${tone}`} style={{ width: 30, height: 30, borderRadius: 9 }}><Icon size={14} strokeWidth={1.9} /></span>}
+        <span className="pc-kpi-label" style={{ fontSize: 12 }}>{label}</span>
+      </div>
+      <div className="pc-kpi-value tnum" style={{ fontSize: 24, marginBlockStart: 10 }}>{value}</div>
+      {sub && <p className="pc-kpi-sub">{sub}</p>}
+    </div>
+  )
 }
 
 export const StatRow = ({ children, min = 170 }) => (
@@ -193,17 +233,12 @@ export const StatRow = ({ children, min = 170 }) => (
 
 export function Table({ columns, children, empty }) {
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
+    <div className="pc-table-wrap">
+      <table className="pc-table">
         <thead>
           <tr>
             {columns.map((c, i) => (
-              <th key={i} style={{
-                textAlign: c.align === 'right' ? 'end' : 'start', padding: '9px 14px',
-                fontSize: 10, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase',
-                color: 'var(--text-3)', background: 'var(--surface)', borderBottom: '1px solid var(--border)',
-                whiteSpace: 'nowrap', width: c.width,
-              }}>{c.label}</th>
+              <th key={i} className={c.align === 'right' ? 'pc-end' : undefined} style={{ width: c.width }}>{c.label}</th>
             ))}
           </tr>
         </thead>
@@ -215,54 +250,30 @@ export function Table({ columns, children, empty }) {
 }
 
 export const Td = ({ children, align, style }) => (
-  <td style={{
-    padding: '11px 14px', fontSize: 12.5, color: 'var(--text-2)', verticalAlign: 'middle',
-    textAlign: align === 'right' ? 'end' : 'start', borderBottom: '1px solid var(--border-3)', ...style,
-  }}>{children}</td>
+  <td className={align === 'right' ? 'pc-end' : undefined} style={style}>{children}</td>
 )
 
-export const Empty = ({ children }) => (
-  <div style={{ padding: '38px 20px', textAlign: 'center', fontSize: 12.5, color: 'var(--text-3)' }}>{children}</div>
-)
+export const Empty = ({ children }) => <div className="pc-empty">{children}</div>
 
-export function SearchInput({ value, onChange, placeholder, width = 260 }) {
+export function SearchInput({ value, onChange, placeholder, width = 280 }) {
   return (
-    <div style={{ position: 'relative', width }}>
+    <div style={{ position: 'relative', width, maxWidth: '100%' }}>
       <Search size={13} style={{ position: 'absolute', insetInlineStart: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }} />
       <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-        className="risys-input" style={{ paddingInlineStart: 30, fontSize: 12.5, width: '100%' }} />
+        className="risys-input" style={{ paddingInlineStart: 30, fontSize: 12.5, width: '100%', borderRadius: 9 }} />
     </div>
   )
 }
 
-/* Segmented filter, used for status and plan filters. */
+/* Segmented filter. */
 export function Segmented({ value, onChange, options }) {
   return (
-    <div style={{ display: 'inline-flex', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: 2, gap: 2 }}>
-      {options.map((o) => {
-        const on = value === o.value
-        return (
-          <button key={o.value} onClick={() => onChange(o.value)} style={{
-            fontSize: 11.5, fontWeight: on ? 600 : 500, padding: '4px 10px', borderRadius: 5, cursor: 'pointer',
-            border: '1px solid ' + (on ? 'var(--border-2)' : 'transparent'),
-            background: on ? '#fff' : 'transparent', color: on ? 'var(--text)' : 'var(--text-3)',
-          }}>{o.label}{o.count != null && <span className="tnum" style={{ opacity: 0.6 }}> {o.count}</span>}</button>
-        )
-      })}
-    </div>
-  )
-}
-
-/* Seat usage: the number that decides whether a client can add people. */
-export function SeatBar({ used, max }) {
-  const pct = max ? Math.min(100, Math.round((used / max) * 100)) : 0
-  const tone = pct >= 100 ? '#8C1616' : pct >= 85 ? '#8A5A12' : '#2F6B3C'
-  return (
-    <div style={{ minWidth: 96 }}>
-      <div className="tnum" style={{ fontSize: 12, color: 'var(--text)' }}>{used} / {max}</div>
-      <div style={{ height: 4, borderRadius: 3, background: 'var(--border)', marginTop: 4, overflow: 'hidden' }}>
-        <div style={{ width: `${pct}%`, height: '100%', background: tone }} />
-      </div>
+    <div className="pc-seg">
+      {options.map((o) => (
+        <button key={o.value} className={value === o.value ? 'is-on' : ''} onClick={() => onChange(o.value)}>
+          {o.label}{o.count != null && <span className="pc-count tnum">{o.count}</span>}
+        </button>
+      ))}
     </div>
   )
 }
@@ -275,9 +286,9 @@ export function CopyBtn({ text, label = 'Copy link' }) {
     setCopied(true); setTimeout(() => setCopied(false), 2000)
   }
   return (
-    <button onClick={copy} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 500, padding: '5px 10px', borderRadius: 7, cursor: 'pointer',
+    <button onClick={copy} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 600, padding: '6px 11px', borderRadius: 8, cursor: 'pointer',
       background: copied ? '#ECF4EE' : 'var(--surface)', color: copied ? '#2F6B3C' : 'var(--crimson)', border: `1px solid ${copied ? '#C8DECD' : 'var(--border)'}` }}>
-      {copied ? <Check size={11} /> : <Copy size={11} />} {copied ? 'Copied' : label}
+      {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? 'Copied' : label}
     </button>
   )
 }
@@ -285,16 +296,14 @@ export function CopyBtn({ text, label = 'Copy link' }) {
 export function ErrorNote({ children }) {
   if (!children) return null
   return (
-    <div role="alert" style={{
-      display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 14,
-      background: '#FBEAEA', border: '1px solid #F0CECE', borderRadius: 'var(--r)', fontSize: 12.5, color: '#8C1616',
-    }}>
-      <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />{children}
+    <div role="alert" className="pc-banner pc-banner--red">
+      <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 2 }} />{children}
     </div>
   )
 }
 
-/* Audit actions, as written by the database. */
+/* Audit actions, as written by the database. Limits changes are kept so older
+ * entries still read correctly; the console no longer makes them. */
 export const ACTION_LABELS = {
   'company.provisioned':       ['Company provisioned', 'green'],
   'company.limits_changed':    ['Limits changed', 'neutral'],
@@ -313,10 +322,12 @@ export const ActionChip = ({ action }) => {
   return <Chip tone={tone}>{label}</Chip>
 }
 
-/* Renders the meta jsonb the RPCs record, e.g. {"plan": ["standard","enterprise"]}. */
+/* Renders the meta jsonb the RPCs record, e.g. {"name": ["Old","New"]}.
+ * Plan, seat and storage values are no longer meaningful, so they are hidden. */
+const HIDDEN_META = new Set(['plan', 'max_members', 'storage_gb', 'storage_quota_gb'])
 export function MetaSummary({ meta }) {
   if (!meta || typeof meta !== 'object') return null
-  const parts = Object.entries(meta).map(([k, v]) => {
+  const parts = Object.entries(meta).filter(([k]) => !HIDDEN_META.has(k)).map(([k, v]) => {
     const key = k.replace(/_/g, ' ')
     if (Array.isArray(v) && v.length === 2) return `${key}: ${v[0]} › ${v[1]}`
     return `${key}: ${typeof v === 'object' ? JSON.stringify(v) : v}`

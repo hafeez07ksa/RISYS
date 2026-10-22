@@ -114,6 +114,24 @@
   .risys-input[aria-invalid='true'] { border-color: var(--critical); }
   .risys-input:disabled { background: var(--surface); color: var(--text-3); cursor: not-allowed; }
 
+  /* Password field with a show/hide toggle (PasswordInput). The button sits at
+     the inline end, so it mirrors to the left in Arabic. */
+  .pw-wrap { position: relative; width: 100%; }
+  .pw-wrap .pw-input { padding-inline-end: 38px; }
+  .pw-toggle {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 4px;
+    width: 32px;
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer;
+    color: var(--text-3);
+    border-radius: var(--r);
+    transition: color var(--dur-2);
+  }
+  .pw-toggle:hover { color: var(--text); }
+  .pw-toggle:focus-visible { outline: 2px solid var(--rose); outline-offset: -4px; }
+
   /* .risys-select is gone: there is no native <select> left in the app. Any
      stray reference now simply styles nothing rather than double-bordering a
      Combobox. */
