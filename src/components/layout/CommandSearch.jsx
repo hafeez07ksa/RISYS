@@ -3,9 +3,10 @@ import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
   Search, CornerDownLeft, ShieldAlert, AlertTriangle, FileWarning,
-  CheckSquare, CheckSquare2, Users, BookCheck, ScrollText, Library, ArrowRight,
+  CheckSquare, CheckSquare2, Users, BookCheck, ScrollText, Library, ArrowRight, Sparkles,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { ASK_RISYS_ENABLED } from '@/lib/env'
 import { useAuth } from '@/hooks/useAuth'
 import { tx } from '@/lib/i18n'
 
@@ -26,6 +27,7 @@ import { tx } from '@/lib/i18n'
 
 const PAGES = [
   { label: tx('Dashboard'),     to: '/app/dashboard',   icon: CheckSquare2, keywords: 'home overview' },
+  ...(ASK_RISYS_ENABLED ? [{ label: tx('Ask RISYS'), to: '/app/ask', icon: Sparkles, keywords: 'ai assistant chat question ask' }] : []),
   { label: tx('Incidents'),     to: '/app/incidents',   icon: AlertTriangle, keywords: 'incident breach' },
   { label: tx('Findings'),      to: '/app/findings',    icon: FileWarning,  keywords: 'finding detection' },
   { label: tx('Risk Register'), to: '/app/risks',       icon: ShieldAlert,  keywords: 'risk register' },

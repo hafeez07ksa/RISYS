@@ -39,3 +39,8 @@ verify_jwt = true
 
 [functions.m365-debug]
 verify_jwt = true
+
+# Ask RISYS (AI phase 0). Called from the browser with the session JWT;
+# the function also checks org membership, ai_settings and the daily limit.
+[functions.ai-gateway]
+verify_jwt = true

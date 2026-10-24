@@ -313,6 +313,7 @@ export const ACTION_LABELS = {
   'company.deleted':           ['Company deleted', 'red'],
   'company.admin_link_issued': ['Activation link issued', 'blue'],
   'company.invitation_revoked':['Invitation revoked', 'neutral'],
+  'company.ai_changed':        ['Ask RISYS changed', 'blue'],
   'staff.granted':             ['Console access granted', 'blue'],
   'staff.revoked':             ['Console access revoked', 'amber'],
 }

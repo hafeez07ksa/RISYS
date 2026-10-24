@@ -5,6 +5,8 @@ import { ShieldAlert, LogOut } from 'lucide-react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { AppTopbar } from '@/components/layout/Topbar'
 import { CommandSearch, useCommandSearch } from '@/components/layout/CommandSearch'
+import { AskRisysWidget } from '@/features/ask/AskRisysWidget'
+import { ASK_RISYS_ENABLED } from '@/lib/env'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuthStore } from '@/store/authStore'
 import { Spinner } from '@/components/ui/Spinner'
@@ -82,6 +84,8 @@ export function AppLayout() {
         </div>
       </main>
       <CommandSearch open={search.open} onClose={() => search.setOpen(false)} />
+      {/* Floating Ask RISYS — renders nothing unless AI is on for the workspace. */}
+      {ASK_RISYS_ENABLED && <AskRisysWidget key={organization.id} />}
     </div>
     </LeaveGuardProvider>
   )

@@ -103,6 +103,13 @@ export function usePlatform() {
     addPlatformAdmin: async (email) => after(await call('platform_add_admin', { p_email: email })),
     removePlatformAdmin: async (userId) => after(await call('platform_remove_admin', { p_user_id: userId })),
 
+    // Ask RISYS: the switch and usage counts, never conversation content.
+    getAiSettings: (orgId) => call('platform_get_ai_settings', { p_org: orgId }),
+    setAiSettings: (orgId, { mode, dailyLimit, reason }) =>
+      call('platform_set_ai_settings', {
+        p_org: orgId, p_mode: mode, p_daily_limit: dailyLimit ?? null, p_reason: reason || null,
+      }),
+
     // Console activity
     listAudit: ({ limit = 100, before = null, action = null, org = null, search = null } = {}) =>
       call('platform_list_audit', {

@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, ShieldAlert, AlertTriangle, CheckSquare,
   BookCheck, ScrollText, Settings, ChevronDown, LogOut, Users, Users2, CheckSquare2, FileWarning,
-  Library, PanelLeftClose, PanelLeftOpen, Check, ClipboardCheck, FileText, Sparkles,
+  Library, PanelLeftClose, PanelLeftOpen, Check, ClipboardCheck, FileText, Sparkles, MessagesSquare,
 } from 'lucide-react'
 import { usePendingSuggestionCount } from '@/hooks/useRiskSuggestions'
 import { RisysLogo } from '@/components/ui/RisysLogo'
@@ -12,6 +12,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
 import { roleLabel } from '@/lib/roles'
 import { NAV_ITEMS } from '@/lib/constants'
+import { ASK_RISYS_ENABLED } from '@/lib/env'
+import { useAiSettings } from '@/hooks/useAskRisys'
 import clsx from 'clsx'
 import { tx } from '@/lib/i18n'
 
@@ -33,7 +35,7 @@ import { tx } from '@/lib/i18n'
 const ICONS = {
   LayoutDashboard, ShieldAlert, AlertTriangle, CheckSquare,
   BookCheck, ScrollText, Settings, Users, Users2, CheckSquare2, FileWarning, Library,
-  ClipboardCheck, FileText, Sparkles,
+  ClipboardCheck, FileText, Sparkles, MessagesSquare,
 }
 
 /* Which capability a nav item needs. Anything not listed is open to every
@@ -45,6 +47,8 @@ const NAV_GATE = {
   settings: (p) => p.canEditOrgSettings,
   audit:    (p) => p.canViewAudit,
   'risks/suggestions': (p) => p.canTriageFindings || p.isAuditor,
+  // Only when the build includes Ask RISYS and AI is on for this workspace.
+  ask: (p, ctx) => ASK_RISYS_ENABLED && ctx.aiOn,
 }
 const COLLAPSE_KEY = 'risys.sidebar.collapsed'
 
@@ -210,8 +214,9 @@ export function Sidebar() {
     ? user.user_metadata.full_name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
     : user?.email?.slice(0, 2).toUpperCase() || 'U'
 
+  const { enabled: aiOn } = useAiSettings(ASK_RISYS_ENABLED ? organization?.id : null)
   const visible = (section) =>
-    NAV_ITEMS.filter((n) => n.section === section).filter((n) => (NAV_GATE[n.id] ? NAV_GATE[n.id](perms) : true))
+    NAV_ITEMS.filter((n) => n.section === section).filter((n) => (NAV_GATE[n.id] ? NAV_GATE[n.id](perms, { aiOn }) : true))
 
   const handleSignOut = async () => { await signOut(); navigate('/login') }
 

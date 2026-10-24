@@ -16,5 +16,5 @@ dist/
 # per-mode env files (Supabase URL and keys)
 .env.app
 .env.console
-.env.development.local
-.env.*.local
+
+.env*.local

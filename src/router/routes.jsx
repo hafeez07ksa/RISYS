@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate, useParams } from 'react-router-dom'
-import { BUILD_MODE } from '@/lib/env'
+import { BUILD_MODE, ASK_RISYS_ENABLED } from '@/lib/env'
 import { consoleRoutes } from './consoleRoutes'
 import { AppLayout } from '@/layouts/AppLayout'
 import { RequireRole } from '@/layouts/RequireRole'
@@ -57,6 +57,7 @@ import { FindingFormPage } from '@/features/audits/FindingFormPage'
 import { FindingPage } from '@/features/audits/FindingPage'
 import { SuggestedRisksPage } from '@/features/risks/SuggestedRisksPage'
 import { SuggestionDetailPage } from '@/features/risks/SuggestionDetailPage'
+import { AskRisysPage } from '@/features/ask/AskRisysPage'
 
 /* The breadcrumb links every segment of the URL, so /app/audits/:id/findings
  * has to go somewhere: to the engagement, on that tab. */
@@ -92,6 +93,14 @@ const appRoutes = [
 
       // ── Available to all authenticated members ──────────────────
       { path: 'dashboard',    element: <DashboardPage /> },
+      // Ask RISYS (AI phase 0). Open to every role: the tools behind it read
+      // under the person's own RLS, so a viewer only ever hears about what a
+      // viewer can open. Compiled in only with VITE_ASK_RISYS=true, and shown
+      // only where RISYS staff have switched AI on for the workspace.
+      ...(ASK_RISYS_ENABLED ? [
+        { path: 'ask',                  element: <AskRisysPage /> },
+        { path: 'ask/:conversationId',  element: <AskRisysPage /> },
+      ] : []),
       { path: 'incidents',      element: <IncidentsPage /> },
       { path: 'incidents/new',  element: <RaiseIncidentPage /> },
       { path: 'incidents/:id',  element: <IncidentDetailPage /> },

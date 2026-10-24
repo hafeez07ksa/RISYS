@@ -44,6 +44,7 @@ const SEGMENT_LABELS = {
   invite: 'Invite', escalate: 'Escalate', limits: 'Limits', activation: 'Activation link', companies: 'Companies',
   reviews: 'Review calendar',
   suggestions: 'Suggested risks',
+  ask: 'Ask RISYS',
 }
 
 /* A dotted requirement id encodes its own ancestry: 1-5-3-1 is a child of
@@ -94,7 +95,7 @@ function useRouteBreadcrumb() {
     const isRecordId = label === undefined && /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(p)
     const RECORD_KIND = { risks: tx('Risk'), controls: tx('Control'), incidents: tx('Incident'), tasks: tx('Task'),
       audits: tx('Engagement'), findings: tx('Finding'), requests: tx('Request'), scope: tx('Scope item'), reports: tx('Report'),
-      suggestions: tx('Suggested risk') }
+      suggestions: tx('Suggested risk'), ask: tx('Conversation') }
     const recordLabel = isRecordId ? (RECORD_KIND[parts[i - 1]] || tx('Details')) : null
     items.push({ label: recordLabel ?? label ?? decodeURIComponent(p), to: acc })
   }

@@ -21,6 +21,11 @@ export const IS_CONSOLE_BUILD = MODE === 'console'
 export const IS_APP_BUILD = MODE === 'app'
 export const BUILD_MODE = MODE
 
+/* Ask RISYS (AI phase 0) is compiled in only when VITE_ASK_RISYS=true in the
+ * build env (.env.app / .env.development.local). Even then it shows only in
+ * workspaces where RISYS staff have switched AI on from the console. */
+export const ASK_RISYS_ENABLED = import.meta.env.VITE_ASK_RISYS === 'true'
+
 /* Public URL of the tenant app. Falls back to the current origin so local
  * development and preview deployments keep working without configuration. */
 export const APP_URL = (import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/+$/, '')

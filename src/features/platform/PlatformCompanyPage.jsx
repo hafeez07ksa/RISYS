@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   Pencil, KeyRound, Pause, Play, Trash2, ExternalLink, Users, AlertTriangle,
-  Plug, Building2, StickyNote, ShieldX, History, HardDrive, Clock, Lock,
+  Plug, Building2, StickyNote, ShieldX, History, HardDrive, Clock, Lock, Bot, Globe2, Check,
 } from 'lucide-react'
 import { usePlatform, useCompany, activationLink } from '@/hooks/usePlatform'
 import { Spinner } from '@/components/ui/Spinner'
 import { InlineConfirm } from '@/components/ui/InlineConfirm'
+import { Spinner as SmallSpinner } from '@/components/ui/Spinner'
 import {
   PlatformShell, Card, Table, Td, Empty, Stat, StatRow, Chip, LifecycleChip, Avatar,
   CopyBtn, ActionChip, MetaSummary, ErrorNote, ago, bytes, fmtDate, fmtDateTime, plural,
@@ -102,6 +103,7 @@ export function PlatformCompanyPage() {
       </nav>
 
       {tab === 'overview' && <Overview detail={detail} org={org} members={members} />}
+      {tab === 'overview' && <AskRisysCard orgId={id} orgName={org.name} suspended={suspended} />}
       {tab === 'members' && <Members members={members} />}
       {tab === 'invitations' && (
         <Invitations invitations={invitations} orgId={id}
@@ -117,7 +119,7 @@ export function PlatformCompanyPage() {
               title={suspended ? 'Reactivate this company' : 'Suspend this company'}
               body={suspended
                 ? 'Members regain access immediately, with all data intact.'
-                : `All ${members.length} member${members.length === 1 ? '' : 's'} lose access within a minute. Nothing is deleted, and reactivating restores everything.`}
+                : `${members.length === 1 ? 'The only member loses' : `All ${members.length} members lose`} access within a minute. Nothing is deleted, and reactivating restores everything.`}
             >
               {suspended ? (
                 <InlineConfirm variant="panel" tone="neutral" triggerClassName="btn-secondary"
@@ -333,5 +335,129 @@ function Activity({ rows }) {
         ))}
       </Table>
     </Card>
+  )
+}
+
+// ── Ask RISYS ────────────────────────────────────────────────────────────────
+/* The only place Ask RISYS can be switched on. Clients cannot do it from their
+ * workspace. Shows the setting and usage counts — never what anyone asked. */
+const AI_MODES = [
+  { value: 'off', label: 'Off' },
+  { value: 'in_kingdom', label: 'In-Kingdom only' },
+  { value: 'global', label: 'Allow provider outside KSA' },
+]
+
+function AskRisysCard({ orgId, orgName, suspended }) {
+  const platform = usePlatform()
+  const [ai, setAi] = useState(null)
+  const [mode, setMode] = useState('off')
+  const [limit, setLimit] = useState(200)
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    let live = true
+    platform.getAiSettings(orgId)
+      .then((d) => { if (!live) return; setAi(d); setMode(d.mode); setLimit(d.daily_request_limit) })
+      .catch((e) => { if (live) setError(e.message) })
+    return () => { live = false }
+  }, [orgId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const changed = ai && (mode !== ai.mode || Number(limit) !== ai.daily_request_limit)
+  const needsReason = mode === 'global' && ai?.mode !== 'global'
+  const save = async () => {
+    setBusy(true); setError(''); setSaved(false)
+    try {
+      const d = await platform.setAiSettings(orgId, { mode, dailyLimit: Number(limit), reason: reason.trim() })
+      setAi(d); setMode(d.mode); setLimit(d.daily_request_limit); setReason(''); setSaved(true)
+    } catch (e) { setError(e.message) } finally { setBusy(false) }
+  }
+
+  const state = !ai ? null
+    : ai.mode === 'global' ? <Chip dot tone="amber">On · provider outside KSA</Chip>
+    : ai.mode === 'in_kingdom' ? <Chip dot tone="blue">On · in-Kingdom only</Chip>
+    : <Chip dot tone="neutral">Off</Chip>
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <Card title="Ask RISYS" icon={Bot} caption="AI assistant for this workspace" action={state}>
+        {!ai && !error ? <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}><SmallSpinner /></div> : (
+          <div className="pc-grid" style={{ gap: 18 }}>
+            <div className="pc-span-7" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <ErrorNote>{error}</ErrorNote>
+              <div>
+                <p className="pc-label" style={{ margin: '0 0 6px' }}>Setting</p>
+                <div className="pc-seg">
+                  {AI_MODES.map((m) => (
+                    <button key={m.value} className={mode === m.value ? 'is-on' : ''} onClick={() => { setMode(m.value); setSaved(false) }} disabled={busy}>
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {mode === 'global' && (
+                <div className="pc-banner pc-banner--amber" style={{ margin: 0 }}>
+                  <Globe2 size={15} style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span>
+                    Questions and the workspace records Ask RISYS reads are processed by <strong>Groq, outside Saudi Arabia</strong>.
+                    Use this only for test workspaces, or with the client's written agreement. While it is on, do not tell this
+                    client that no data is sent to an AI model.
+                  </span>
+                </div>
+              )}
+              {mode === 'in_kingdom' && (
+                <div className="pc-banner pc-banner--amber" style={{ margin: 0 }}>
+                  <Lock size={15} style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span>No in-Kingdom model is configured yet, so every question will be refused until one is (OCI Generative AI, Riyadh).</span>
+                </div>
+              )}
+
+              <div className="pc-fields-2">
+                <label className="pc-field">
+                  <span className="pc-label">Daily question limit</span>
+                  <input type="number" min="0" max="10000" className="risys-input" value={limit} disabled={busy}
+                    onChange={(e) => { setLimit(e.target.value); setSaved(false) }} style={{ borderRadius: 9 }} />
+                  <span className="pc-hint">Resets at midnight Riyadh time.</span>
+                </label>
+                {needsReason && (
+                  <label className="pc-field">
+                    <span className="pc-label">Reason <i>*</i></span>
+                    <input className="risys-input" value={reason} disabled={busy} onChange={(e) => setReason(e.target.value)}
+                      placeholder="Test workspace — synthetic data only" style={{ borderRadius: 9 }} />
+                    <span className="pc-hint">At least 10 characters. Kept in the console activity log.</span>
+                  </label>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <button className="btn-primary" onClick={save}
+                  disabled={busy || !changed || (needsReason && reason.trim().length < 10) || suspended}>
+                  {busy && <SmallSpinner size="sm" />} Save Ask RISYS setting
+                </button>
+                {saved && <span style={{ fontSize: 12, color: '#2F6B3C', display: 'inline-flex', alignItems: 'center', gap: 4 }}><Check size={13} /> Saved and logged</span>}
+                {suspended && <span className="pc-hint">Reactivate the company to change this.</span>}
+              </div>
+            </div>
+
+            <div className="pc-span-5">
+              <dl className="pc-dl">
+                <dt>Questions today</dt><dd className="tnum">{ai?.requests_today ?? 0} of {ai?.daily_request_limit ?? 0}</dd>
+                <dt>Last 30 days</dt><dd className="tnum">{plural(ai?.requests_30d ?? 0, 'question')} · {plural(ai?.people_30d ?? 0, 'person', 'people')}</dd>
+                <dt>Refused or limited</dt><dd className="tnum">{ai?.refused_30d ?? 0} in 30 days</dd>
+                <dt>Last used</dt><dd>{ai?.last_request_at ? ago(ai.last_request_at) : 'never'}</dd>
+                <dt>Changed</dt><dd>{ai?.updated_at ? `${ago(ai.updated_at)}${ai.updated_by_email ? ` by ${ai.updated_by_email}` : ''}` : 'never'}</dd>
+              </dl>
+              <p className="pc-hint" style={{ marginTop: 12, display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                <Lock size={12} style={{ flexShrink: 0, marginTop: 2 }} />
+                The console sees usage counts only. Questions and answers stay private to the person who asked.
+              </p>
+            </div>
+          </div>
+        )}
+      </Card>
+    </div>
   )
 }

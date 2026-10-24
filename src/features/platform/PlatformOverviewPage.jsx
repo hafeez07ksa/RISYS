@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Building2, Hourglass, Users, Sparkles, Plug, History, Inbox, TrendingUp, Activity as ActivityIcon,
-  KeyRound, Pause, Play, Trash2, Pencil, ShieldCheck, ShieldOff, XCircle, CircleCheck, ArrowUpRight, SlidersHorizontal,
+  KeyRound, Pause, Play, Trash2, Pencil, ShieldCheck, ShieldOff, XCircle, CircleCheck, ArrowUpRight, SlidersHorizontal, Bot,
 } from 'lucide-react'
 import { usePlatform } from '@/hooks/usePlatform'
 import { Spinner } from '@/components/ui/Spinner'
@@ -231,6 +231,7 @@ const ACTION_ICON = {
   'company.deleted': [Trash2, 'wine'],
   'company.admin_link_issued': [KeyRound, 'blue'],
   'company.invitation_revoked': [XCircle, 'neutral'],
+  'company.ai_changed': [Bot, 'blue'],
   'staff.granted': [ShieldCheck, 'blue'],
   'staff.revoked': [ShieldOff, 'amber'],
 }

@@ -159,6 +159,9 @@ export const CONNECTOR_CATEGORIES = ['All', ...new Set(CONNECTORS.map(c => c.cat
 
 export const NAV_ITEMS = [
   { id: 'dashboard',  label: tx('Dashboard'),     icon: 'LayoutDashboard', section: 'workspace' },
+  // AI phase 0 — questions about the workspace, answered from its records.
+  // Hidden unless the build and the workspace both have AI on (Sidebar NAV_GATE).
+  { id: 'ask',        label: tx('Ask RISYS'),     icon: 'MessagesSquare',  section: 'workspace' },
   { id: 'incidents',  label: tx('Incidents'),      icon: 'AlertTriangle',   section: 'workspace' },
   { id: 'findings',   label: tx('Findings'),       icon: 'FileWarning',     section: 'workspace' },
   { id: 'risks',      label: tx('Risk Register'),  icon: 'ShieldAlert',     section: 'workspace' },
