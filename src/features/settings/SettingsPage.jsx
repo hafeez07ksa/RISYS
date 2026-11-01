@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Topbar } from '@/components/layout/Topbar'
 import { IntegrationsPage } from './integrations/IntegrationsPage'
 import { MembersSettings } from './MembersSettings'
 import { NotificationSettings } from './NotificationSettings'
+import { OrganizationSettings } from './OrganizationSettings'
+import { BusinessUnitsSettings } from './BusinessUnitsSettings'
 import { useAuth } from '@/hooks/useAuth'
 import clsx from 'clsx'
 import { tx } from '@/lib/i18n'
@@ -12,22 +14,27 @@ import { tx } from '@/lib/i18n'
 const TABS = [
   { id: 'integrations', label: tx('Integrations') },
   { id: 'organization', label: tx('Organization') },
+  { id: 'units',        label: tx('Business units') },
   { id: 'members',      label: tx('Members') },
   { id: 'notifications',label: tx('Notifications') },
 ]
 
-const Stub = ({ text }) => (
-  <div className="py-16 text-center text-xs" style={{ color: '#8a7070' }}>
-    {text} {tx('— coming soon')}</div>
-)
-
 export function SettingsPage() {
-  const [active, setActive] = useState('integrations')
+  // The tab lives in the query string so other pages can link to it
+  // (Compliance → "Set the CCC scope" opens ?tab=organization).
+  const [params, setParams] = useSearchParams()
+  const active = TABS.some(t => t.id === params.get('tab')) ? params.get('tab') : 'integrations'
+  const setActive = (id) => setParams(prev => {
+    const next = new URLSearchParams(prev)
+    if (id === 'integrations') next.delete('tab'); else next.set('tab', id)
+    return next
+  }, { replace: true })
   const { organization } = useAuth()
 
   const content = {
     integrations:  <IntegrationsPage />,
-    organization:  <Stub text={tx('Organization settings')} />,
+    organization:  <OrganizationSettings />,
+    units:         <BusinessUnitsSettings />,
     members:       <MembersSettings />,
     notifications: <NotificationSettings />,
   }

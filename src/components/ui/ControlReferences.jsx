@@ -1,16 +1,28 @@
 import { useEffect, useState } from 'react'
 import { BookOpen, ChevronDown, ExternalLink } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { parseControlRefs, eccControlPath } from '@/lib/controlRefs'
+import { parseControlRefs, eccControlPath, cccControlPath, deriveCccRefs } from '@/lib/controlRefs'
 import { mainControlId } from '@/data/eccAutomation'
+import { CCC_FROM_ECC_EVIDENCE, cccMainId, cccProfile } from '@/data/cccAutomation'
+import { useAuth } from '@/hooks/useAuth'
 import { tx, localizeRow } from '@/lib/i18n'
 
 // Control references on a finding. Each reference is a chip; opening one shows
 // the regulator's text and the implementation guidance, so a finding can be
 // explained against the exact clause it is evidence for.
+//
+// In a workspace that is a cloud service tenant (CCC scope set), the CCC
+// tenant controls a finding also evidences are added beside its ECC
+// references, marked as derived from the ECC control they come through.
 
 const cache = new Map()   // reference key → loaded detail
 let guidesPromise = null  // bundled reference content, loaded once
+
+let cccGuidePromise = null
+function loadCccGuide() {
+  if (!cccGuidePromise) cccGuidePromise = import('@/data/cccGuidance.json').then(m => m.default ?? m).catch(() => null)
+  return cccGuidePromise
+}
 
 function loadGuides() {
   if (!guidesPromise) {
@@ -49,6 +61,27 @@ export async function loadDetail(ref) {
       ncaCaveat: guides.nca?.sources?.nca_official?.caveat || null,
       ncaFromParent: !guides.nca?.controls?.[ref.id]?.nca_official && !!ncaNode,
     }
+  } else if (ref.type === 'ccc') {
+    const main = cccMainId(ref.id)
+    const ids = [...new Set([ref.id, main])]
+    const [{ data }, guide] = await Promise.all([
+      supabase.from('nca_ccc').select('*').in('control_id', ids),
+      loadCccGuide(),
+    ])
+    const rowsL = (data || []).map(localizeRow)
+    const row = rowsL.find(r => r.control_id === ref.id)
+    const parent = ref.id !== main ? rowsL.find(r => r.control_id === main) : null
+    const node = guide?.controls?.[ref.id] || null
+    detail = {
+      heading: row ? `${row.subdomain_id} ${row.subdomain_name}` : null,
+      role: row?.role || null,
+      text: row?.control_text || null,
+      parentText: parent?.control_text || null,
+      parentId: parent ? main : null,
+      nca: (node?.nca_official || []).filter(sec => ['guidelines', 'deliverables'].includes(sec.key)),
+      ncaSource: node?.nca_source ? guide.sources?.[node.nca_source] : null,
+      risys: (node?.risys || []).filter(sec => ['data', 'finding'].includes(sec.key)),
+    }
   } else if (ref.type === 'pdpl') {
     const { data } = await supabase.from('sdaia_pdpl')
       .select('article_title, clause_id, clause_text')
@@ -63,7 +96,12 @@ export async function loadDetail(ref) {
 }
 
 export function ControlReferences({ control, compact = false }) {
-  const refs = parseControlRefs(control)
+  const { organization } = useAuth()
+  const scope = cccProfile(organization)
+  const parsed = parseControlRefs(control)
+  // CCC chips only for a workspace with CCC in scope, and derived ones only for tenants.
+  const stated = scope ? parsed : parsed.filter(r => r.type !== 'ccc')
+  const refs = scope?.roles.includes('CST') ? [...stated, ...deriveCccRefs(stated, CCC_FROM_ECC_EVIDENCE)] : stated
   const [open, setOpen] = useState(null)
   if (!refs.length) return null
   const active = refs.find(r => r.key === open)
@@ -78,12 +116,15 @@ export function ControlReferences({ control, compact = false }) {
           return (
             <button key={ref.key} type="button" disabled={!linkable}
               onClick={() => setOpen(isOpen ? null : ref.key)}
-              title={linkable ? tx('Show the control text and implementation guidance') : undefined}
+              title={ref.derived
+                ? tx('Also evidences this CCC tenant control, through ECC {{id}}', { id: ref.via })
+                : linkable ? tx('Show the control text and implementation guidance') : undefined}
               className="inline-flex items-center gap-1"
               style={{
                 fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 6,
-                color: '#5D0F0F', background: isOpen ? '#F6EBE8' : '#fff',
-                border: `1px solid ${isOpen ? '#d9b8b1' : '#eadcd8'}`,
+                color: ref.type === 'ccc' ? '#6d28d9' : '#5D0F0F',
+                background: isOpen ? (ref.type === 'ccc' ? '#f5f3ff' : '#F6EBE8') : '#fff',
+                border: `1px ${ref.derived ? 'dashed' : 'solid'} ${ref.type === 'ccc' ? '#ddd6fe' : isOpen ? '#d9b8b1' : '#eadcd8'}`,
                 cursor: linkable ? 'pointer' : 'default',
               }}>
               <span>{ref.code}</span>
@@ -112,6 +153,53 @@ function ReferencePanel({ ref_: ref }) {
 
   if (error) return <div style={box}>{tx('Could not load the control text.')}</div>
   if (!detail) return <div style={box}>{tx('Loading…')}</div>
+
+  if (ref.type === 'ccc') {
+    return (
+      <div style={box}>
+        <p style={{ fontWeight: 600 }}>{tx('NCA CCC-2:2024 ·')} {ref.id}{detail.heading ? ` · ${detail.heading.replace(/^\S+\s/, '')}` : ''}</p>
+        {ref.derived && (
+          <p style={{ color: '#6b5555', marginTop: 2 }}>
+            {tx('Derived: the finding is keyed to ECC {{id}}, and on a cloud service the same evidence serves this CCC tenant control.', { id: ref.via })}
+          </p>
+        )}
+        <p style={h}>{tx('Control text')}</p>
+        {detail.parentText && (
+          <p style={{ color: '#6b5555' }}>{detail.parentId}: {detail.parentText}</p>
+        )}
+        <p style={{ fontWeight: 500, paddingInlineStart: detail.parentText ? 12 : 0 }}>
+          {detail.parentText ? `${ref.id}: ` : ''}{detail.text || tx('Control text not loaded.')}
+        </p>
+
+        {detail.risys.map(section => (
+          <div key={section.key}>
+            <p style={h}>{tx('RISYS ·')} {section.label}</p>
+            <ul style={{ margin: 0, paddingInlineStart: 18 }}>
+              {section.items.slice(0, 6).map((it, i) => <li key={i}>{it.text}</li>)}
+            </ul>
+          </div>
+        ))}
+
+        {detail.nca.map(section => (
+          <div key={section.key}>
+            <p style={h}>{tx('NCA guide ·')} {section.label}</p>
+            <ul style={{ margin: 0, paddingInlineStart: 18 }}>
+              {section.items.slice(0, 8).map((it, i) => (
+                <li key={i} style={{ marginInlineStart: (it.level || 0) * 16, listStyle: it.level ? 'circle' : 'disc' }}>{it.text}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+        {detail.nca.length > 0 && detail.ncaSource && (
+          <p style={{ fontSize: 10.5, color: '#8a7070', marginTop: 6 }}>{detail.ncaSource.version}. {detail.ncaSource.caveat}</p>
+        )}
+
+        <a href={cccControlPath(ref.id)} target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 mt-2" style={{ color: '#6d28d9', fontWeight: 600 }}>{tx('Open control')} {ref.id} {tx('in RISYS (full guidance, status and evidence)')} <ExternalLink size={11} />
+        </a>
+      </div>
+    )
+  }
 
   if (ref.type === 'pdpl') {
     return (

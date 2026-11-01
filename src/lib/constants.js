@@ -157,28 +157,7 @@ export const CONNECTORS = [
 
 export const CONNECTOR_CATEGORIES = ['All', ...new Set(CONNECTORS.map(c => c.category))]
 
-export const NAV_ITEMS = [
-  { id: 'dashboard',  label: tx('Dashboard'),     icon: 'LayoutDashboard', section: 'workspace' },
-  // AI phase 0 — questions about the workspace, answered from its records.
-  // Hidden unless the build and the workspace both have AI on (Sidebar NAV_GATE).
-  { id: 'ask',        label: tx('Ask RISYS'),     icon: 'MessagesSquare',  section: 'workspace' },
-  { id: 'incidents',  label: tx('Incidents'),      icon: 'AlertTriangle',   section: 'workspace' },
-  { id: 'findings',   label: tx('Findings'),       icon: 'FileWarning',     section: 'workspace' },
-  { id: 'risks',      label: tx('Risk Register'),  icon: 'ShieldAlert',     section: 'workspace' },
-  // Risks RISYS raised itself from connector findings, waiting for approval.
-  { id: 'risks/suggestions', label: tx('Suggested risks'), icon: 'Sparkles', section: 'workspace', sub: true },
-  { id: 'controls',   label: tx('Controls'),       icon: 'CheckSquare',     section: 'workspace' },
-  { id: 'compliance', label: tx('Compliance'),     icon: 'BookCheck',       section: 'workspace' },
-  { id: 'tasks',      label: tx('Tasks'),          icon: 'CheckSquare2',    section: 'workspace' },
-  { id: 'audits',     label: tx('Audits'),         icon: 'ClipboardCheck',  section: 'workspace' },
-  { id: 'reports',    label: tx('Reports'),        icon: 'FileText',        section: 'workspace' },
-  { id: 'people',     label: tx('People'),         icon: 'Users',           section: 'workspace' },
-  { id: 'audit',      label: tx('Audit Log'),      icon: 'ScrollText',      section: 'workspace' },
-  { id: 'settings',   label: tx('Settings'),       icon: 'Settings',        section: 'system'    },
-  // Reference library — sits at the foot of the sidebar, below System.
-  // Holds every loaded framework; only the in-scope one is assessed.
-  { id: 'frameworks', label: tx('Frameworks'),     icon: 'Library',         section: 'library'   },
-]
+/* Navigation lives in lib/navigation.js (modules in the top bar, pages in the sidebar). */
 
 // Roles live in lib/roles.js — the single definition shared by the invite
 // dropdowns, the permission matrix and the database CHECK constraint (B10).

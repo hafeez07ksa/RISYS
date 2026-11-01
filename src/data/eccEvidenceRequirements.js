@@ -599,3 +599,7 @@ export function evidenceRequirementFor(id, { measured = false } = {}) {
     default: return null
   }
 }
+
+// Field builders, shared with the NCA CCC definitions (src/data/cccEvidenceRequirements.js)
+// so both frameworks ask for evidence the same way.
+export { file, text, date, select, number, member, checklist, people, nextReview }

@@ -1,0 +1,62 @@
+/* ── Top bar: module tabs, workspace, search ─────────────────────────────────
+ * Logical properties only (tools/check-logical-css.mjs): the bar mirrors in
+ * Arabic. */
+
+.module-tab {
+  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+  height: 32px; padding: 0 11px; border-radius: var(--r-md);
+  border: 1px solid transparent; background: transparent; cursor: pointer;
+  font-size: var(--t-sm); font-weight: 500; color: var(--text-2); white-space: nowrap;
+  transition: background var(--dur-2) var(--ease), color var(--dur-2) var(--ease);
+}
+.module-tab svg { color: var(--text-3); }
+.module-tab:hover { background: var(--surface); color: var(--text); }
+.module-tab.active { background: var(--crimson); color: #fff; }
+.module-tab.active svg { color: #f3d9d9; }
+
+.ws-switch {
+  display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 9px;
+  border-radius: var(--r-md); border: 1px solid var(--border); background: var(--bg);
+  font-size: var(--t-sm); color: var(--text-2);
+}
+
+.menu-row {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 7px 9px; border: none; border-radius: var(--r); background: transparent;
+  font-size: var(--t-sm); color: var(--text-2); cursor: pointer;
+}
+.menu-row:hover { background: var(--surface); color: var(--text); }
+
+.search-field {
+  display: flex; align-items: center; gap: 8px; width: 200px; height: 30px;
+  padding: 0 9px; border-radius: var(--r-md); border: 1px solid var(--border);
+  background: var(--bg); color: var(--text-3); cursor: pointer; font-size: var(--t-sm);
+}
+.search-field:hover { border-color: var(--border-2); }
+.search-kbd {
+  font-size: var(--t-micro); border: 1px solid var(--border); border-radius: var(--r-sm);
+  padding: 1px 4px; background: var(--bg-2); color: var(--text-3);
+}
+
+/* Narrow windows: the search field shrinks to its icon before modules fold. */
+@media (max-width: 1280px) {
+  .search-field { width: auto; }
+  .search-label, .search-kbd { display: none; }
+  .ws-switch .truncate { max-width: 90px !important; }
+}
+
+/* ── Ask RISYS entry at the foot of the module sidebar ─────────────────────── */
+.ask-entry {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 10px 11px; border-radius: 12px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(135deg, rgba(140,22,22,0.55), rgba(93,15,15,0.35));
+  transition: background var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease);
+}
+.ask-entry:hover, .ask-entry.open { border-color: rgba(255,255,255,0.18); background: linear-gradient(135deg, rgba(160,28,28,0.7), rgba(110,18,18,0.5)); }
+.ask-entry.collapsed { justify-content: center; padding: 8px 0; }
+.ask-entry-mark {
+  width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(248,244,234,0.12);
+}

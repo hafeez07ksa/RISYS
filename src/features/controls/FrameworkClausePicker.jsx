@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, ChevronRight, ChevronDown, ChevronUp, Search, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { PRIMARY_FRAMEWORK_ID } from '@/hooks/useCompliance'
+import { isActiveFramework, compareRequirementIds } from '@/hooks/useCompliance'
+import { useAuth } from '@/hooks/useAuth'
+import { cccProfile, scopeCccRequirements } from '@/data/cccAutomation'
 import { tx, localizeRow } from '@/lib/i18n'
 
 // ── Framework registry ────────────────────────────────────────────────────────
@@ -19,11 +21,18 @@ const ALL_FRAMEWORKS = [
   { id: 'NCA NCNICC', label: 'NCA NCNICC', fullName: tx('Non-CNI Private Sector Controls'),         table: 'nca_ncnicc',  color: '#b45309', bg: '#fffbeb', tag: tx('Private Sector'),   idKey: 'control_id',  textKey: 'control_text',  groupKey: 'domain_id',    groupName: 'domain_name'    },
 ]
 
-const FRAMEWORKS = ALL_FRAMEWORKS.filter(f => f.id === PRIMARY_FRAMEWORK_ID)
+// ECC always; CCC once the workspace has a CCC scope (role + data level).
+const frameworksFor = (organization) => ALL_FRAMEWORKS.filter(f => isActiveFramework(f.id, organization))
 
 // ── Clause drill-down within a framework ──────────────────────────────────────
 function ClauseList({ fw, onSelect, selected, search }) {
-  const [rows, setRows] = useState([])
+  const { organization } = useAuth()
+  const cccScope = fw.id === 'NCA CCC' ? cccProfile(organization) : null
+  const [allRows, setRows] = useState([])
+  // CCC: only the controls for the workspace's role, in document order.
+  const rows = fw.id === 'NCA CCC'
+    ? scopeCccRequirements(allRows, cccScope).sort((a, b) => compareRequirementIds(a.control_id, b.control_id))
+    : allRows
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState({})
 
@@ -130,6 +139,8 @@ function ClauseList({ fw, onSelect, selected, search }) {
  * with a search box and the framework's own grouping. Picking a clause or
  * pressing Done folds it away again. */
 export function ClausePickerField({ value, onChange, help }) {
+  const { organization } = useAuth()
+  const FRAMEWORKS = frameworksFor(organization)
   const [open, setOpen] = useState(false)
   const [fwId, setFwId] = useState(FRAMEWORKS[0]?.id)
   const [search, setSearch] = useState('')

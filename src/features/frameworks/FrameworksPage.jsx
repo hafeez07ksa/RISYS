@@ -3,8 +3,9 @@ import { Library, ChevronRight, Lock, CheckCircle2 } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
 import {
-  PRIMARY_FRAMEWORKS,
-  SECONDARY_FRAMEWORKS,
+  FRAMEWORKS,
+  activeFrameworksFor,
+  isSubControl,
   useFrameworkRequirements,
 } from '@/hooks/useCompliance'
 import { FrameworkReaderPage } from './FrameworkReaderPage'
@@ -13,19 +14,19 @@ import { tx } from '@/lib/i18n'
 /*
  * Frameworks library.
  *
- * Only NCA ECC is in active scope — it lives under Compliance and is the only
- * framework that is scored, mapped or reported on. Everything else sits here:
+ * NCA ECC is always in scope; NCA CCC joins it once the workspace administrator
+ * sets a CCC scope (Settings → Organization). Frameworks in scope live under
+ * Compliance and are scored, mapped and reported on. Everything else sits here:
  * the control text is loaded and browsable so the content is verifiable before
  * a framework is brought into scope, but nothing is assessed against it.
  *
- * To promote a framework, move its id into PRIMARY_FRAMEWORK_ID handling in
- * hooks/useCompliance.js. Nothing else needs to change.
+ * Scope is decided by activeFrameworksFor() in hooks/useCompliance.js.
  */
 
 // ── One row in the library ────────────────────────────────────────────────────
 function FrameworkRow({ fw, active, onOpen }) {
   const { requirements, loading } = useFrameworkRequirements(fw.id)
-  const mainCount = requirements.filter(r => r.control_type !== 'Sub-Control').length
+  const mainCount = requirements.filter(r => !isSubControl(r)).length
 
   return (
     <button
@@ -93,6 +94,7 @@ function FrameworkRow({ fw, active, onOpen }) {
 export function FrameworksPage() {
   const { organization } = useAuth()
   const [openFramework, setOpenFramework] = useState(null)
+  const inScope = activeFrameworksFor(organization)
 
   // Always the reader. Frameworks is a reference library — opening a framework
   // here shows the regulation as published, never the entity's assessment of it.
@@ -125,7 +127,7 @@ export function FrameworksPage() {
           color: 'var(--text-3)', fontWeight: 600, marginBottom: 10,
         }}>{tx('In scope')}</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
-          {PRIMARY_FRAMEWORKS.map(fw => (
+          {inScope.map(fw => (
             <FrameworkRow key={fw.id} fw={fw} active onOpen={setOpenFramework} />
           ))}
         </div>
@@ -136,7 +138,7 @@ export function FrameworksPage() {
           color: 'var(--text-3)', fontWeight: 600, marginBottom: 10,
         }}>{tx('Available — not currently assessed')}</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {SECONDARY_FRAMEWORKS.map(fw => (
+          {FRAMEWORKS.filter(f => !inScope.some(a => a.id === f.id)).map(fw => (
             <FrameworkRow key={fw.id} fw={fw} active={false} onOpen={setOpenFramework} />
           ))}
         </div>

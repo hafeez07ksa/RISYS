@@ -8,14 +8,18 @@ import { usePeople } from '@/hooks/usePeople'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useAudits, useAudit, AUDIT_TYPES } from '@/hooks/useAudits'
 import { Field, SubmitButton } from './parts'
+import { useAuth } from '@/hooks/useAuth'
+import { hasCccProfile } from '@/hooks/useCompliance'
 import { tx } from '@/lib/i18n'
 
-const FRAMEWORKS = [
+// Frameworks whose requirements are in framework_requirements_v, so scope
+// items and findings can point at a clause. NCA CCC is offered once the
+// workspace has a CCC scope.
+const BASE_FRAMEWORKS = [
   { value: '', label: tx('Not tied to a framework') },
-  // Frameworks whose requirements are in framework_requirements_v, so scope
-  // items and findings can point at a clause. Add others as they are loaded.
   { value: 'NCA ECC', label: 'NCA ECC-2:2024' },
 ]
+const CCC_OPTION = { value: 'NCA CCC', label: 'NCA CCC-2:2024' }
 
 const EMPTY = {
   title: '', audit_type: 'internal', framework: 'NCA ECC', objective: '', scope_summary: '', methodology: '',
@@ -28,6 +32,8 @@ export function EngagementFormPage() {
   const { id } = useParams()
   const editing = !!id
   const navigate = useNavigate()
+  const { organization } = useAuth()
+  const FRAMEWORKS = hasCccProfile(organization) ? [...BASE_FRAMEWORKS, CCC_OPTION] : BASE_FRAMEWORKS
   const perms = usePermissions()
   const { members } = usePeople()
   const { createEngagement } = useAudits()

@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
 import { localISO } from '@/lib/manualCompliance'
 import { tx, localizeRow } from '@/lib/i18n'
+import { cccProfile, scopeCccRequirements } from '@/data/cccAutomation'
 
 // ── FRAMEWORK REGISTRY ────────────────────────────────────────────────────────
 export const FRAMEWORKS = [
@@ -50,7 +51,7 @@ export const FRAMEWORKS = [
     id: 'NCA CCC',
     label: 'NCA CCC',
     fullName: tx('Cloud Cybersecurity Controls'),
-    version: 'CCC-1:2020',
+    version: 'CCC-2:2024',
     table: 'nca_ccc',
     color: '#6d28d9',
     bg: '#f5f3ff',
@@ -58,6 +59,9 @@ export const FRAMEWORKS = [
     requirementKey: 'control_id',
     textKey: 'control_text',
     groupBy: 'domain',
+    // In scope only when the workspace admin sets a CCC profile (role + data level)
+    // in Settings → Organization; the rows are then filtered to that role and level.
+    scopedByProfile: true,
   },
   {
     id: 'NCA DCC',
@@ -116,15 +120,40 @@ export const FRAMEWORKS = [
 export const getFramework = (id) => FRAMEWORKS.find(f => f.id === id)
 
 // ── ACTIVE SCOPE ──────────────────────────────────────────────────────────────
-// Only NCA ECC is being implemented. The Compliance section works against the
-// primary framework; everything else lives in the read-only Frameworks library
-// until it is brought into scope.
+// NCA ECC is always in scope. NCA CCC joins it when the workspace has a CCC
+// profile (role + data classification level), set by its administrator in
+// Settings → Organization. Everything else lives in the read-only Frameworks
+// library until it is brought into scope.
 export const PRIMARY_FRAMEWORK_ID = 'NCA ECC'
+export const CCC_FRAMEWORK_ID = 'NCA CCC'
+export const IMPLEMENTED_FRAMEWORK_IDS = [PRIMARY_FRAMEWORK_ID, CCC_FRAMEWORK_ID]
 
 export const PRIMARY_FRAMEWORKS   = FRAMEWORKS.filter(f => f.id === PRIMARY_FRAMEWORK_ID)
-export const SECONDARY_FRAMEWORKS = FRAMEWORKS.filter(f => f.id !== PRIMARY_FRAMEWORK_ID)
+export const SECONDARY_FRAMEWORKS = FRAMEWORKS.filter(f => !IMPLEMENTED_FRAMEWORK_IDS.includes(f.id))
 
 export const isPrimaryFramework = (id) => id === PRIMARY_FRAMEWORK_ID
+export const isImplementedFramework = (id) => IMPLEMENTED_FRAMEWORK_IDS.includes(id)
+
+/** True when the workspace has a valid CCC profile. */
+export function hasCccProfile(organization) {
+  const level = Number(organization?.ccc_level)
+  return ['cst', 'csp', 'both'].includes(organization?.ccc_role) && level >= 1 && level <= 4
+}
+
+/** The frameworks this workspace works against: ECC, plus CCC once it has a profile. */
+export function activeFrameworksFor(organization) {
+  return FRAMEWORKS.filter(f =>
+    f.id === PRIMARY_FRAMEWORK_ID || (f.id === CCC_FRAMEWORK_ID && hasCccProfile(organization)))
+}
+
+export function isActiveFramework(id, organization) {
+  return activeFrameworksFor(organization).some(f => f.id === id)
+}
+
+export function useActiveFrameworks() {
+  const { organization } = useAuth()
+  return activeFrameworksFor(organization)
+}
 
 // ── COMPLIANCE STATUS HELPERS ─────────────────────────────────────────────────
 export const STATUS_CONFIG = {
@@ -156,6 +185,33 @@ export function useFrameworkRequirements(frameworkId) {
   useEffect(() => { fetch() }, [fetch])
 
   return { requirements, loading, refetch: fetch }
+}
+
+// ── HOOK: the requirements in scope for this workspace ───────────────────────
+//
+// For most frameworks this is every row. NCA CCC is filtered by the workspace's
+// CCC profile: only the role it holds (tenant, provider or both), each row
+// tagged with _applicability at its data level (mandatory · optional ·
+// not_applicable). Without a profile CCC has nothing in scope.
+export function useScopedRequirements(frameworkId) {
+  const { organization } = useAuth()
+  const { requirements, loading, refetch } = useFrameworkRequirements(frameworkId)
+  const fw = getFramework(frameworkId)
+  const profile = fw?.scopedByProfile ? cccProfile(organization) : null
+
+  const scoped = useMemo(
+    () => (fw?.scopedByProfile ? scopeCccRequirements(requirements, profile) : requirements),
+    [requirements, fw?.scopedByProfile, profile?.role, profile?.level],
+  )
+
+  return {
+    requirements: scoped,
+    allRequirements: requirements,
+    loading,
+    refetch,
+    profile,
+    needsProfile: !!fw?.scopedByProfile && !profile,
+  }
 }
 
 // ── HOOK: org compliance statuses for a framework ─────────────────────────────
@@ -540,9 +596,18 @@ export function hasAutomatedResult(auto) {
 //
 // Comparing numerically also nests for free: 1-5-3-1 sorts immediately after
 // 1-5-3 because it shares the prefix and has one more segment.
+//
+// CCC ids carry a role letter (1-3-P-1-1, 1-3-T-1-1): provider (P) sorts
+// before tenant (T), as in the published document.
+const idSegment = (s) => {
+  const n = Number(s)
+  if (Number.isFinite(n)) return n
+  return /^[A-Za-z]$/.test(s) ? s.toUpperCase().charCodeAt(0) / 1000 : NaN
+}
+
 export function compareRequirementIds(a, b) {
-  const pa = String(a ?? '').split('-').map(Number)
-  const pb = String(b ?? '').split('-').map(Number)
+  const pa = String(a ?? '').split('-').map(idSegment)
+  const pb = String(b ?? '').split('-').map(idSegment)
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
     const x = Number.isFinite(pa[i]) ? pa[i] : -1
     const y = Number.isFinite(pb[i]) ? pb[i] : -1
@@ -613,8 +678,11 @@ export function computeFrameworkScore(requirements, statuses, mappings, controls
 
   // If framework scores all controls (e.g. SAMA CSF), include sub-controls
   const scoreAll = fw?.scoreAllControls
-  const scoreable = scoreAll ? requirements : requirements.filter(r => !isSubControl(r))
-  const total = scoreable.length || requirements.length
+  // NCA CCC: controls that are optional or not applicable at the workspace's
+  // data level are shown but never scored (rows tagged by scopeCccRequirements).
+  const inScore = r => !r._applicability || r._applicability === 'mandatory'
+  const scoreable = (scoreAll ? requirements : requirements.filter(r => !isSubControl(r))).filter(inScore)
+  const total = scoreable.length || (requirements.some(r => r._applicability) ? 0 : requirements.length)
 
   for (const req of scoreable) {
     const reqId = req.control_id || req.clause_id

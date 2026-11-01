@@ -1,6 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
-import { Bell, CheckCheck, Search, HelpCircle, ChevronDown, LogOut, Settings, Mail } from 'lucide-react'
+import { Bell, CheckCheck, Search, HelpCircle, ChevronDown, LogOut, Settings, Mail, Check, MoreHorizontal } from 'lucide-react'
+import clsx from 'clsx'
+import { RisysLogo } from '@/components/ui/RisysLogo'
+import { roleLabel } from '@/lib/roles'
+import { ICONS } from './Sidebar'
+import './nav.css'
 import { useNotifications, useEmailPreference } from '@/hooks/useRisks'
 import { useAuth } from '@/hooks/useAuth'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
@@ -45,6 +50,8 @@ const SEGMENT_LABELS = {
   reviews: 'Review calendar',
   suggestions: 'Suggested risks',
   ask: 'Ask RISYS',
+  policies: 'Policies', coverage: 'ECC coverage', versions: 'Versions', 'my-policies': 'My policies',
+  exceptions: 'Exceptions', evidence: 'Evidence library',
 }
 
 /* A dotted requirement id encodes its own ancestry: 1-5-3-1 is a child of
@@ -72,7 +79,9 @@ function useRouteBreadcrumb() {
   for (let i = 0; i < parts.length; i++) {
     const p = parts[i]
     acc += `/${p}`
-    const label = SEGMENT_LABELS[p]
+    // The report pages reuse segment names that mean something else at the top level (audit).
+    const REPORT_SEG = { board: 'Board report', ecc: 'ECC status report', audit: 'Audit reports', new: 'Generate' }
+    const label = parts[1] === 'reports' && i === 2 && REPORT_SEG[p] ? REPORT_SEG[p] : SEGMENT_LABELS[p]
     if (label === null) continue
 
     // /app/compliance/:frameworkId/:requirementId — the last segment is a
@@ -95,7 +104,8 @@ function useRouteBreadcrumb() {
     const isRecordId = label === undefined && /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(p)
     const RECORD_KIND = { risks: tx('Risk'), controls: tx('Control'), incidents: tx('Incident'), tasks: tx('Task'),
       audits: tx('Engagement'), findings: tx('Finding'), requests: tx('Request'), scope: tx('Scope item'), reports: tx('Report'),
-      suggestions: tx('Suggested risk'), ask: tx('Conversation') }
+      suggestions: tx('Suggested risk'), ask: tx('Conversation'),
+      policies: tx('Policy'), 'my-policies': tx('Attestation'), exceptions: tx('Exception'), evidence: tx('Evidence') }
     const recordLabel = isRecordId ? (RECORD_KIND[parts[i - 1]] || tx('Details')) : null
     items.push({ label: recordLabel ?? label ?? decodeURIComponent(p), to: acc })
   }
@@ -323,51 +333,194 @@ function MenuLink({ icon: Icon, to, children, onClick }) {
   )
 }
 
-/** The global bar. Rendered once by AppLayout. */
-export function AppTopbar({ onOpenSearch }) {
+/** Where you are, as a trail under the top bar. Rendered once by AppLayout. */
+export function RouteBreadcrumb() {
   const crumbs = useRouteBreadcrumb()
-  const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || '')
+  // A top-level page needs no trail: the sidebar already shows where you are.
+  if (crumbs.length < 2) return null
+  return (
+    <div style={{ padding: '10px var(--gutter) 0', flexShrink: 0 }}>
+      <Breadcrumb items={crumbs} />
+    </div>
+  )
+}
+
+/* ── Workspace switcher ───────────────────────────────────────────────────────
+ * A user can belong to several organisations (an advisory firm running its
+ * clients, a RISYS staff account). With one membership it is a plain label. */
+function WorkspaceSwitcher() {
+  const { organization, memberships, switchOrganization } = useAuth()
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  const many = (memberships?.length || 0) > 1
+  useEffect(() => {
+    if (!open) return
+    const f = (e) => { if (!ref.current?.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', f)
+    return () => document.removeEventListener('mousedown', f)
+  }, [open])
 
   return (
-    <header
-      style={{
-        height: 'var(--topbar-h)', flexShrink: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
-        padding: '0 var(--gutter)', background: 'var(--bg-2)',
-        borderBottom: '1px solid var(--border)',
-      }}
-    >
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <Breadcrumb items={crumbs} />
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={() => many && setOpen((o) => !o)}
+        aria-haspopup={many ? 'listbox' : undefined}
+        aria-expanded={many ? open : undefined}
+        title={organization?.name}
+        className="ws-switch"
+        style={{ cursor: many ? 'pointer' : 'default' }}
+      >
+        <span style={{ width: 7, height: 7, borderRadius: 999, background: 'var(--taupe)', flexShrink: 0 }} />
+        <span className="truncate" style={{ maxWidth: 140 }}>{organization?.name || tx('Workspace')}</span>
+        {many && <ChevronDown size={12} style={{ color: 'var(--text-3)', flexShrink: 0 }} />}
+      </button>
+      {open && many && (
+        <div role="listbox" className="anim-pop" style={{
+          position: 'absolute', insetInlineEnd: 0, top: 'calc(100% + 6px)', minWidth: 230,
+          background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
+          boxShadow: 'var(--e-3)', zIndex: 'var(--z-popover)', padding: 5,
+        }}>
+          <p style={{ fontSize: 'var(--t-micro)', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-3)', padding: '6px 8px 4px', margin: 0 }}>{tx('Workspaces')}</p>
+          {memberships.map((o) => {
+            const active = o.id === organization?.id
+            return (
+              <button key={o.id} role="option" aria-selected={active}
+                onClick={() => { setOpen(false); if (!active) switchOrganization(o.id) }}
+                className="menu-row" style={{ background: active ? 'var(--surface)' : undefined }}>
+                <span style={{ flex: 1, minWidth: 0, textAlign: 'start' }}>
+                  <span className="block truncate" style={{ fontSize: 'var(--t-sm)', color: 'var(--text)' }}>{o.name}</span>
+                  <span className="block truncate" style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{roleLabel(o.memberRole)}</span>
+                </span>
+                {active && <Check size={13} style={{ color: 'var(--crimson)', flexShrink: 0 }} />}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Module tabs ──────────────────────────────────────────────────────────────
+ * The first navigation level. Clicking a module opens its first page; the
+ * module's own pages are in the sidebar. Tabs that do not fit fold into
+ * "More", so a narrow window or the longer Arabic labels never wrap the bar. */
+function ModuleTabs({ modules, active }) {
+  const navigate = useNavigate()
+  const wrap = useRef(null)
+  const [fit, setFit] = useState(modules.length)
+  const [more, setMore] = useState(false)
+  const moreRef = useRef(null)
+
+  // Measure every tab once (hidden copies), then show as many as fit.
+  useEffect(() => {
+    const el = wrap.current
+    if (!el) return
+    const measure = () => {
+      const widths = [...el.querySelectorAll('[data-measure]')].map((n) => n.offsetWidth + 2)
+      const room = el.clientWidth - 84
+      let used = 0; let n = 0
+      for (const w of widths) { if (used + w > room) break; used += w; n += 1 }
+      setFit(n >= widths.length ? widths.length : Math.max(1, n))
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [modules])
+
+  useEffect(() => {
+    if (!more) return
+    const f = (e) => { if (!moreRef.current?.contains(e.target)) setMore(false) }
+    document.addEventListener('mousedown', f)
+    return () => document.removeEventListener('mousedown', f)
+  }, [more])
+
+  const go = (m) => { setMore(false); navigate(`/app/${m.pages[0].path}`) }
+  const Tab = ({ m, measure }) => {
+    const Icon = ICONS[m.icon]
+    const on = m.id === active?.id
+    return (
+      <button type="button" data-measure={measure ? '' : undefined} tabIndex={measure ? -1 : undefined} aria-hidden={measure || undefined}
+        onClick={measure ? undefined : () => go(m)} aria-current={on && !measure ? 'page' : undefined}
+        className={clsx('module-tab', on && 'active')}>
+        {Icon && <Icon size={14} strokeWidth={1.7} />}<span>{m.label}</span>
+      </button>
+    )
+  }
+  const shown = modules.slice(0, fit)
+  const hidden = modules.slice(fit)
+
+  return (
+    <nav ref={wrap} aria-label={tx('Modules')} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 2, position: 'relative' }}>
+      <div aria-hidden="true" style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none', display: 'flex', gap: 2, insetInlineStart: 0, top: 0 }}>
+        {modules.map((m) => <Tab key={m.id} m={m} measure />)}
       </div>
+      {shown.map((m) => <Tab key={m.id} m={m} />)}
+      {hidden.length > 0 && (
+        <div ref={moreRef} style={{ position: 'relative' }}>
+          <button type="button" onClick={() => setMore((o) => !o)} aria-expanded={more}
+            className={clsx('module-tab', hidden.some((m) => m.id === active?.id) && 'active')}>
+            <MoreHorizontal size={14} /><span>{tx('More')}</span>
+          </button>
+          {more && (
+            <div className="anim-pop" style={{
+              position: 'absolute', insetInlineStart: 0, top: 'calc(100% + 6px)', minWidth: 200,
+              background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
+              boxShadow: 'var(--e-3)', zIndex: 'var(--z-popover)', padding: 5,
+            }}>
+              {hidden.map((m) => {
+                const Icon = ICONS[m.icon]
+                return (
+                  <button key={m.id} className="menu-row" onClick={() => go(m)} style={{ fontWeight: m.id === active?.id ? 600 : 400 }}>
+                    {Icon && <Icon size={13} />}<span style={{ flex: 1, textAlign: 'start' }}>{m.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </nav>
+  )
+}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-        {/* §6 — search presents as a field, not an icon. An icon hides the fact
-            that the product is searchable at all. */}
-        <button
-          onClick={onOpenSearch}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8, width: 210,
-            padding: '5px 9px', borderRadius: 'var(--r-md)',
-            border: '1px solid var(--border)', background: 'var(--bg)',
-            color: 'var(--text-3)', cursor: 'pointer', fontSize: 'var(--t-sm)',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--border-2)')}
-          onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
-        >
-          <Search size={13} />
-          <span style={{ flex: 1, textAlign: 'start' }}>{tx('Search anything…')}</span>
-          <kbd style={{
-            fontSize: 'var(--t-micro)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)',
-            padding: '1px 4px', background: 'var(--bg-2)', color: 'var(--text-3)',
-          }}>{isMac ? '⌘' : tx('Ctrl')} K</kbd>
-        </button>
+/** The global bar: logo, modules, workspace, search, help, notifications, account.
+ *  Rendered once by AppLayout. The logo block keeps the sidebar's width so the
+ *  two read as one dark column. */
+export function AppTopbar({ onOpenSearch, modules, active, collapsed, hasSidebar }) {
+  const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || '')
+  const logoW = collapsed ? 'var(--sidebar-w-collapsed)' : 'var(--sidebar-w)'
 
-        <IconButton title={tx('Help')}>
-          <HelpCircle size={14} />
-        </IconButton>
-        <NotificationsBell />
-        <ProfileMenu />
+  return (
+    <header style={{ height: 'var(--topbar-h)', flexShrink: 0, display: 'flex', alignItems: 'stretch', background: 'var(--bg-2)', borderBottom: '1px solid var(--border)' }}>
+      <Link to="/app/dashboard" aria-label={tx('Dashboard')} style={{
+        width: logoW, flexShrink: 0, display: 'flex', alignItems: 'center',
+        justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? 0 : '0 14px',
+        background: 'var(--ink)', borderBottom: hasSidebar ? '1px solid rgba(255,255,255,0.07)' : 'none',
+        transition: 'width var(--dur-3) var(--ease)',
+      }}>
+        <RisysLogo size={collapsed ? 'xs' : 'sm'} tone="light" showText={!collapsed} />
+      </Link>
+
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12, padding: '0 var(--gutter) 0 14px' }}>
+        <ModuleTabs modules={modules} active={active} />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <WorkspaceSwitcher />
+          {/* §6 — search presents as a field, not an icon. An icon hides the
+              fact that the product is searchable at all. */}
+          <button onClick={onOpenSearch} className="search-field" aria-label={tx('Search anything…')}>
+            <Search size={13} />
+            <span className="search-label" style={{ flex: 1, textAlign: 'start' }}>{tx('Search anything…')}</span>
+            <kbd className="search-kbd">{isMac ? '⌘' : tx('Ctrl')} K</kbd>
+          </button>
+          <IconButton title={tx('Help')}>
+            <HelpCircle size={14} />
+          </IconButton>
+          <NotificationsBell />
+          <ProfileMenu />
+        </div>
       </div>
     </header>
   )
@@ -379,6 +532,10 @@ export function AppTopbar({ onOpenSearch }) {
  * and stripped of its own notification bell now that the global bar owns it —
  * otherwise every page would render two. */
 export function Topbar({ title, subtitle, actions }) {
+  // The workspace name is already in the top bar; repeating it under every
+  // page title says nothing.
+  const { organization } = useAuth()
+  if (subtitle && subtitle === organization?.name) subtitle = null
   return (
     <div style={{
       display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16,

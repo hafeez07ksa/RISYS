@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { tx } from '@/lib/i18n'
+import { cccProfile, cccRoleOf } from '@/data/cccAutomation'
 
 /* Reference data the scope and finding pages pick from. */
 
@@ -15,6 +16,10 @@ const ECC_DOMAINS = {
 const sortKey = (id) => id.split('-').map((p) => p.padStart(4, '0')).join('-')
 
 export function useFrameworkRequirements(framework) {
+  const { organization } = useAuth()
+  // NCA CCC: only the controls for the workspace's CCC role (tenant / provider / both).
+  const roles = framework === 'NCA CCC' ? (cccProfile(organization)?.roles || []) : null
+  const rolesKey = roles ? roles.join(',') : ''
   const [reqs, setReqs] = useState([])
   useEffect(() => {
     if (!framework) { setReqs([]); return }
@@ -22,10 +27,11 @@ export function useFrameworkRequirements(framework) {
     supabase.from('framework_requirements_v').select('requirement_id, requirement_text, parent_requirement_id')
       .eq('framework', framework).then(({ data }) => {
         if (!alive) return
-        setReqs((data || []).sort((a, b) => sortKey(a.requirement_id).localeCompare(sortKey(b.requirement_id))))
+        const rows = (data || []).filter(r => !roles || roles.includes(cccRoleOf(r.requirement_id)))
+        setReqs(rows.sort((a, b) => sortKey(a.requirement_id).localeCompare(sortKey(b.requirement_id))))
       })
     return () => { alive = false }
-  }, [framework])
+  }, [framework, rolesKey]) // eslint-disable-line react-hooks/exhaustive-deps
   return reqs
 }
 

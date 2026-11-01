@@ -81,6 +81,11 @@ export function ReviewCalendarPage() {
       render: r => (
         <span style={{ display: 'flex', gap: 10, alignItems: 'baseline', minWidth: 0 }}>
           <span className="tnum" style={{ fontWeight: 600, color: 'var(--text)', flexShrink: 0, minWidth: 52 }}>
+            {r.framework && r.framework !== 'NCA ECC' && (
+              <span style={{ fontSize: 'var(--t-micro)', fontWeight: 600, color: 'var(--text-3)', marginInlineEnd: 5 }}>
+                {r.framework.replace(/^NCA\s+/, '')}
+              </span>
+            )}
             {r.requirement_id}
           </span>
           <span style={{ color: 'var(--text-2)', minWidth: 0 }}>
@@ -134,7 +139,7 @@ export function ReviewCalendarPage() {
 
       <div className="page-content" style={{ flex: 1, overflowY: 'auto' }}>
         <p style={{ fontSize: 13, color: 'var(--text-3)', maxWidth: 720, margin: '0 0 16px', lineHeight: 1.6 }}>{tx(
-          'Every ECC control that must be reviewed periodically, and every other control with a next review date on record. Owners are reminded 30 and 7 days before the date and when it passes. A compliant control counts as Partial once its review date has passed.'
+          'Every ECC control (and, when CCC is in scope, every CCC control) that must be reviewed periodically, and every other control with a next review date on record. Owners are reminded 30 and 7 days before the date and when it passes. A compliant control counts as Partial once its review date has passed.'
         )}</p>
 
         <div style={{ marginBottom: 16 }}>

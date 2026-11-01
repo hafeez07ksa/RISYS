@@ -5,8 +5,8 @@ import { usePermissions } from '@/hooks/usePermissions'
 import { useConnectors } from '@/hooks/useConnectors'
 import { useRiskMatrix } from '@/hooks/useRiskGate'
 import {
-  PRIMARY_FRAMEWORK_ID, getFramework,
-  useFrameworkRequirements, useComplianceStatuses, useFrameworkMappings,
+  PRIMARY_FRAMEWORK_ID, CCC_FRAMEWORK_ID, getFramework, hasCccProfile,
+  useFrameworkRequirements, useScopedRequirements, useComplianceStatuses, useFrameworkMappings,
   useRequirementAutomation, useReviewSchedule, summariseReviews,
   computeFrameworkScore,
 } from '@/hooks/useCompliance'
@@ -37,6 +37,7 @@ import { localISO } from '@/lib/manualCompliance'
  * -------------------------------------------------------------------------- */
 
 const ECC = getFramework(PRIMARY_FRAMEWORK_ID)
+const CCC = getFramework(CCC_FRAMEWORK_ID)
 const DAY = 86400000
 
 /** The score a risk carries now: residual once scored, inherent until then. */
@@ -73,6 +74,14 @@ export function useDashboardData() {
     statuses: useComplianceStatuses(ECC.id),
     maps: useFrameworkMappings(ECC.id),
     auto: useRequirementAutomation(ECC.id),
+  }
+  // NCA CCC, only once the workspace has a CCC scope — scoped exactly as on its Compliance page.
+  const cccId = hasCccProfile(organization) ? CCC.id : null
+  const ccc = {
+    reqs: useScopedRequirements(cccId),
+    statuses: useComplianceStatuses(cccId),
+    maps: useFrameworkMappings(cccId),
+    auto: useRequirementAutomation(cccId),
   }
   const reviews = useReviewSchedule()
 
@@ -162,6 +171,13 @@ export function useDashboardData() {
     [ecc.reqs.requirements, ecc.statuses.statuses, ecc.maps.mappings, ecc.maps.controls, ecc.auto.automation],
   )
 
+  const cccScore = useMemo(
+    () => (cccId && ccc.reqs.requirements.length
+      ? computeFrameworkScore(ccc.reqs.requirements, ccc.statuses.statuses, ccc.maps.mappings, ccc.maps.controls, CCC, ccc.auto.automation)
+      : null),
+    [cccId, ccc.reqs.requirements, ccc.statuses.statuses, ccc.maps.mappings, ccc.maps.controls, ccc.auto.automation],
+  )
+
   const reviewSummary = useMemo(() => summariseReviews(reviews.rows), [reviews.rows])
 
   return {
@@ -172,6 +188,7 @@ export function useDashboardData() {
     updatedAt,
     model,
     ecc: eccModel,
+    ccc: cccScore,
     reviews: reviewSummary,
     matrix,
     perms,

@@ -39,7 +39,7 @@ import { ReviewCalendarPage } from '@/features/compliance/ReviewCalendarPage'
 import { FrameworksPage } from '@/features/frameworks/FrameworksPage'
 import { AuditsPage } from '@/features/audits/AuditsPage'
 import { AuditDetailPage } from '@/features/audits/AuditDetailPage'
-import { ReportsPage } from '@/features/reports/ReportsPage'
+import { ReportsPage, ReportTypePage } from '@/features/reports/ReportsPage'
 import { CreateTaskPage } from '@/features/tasks/CreateTaskPage'
 import { RaiseIncidentPage } from '@/features/incidents/RaiseIncidentPage'
 import { EscalateIncidentPage } from '@/features/incidents/EscalateIncidentPage'
@@ -58,12 +58,30 @@ import { FindingPage } from '@/features/audits/FindingPage'
 import { SuggestedRisksPage } from '@/features/risks/SuggestedRisksPage'
 import { SuggestionDetailPage } from '@/features/risks/SuggestionDetailPage'
 import { AskRisysPage } from '@/features/ask/AskRisysPage'
+import { PoliciesPage } from '@/features/policies/PoliciesPage'
+import { PolicyCoveragePage } from '@/features/policies/PolicyCoveragePage'
+import { PolicyFormPage } from '@/features/policies/PolicyFormPage'
+import { PolicyDetailPage } from '@/features/policies/PolicyDetailPage'
+import { PolicyVersionPage } from '@/features/policies/PolicyVersionPage'
+import { MyPoliciesPage } from '@/features/policies/MyPoliciesPage'
+import { AttestPage } from '@/features/policies/AttestPage'
+import { ExceptionsPage } from '@/features/exceptions/ExceptionsPage'
+import { ExceptionFormPage } from '@/features/exceptions/ExceptionFormPage'
+import { ExceptionDetailPage } from '@/features/exceptions/ExceptionDetailPage'
+import { EvidenceLibraryPage } from '@/features/evidence/EvidenceLibraryPage'
+import { EvidenceFormPage } from '@/features/evidence/EvidenceFormPage'
+import { EvidenceDetailPage } from '@/features/evidence/EvidenceDetailPage'
 
 /* The breadcrumb links every segment of the URL, so /app/audits/:id/findings
  * has to go somewhere: to the engagement, on that tab. */
 function EngagementTab({ tab }) {
   const { id } = useParams()
   return <Navigate to={`/app/audits/${id}?tab=${tab}`} replace />
+}
+
+function PolicyVersionsRedirect() {
+  const { id } = useParams()
+  return <Navigate to={`/app/policies/${id}?tab=history`} replace />
 }
 
 /* Which half of the product this build serves. Vite replaces the env var with
@@ -130,6 +148,24 @@ const appRoutes = [
       { path: 'compliance/:frameworkId',                 element: <ComplianceFrameworkRoute /> },
       { path: 'compliance/:frameworkId/:requirementId',  element: <ComplianceControlRoute /> },
       { path: 'frameworks',   element: <FrameworksPage /> },
+      // Policies, exceptions and the evidence library. Open to every member:
+      // everyone reads and attests to policies; who may write, approve and
+      // publish is decided per action in the database.
+      { path: 'policies',                    element: <PoliciesPage /> },
+      { path: 'policies/coverage',           element: <PolicyCoveragePage /> },
+      { path: 'policies/new',                element: <PolicyFormPage /> },
+      { path: 'policies/:id',                element: <PolicyDetailPage /> },
+      { path: 'policies/:id/edit',           element: <PolicyFormPage /> },
+      { path: 'policies/:id/versions',       element: <PolicyVersionsRedirect /> },
+      { path: 'policies/:id/versions/:no',   element: <PolicyVersionPage /> },
+      { path: 'my-policies',                 element: <MyPoliciesPage /> },
+      { path: 'my-policies/:id',             element: <AttestPage /> },
+      { path: 'exceptions',                  element: <ExceptionsPage /> },
+      { path: 'exceptions/new',              element: <ExceptionFormPage /> },
+      { path: 'exceptions/:id',              element: <ExceptionDetailPage /> },
+      { path: 'evidence',                    element: <EvidenceLibraryPage /> },
+      { path: 'evidence/new',                element: <EvidenceFormPage /> },
+      { path: 'evidence/:id',                element: <EvidenceDetailPage /> },
       { path: 'tasks',        element: <TasksPage /> },
       { path: 'tasks/new',   element: <CreateTaskPage /> },
       { path: 'tasks/:id',   element: <TaskDetailPage /> },
@@ -158,6 +194,9 @@ const appRoutes = [
       { path: 'audits/:id/findings/:findingId/edit', element: <FindingFormPage /> },
       { path: 'reports',      element: <ReportsPage /> },
       { path: 'reports/new',  element: <GenerateReportPage /> },
+      { path: 'reports/board', element: <ReportTypePage key="board" slug="board" /> },
+      { path: 'reports/ecc',   element: <ReportTypePage key="ecc" slug="ecc" /> },
+      { path: 'reports/audit', element: <ReportTypePage key="audit" slug="audit" /> },
       { path: 'reports/:runId', element: <Navigate to="/app/reports" replace /> },
       { path: 'reports/:runId/record', element: <RecordPresentationPage /> },
 

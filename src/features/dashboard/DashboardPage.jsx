@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { RefreshCw, Plus, AlertTriangle, CheckSquare2 } from 'lucide-react'
-import { Topbar } from '@/components/layout/Topbar'
 import { Spinner } from '@/components/ui/Spinner'
 import { useAuth } from '@/hooks/useAuth'
 import { tx, appLocale } from '@/lib/i18n'
@@ -39,7 +38,7 @@ function greeting(d = new Date()) {
 
 export function DashboardPage() {
   const { organization, user } = useAuth()
-  const { loading, eccLoading, refreshing, refresh, updatedAt, model, ecc, reviews, matrix, perms } = useDashboardData()
+  const { loading, eccLoading, refreshing, refresh, updatedAt, model, ecc, ccc, reviews, matrix, perms } = useDashboardData()
 
   const name = user?.user_metadata?.full_name || ''
   const firstName = name.split(' ')[0]
@@ -47,10 +46,8 @@ export function DashboardPage() {
   const canReadFindings = ROLE_SETS.findingsReader.includes(perms.role)
 
   return (
-    <div className="h-full flex flex-col">
-      <Topbar title={tx('Dashboard')} subtitle={organization?.name} />
-
-      <div className="flex-1 overflow-y-auto page-content db">
+    <div>
+      <div className="page-content db">
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
         <div className="db-hero">
           <div>
@@ -90,7 +87,7 @@ export function DashboardPage() {
           <div className="flex justify-center py-20"><Spinner /></div>
         ) : (
           <>
-            <div className="db-rise"><KpiRow ecc={ecc} model={model} /></div>
+            <div className="db-rise"><KpiRow ecc={ecc} ccc={ccc} model={model} /></div>
 
             <div className="db-grid db-rise" style={{ animationDelay: '60ms' }}>
               <CompliancePosture ecc={ecc} loading={eccLoading} />

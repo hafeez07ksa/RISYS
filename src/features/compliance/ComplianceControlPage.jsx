@@ -10,15 +10,19 @@ import { Skeleton, SkeletonText } from '@/components/ui/Skeleton'
 import { BackLink } from '@/components/ui/BackLink'
 import {
   getFramework, STATUS_CONFIG, STATUS_OPTIONS,
-  useFrameworkRequirements, useComplianceStatuses, useFrameworkMappings,
+  useScopedRequirements, useComplianceStatuses, useFrameworkMappings,
   useRequirementAutomation, useRequirementFindings, hasFindingsWarning,
   computeEffectiveStatus, isSubControl,
   isAutomated, hasAutomatedResult, isOverridingEvidence,
 } from '@/hooks/useCompliance'
 import { ControlMapper } from './ComplianceFrameworkPage'
 import { EvidenceCompliancePanel } from './EvidenceCompliancePanel'
-import { AUTOMATION_META, automationClassFor, mainControlId } from '@/data/eccAutomation'
-import { evidenceRequirementFor } from '@/data/eccEvidenceRequirements'
+import { AUTOMATION_META } from '@/data/eccAutomation'
+import {
+  automationClassForFramework, mainIdForFramework, evidenceRequirementForFramework, hasAutomationClasses,
+} from '@/data/frameworkAutomation'
+import { CCC_EXTENDS_ECC, CCC_LEVELS, cccRoleOf } from '@/data/cccAutomation'
+import { ApplicabilityChip } from './ComplianceFrameworkPage'
 import { tx, appLocale } from '@/lib/i18n'
 
 const GUIDE_SECTIONS = [
@@ -230,11 +234,22 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
   const perms = usePermissions()
   const canManage = perms.isManager || perms.isAdmin
 
-  const { requirements, loading: reqLoading } = useFrameworkRequirements(frameworkId)
+  const {
+    requirements: scopedRequirements, allRequirements, loading: reqLoading, profile: cccScope,
+  } = useScopedRequirements(frameworkId)
+  const isCcc = frameworkId === 'NCA CCC'
+  // CCC rows carry _applicability for the workspace's role and level; a CCC id
+  // outside that role still opens (from a link or search) but says so.
+  const requirements = isCcc && cccScope ? scopedRequirements : allRequirements
   const { statuses, setStatus, refetch: refetchStatuses } = useComplianceStatuses(frameworkId)
   const { controls, mappingsFor, controlsFor, linkControl, unlinkControl } = useFrameworkMappings(frameworkId)
   const { automation } = useRequirementAutomation(frameworkId)
   const { findings: reqFindings } = useRequirementFindings(frameworkId)
+
+  // CCC builds on ECC: show where the ECC controls it extends stand, and on
+  // an ECC control, the CCC controls in this workspace's scope that extend it.
+  const { statuses: eccStatuses } = useComplianceStatuses(isCcc ? 'NCA ECC' : null)
+  const { automation: eccAutomation } = useRequirementAutomation(isCcc ? 'NCA ECC' : null)
 
   const [guidance, setGuidance] = useState(null)
   const [guidanceError, setGuidanceError] = useState(false)
@@ -246,11 +261,13 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
   // Bundled reference content — loaded on demand, never per tenant.
   useEffect(() => {
     let cancelled = false
-    import('@/data/eccGuidance.json')
+    setGuidance(null); setGuidanceError(false)
+    const load = frameworkId === 'NCA CCC' ? import('@/data/cccGuidance.json') : import('@/data/eccGuidance.json')
+    load
       .then(m => { if (!cancelled) setGuidance(m.default ?? m) })
       .catch(() => { if (!cancelled) setGuidanceError(true) })
     return () => { cancelled = true }
-  }, [])
+  }, [frameworkId])
 
   // The implementation guide covers every ECC main control; subcontrols read their parent's entry.
   useEffect(() => {
@@ -265,10 +282,13 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
   const idKey   = fw?.requirementKey || 'control_id'
   const textKey = fw?.textKey || 'control_text'
 
-  const req = useMemo(
+  const scopedReq = useMemo(
     () => requirements.find(r => r[idKey] === requirementId),
     [requirements, requirementId, idKey]
   )
+  const req = scopedReq || allRequirements.find(r => r[idKey] === requirementId)
+  const outOfCccScope = isCcc && !!req && (!cccScope || !scopedReq)
+  const applicability = scopedReq?._applicability || null
 
   const children = useMemo(
     () => requirements
@@ -290,13 +310,28 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
 
   const node = guidance?.controls?.[requirementId]
   // Same source as the list filter, covering all 108 main controls (the guidance file carried 20).
-  const cls = fw?.id === 'NCA ECC' ? AUTOMATION_META[automationClassFor(requirementId)] ?? null : null
+  const cls = AUTOMATION_META[automationClassForFramework(fw?.id, requirementId)] ?? null
 
   const isEcc = fw?.id === 'NCA ECC'
+  const classified = hasAutomationClasses(fw?.id)
   const isSub = isSubControl(req || {})
-  const evidence = isEcc && !isSub ? evidenceRequirementFor(requirementId, { measured: hasAutomatedResult(auto) }) : null
-  const evidenceParent = isEcc && isSub && automationClassFor(requirementId) ? mainControlId(requirementId) : null
-  const guideEntry = isEcc ? implGuide?.controls?.[mainControlId(requirementId)] : null
+  const mainId = mainIdForFramework(fw?.id, requirementId)
+  // CCC: no evidence form outside the workspace's scope, or where the level makes the control not applicable.
+  const evidenceAllowed = !isCcc || (!outOfCccScope && applicability !== 'not_applicable')
+  const evidence = classified && !isSub && evidenceAllowed
+    ? evidenceRequirementForFramework(fw?.id, requirementId, { measured: hasAutomatedResult(auto), level: cccScope?.level })
+    : null
+  const evidenceParent = classified && isSub && automationClassForFramework(fw?.id, requirementId) ? mainId : null
+  const guideEntry = isEcc ? implGuide?.controls?.[mainId] : null
+
+  // ECC controls a CCC main control extends ("In addition to ECC 2-2-3 …")
+  const extendsEcc = isCcc && !isSub ? (req?.ecc_refs?.length ? req.ecc_refs : CCC_EXTENDS_ECC[requirementId] || []) : []
+  // CCC controls in scope that extend this ECC control
+  const extendedByCcc = isEcc && cccScope
+    ? Object.entries(CCC_EXTENDS_ECC)
+        .filter(([cid, refs]) => refs.includes(requirementId) && cccScope.roles.includes(cccRoleOf(cid)))
+        .map(([cid]) => cid)
+    : []
   // A semi-automated control cannot be complied over a failing measurement.
   const measuredBlocker = evidence?.mode === 'semi' && hasAutomatedResult(auto)
     && ['not_compliant', 'partial'].includes(auto.automated_status)
@@ -396,6 +431,15 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                 }}>{cls.label}</span>
               )}
 
+              {isCcc && req.role && (
+                <span title={req.role === 'CSP' ? tx('Cloud service provider control') : tx('Cloud service tenant control')} style={{
+                  fontSize: 'var(--t-micro)', padding: '2px 8px', borderRadius: 'var(--r-full)', fontWeight: 600,
+                  color: '#6d28d9', background: '#f5f3ff', border: '1px solid #ddd6fe',
+                }}>{req.role === 'CSP' ? tx('Provider (CSP)') : tx('Tenant (CST)')}</span>
+              )}
+
+              <ApplicabilityChip value={applicability} />
+
               {isSubControl(req) && (
                 <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{tx('Subcontrol of')} <span className="mono">{parentId}</span>
                 </span>
@@ -486,6 +530,84 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
               </div>
             </Source>
 
+            {outOfCccScope && (
+              <Panel style={{ marginBottom: 30, background: 'var(--surface)' }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <Info size={14} style={{ color: 'var(--taupe)', flexShrink: 0, marginTop: 2 }} />
+                  <p style={{ fontSize: 'var(--t-body)', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
+                    {cccScope
+                      ? (req.role === 'CSP'
+                          ? tx('This control applies to cloud service providers (CSP), which is outside your CCC scope.')
+                          : tx('This control applies to cloud service tenants (CST), which is outside your CCC scope.'))
+                      : tx('NCA CCC is not in scope for this workspace yet. A workspace administrator sets the CCC role and data level in Settings → Organization.')}
+                  </p>
+                </div>
+              </Panel>
+            )}
+
+            {isCcc && !outOfCccScope && applicability && applicability !== 'mandatory' && (
+              <Panel style={{ marginBottom: 30, background: 'var(--surface)' }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <Info size={14} style={{ color: 'var(--taupe)', flexShrink: 0, marginTop: 2 }} />
+                  <p style={{ fontSize: 'var(--t-body)', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
+                    {applicability === 'optional'
+                      ? tx('Optional at {{level}} (CCC Annex A). You can still evidence it; it does not count towards the CCC score.', { level: tx(CCC_LEVELS[cccScope.level].label) })
+                      : tx('Not applicable at {{level}} (CCC Annex A). It does not count towards the CCC score.', { level: tx(CCC_LEVELS[cccScope.level].label) })}
+                  </p>
+                </div>
+              </Panel>
+            )}
+
+            {extendsEcc.length > 0 && (
+              <Source
+                icon={Link2}
+                title={tx('Builds on ECC')}
+                attribution={tx('CCC adds these requirements to the ECC controls below; both must be met.')}
+              >
+                <Panel>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {extendsEcc.map(eid => {
+                      const st = computeEffectiveStatus(eccStatuses[eid]?.status, [], eccAutomation[eid])
+                      const sc = STATUS_CONFIG[st] || STATUS_CONFIG.not_started
+                      return (
+                        <Link key={eid} to={`/app/compliance/${encodeURIComponent('NCA ECC')}/${encodeURIComponent(eid)}`}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+                          <span className="mono" style={{ fontSize: 'var(--t-sm)', color: 'var(--crimson)', fontWeight: 600, minWidth: 64 }}>
+                            ECC {eid}
+                          </span>
+                          <span style={{
+                            fontSize: 'var(--t-micro)', padding: '1px 7px', borderRadius: 'var(--r-full)', fontWeight: 600,
+                            color: sc.color, background: sc.bg, border: `1px solid ${sc.border}`,
+                          }}>{sc.label}</span>
+                          <ChevronRight size={12} className="rtl-flip" style={{ color: 'var(--taupe)', marginInlineStart: 'auto' }} />
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </Panel>
+              </Source>
+            )}
+
+            {extendedByCcc.length > 0 && (
+              <Panel style={{ marginBottom: 30, background: 'var(--surface)' }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <Link2 size={14} style={{ color: 'var(--taupe)', flexShrink: 0, marginTop: 2 }} />
+                  <p style={{ fontSize: 'var(--t-body)', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
+                    {tx('NCA CCC extends this control for your cloud services:')}{' '}
+                    {extendedByCcc.map((cid, i) => (
+                      <span key={cid}>
+                        {i > 0 && ', '}
+                        <Link to={`/app/compliance/${encodeURIComponent('NCA CCC')}/${encodeURIComponent(cid)}`}
+                          className="mono" style={{ color: 'var(--crimson)', fontSize: 'var(--t-sm)', fontWeight: 500 }}>
+                          {cid}
+                        </Link>
+                      </span>
+                    ))}
+                  </p>
+                </div>
+              </Panel>
+            )}
+
             {evidence && (
               <EvidenceCompliancePanel
                 key={`${requirementId}:${evidence.mode}`}
@@ -532,7 +654,8 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
 
             {guidance && ['nca_official', 'risys'].map(srcKey => {
               const sections = node?.[srcKey]
-              const src = guidance.sources[srcKey]
+              // CCC guidance comes from two NCA guides (tenant / provider); the node names which.
+              const src = guidance.sources[srcKey === 'nca_official' ? (node?.nca_source || srcKey) : srcKey]
               if (!sections || !src) return null
               const regulatory = src.authority === 'regulatory'
               return (
@@ -608,7 +731,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
               <Source
                 icon={ClipboardList}
                 title={implGuide.source.label}
-                attribution={`${implGuide.source.publisher} · ${implGuide.source.version}${isSub ? ` · from main control ${mainControlId(requirementId)}` : ''}`}
+                attribution={`${implGuide.source.publisher} · ${implGuide.source.version}${isSub ? ` · from main control ${mainId}` : ''}`}
                 badge={
                   <span style={{
                     fontSize: 'var(--t-micro)', padding: '2px 8px', borderRadius: 'var(--r-full)',
@@ -704,7 +827,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
             </RailCard>
 
             {/* Open findings — evidence of gaps, shown beside the status, never folded into it */}
-            {isEcc && (
+            {classified && (
               <RailCard icon={ScanSearch} title={tx('Open findings')}>
                 {!openFindings?.open_count ? (
                   <RailEmpty>{tx(

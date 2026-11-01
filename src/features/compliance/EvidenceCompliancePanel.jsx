@@ -104,7 +104,10 @@ export function EvidenceCompliancePanel({
   const [recorded, setRecorded] = useState(false)
 
   // The last submission seeds the form only when it was made with this same checklist.
-  const latestForMode = latest && (latest.answers?.__mode || 'manual') === mode ? latest : null
+  // A published policy also records evidence here (answers.source = 'policy'); it is
+  // not a checklist answer, so it never seeds the form.
+  const fromPolicy = latest?.answers?.source === 'policy'
+  const latestForMode = latest && !fromPolicy && (latest.answers?.__mode || 'manual') === mode ? latest : null
 
   // Seed once: an unsaved draft wins, otherwise the last submission, so re-complying starts from the record.
   useEffect(() => {
@@ -226,7 +229,9 @@ export function EvidenceCompliancePanel({
       banner = { tone: 'critical', Icon: AlertTriangle, title: tx('Review overdue'),
         text: `The next review was due ${formatDate(statusRow.review_due_at)}. This control counts as Partial until evidence is re-submitted.` }
     } else if (evidenced) {
-      const byline = latest
+      const byline = fromPolicy
+        ? `${tx('Evidenced by the published policy')} ${latest.answers?.title || ''} · ${tx('approved by')} ${nameOf(latest.answers?.approver_id)}`
+        : latest
         ? `Evidenced ${formatDate(latest.submitted_at)} by ${nameOf(latest.answers?.reviewer) || nameOf(latest.submitted_by)}`
         : 'Evidence on record'
       banner = { tone: 'low', Icon: ShieldCheck,

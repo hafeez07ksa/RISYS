@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useAudits } from '@/hooks/useAudits'
 import { REPORT_TYPES } from '@/lib/reports/theme'
+import { slugForType } from './ReportsPage'
 import { generateReport, recentQuarters } from '@/lib/reports/generate'
 import { fmtDate } from '@/lib/reports/models'
 import { Field, SubmitButton, StageBadge } from '@/features/audits/parts'
@@ -52,7 +53,9 @@ export function GenerateReportPage() {
 
   const back = fixedEngagement
     ? { label: tx('Engagement'), onClick: () => navigate(`/app/audits/${fixedEngagement}?tab=reports`) }
-    : { label: tx('Reports'), onClick: () => navigate('/app/reports') }
+    : REPORT_TYPES[params.get('type')]
+      ? { label: REPORT_TYPES[params.get('type')].short, onClick: () => navigate(`/app/reports/${slugForType(params.get('type'))}`) }
+      : { label: tx('Report archive'), onClick: () => navigate('/app/reports') }
 
   if (!perms.canGenerateReports) {
     return <PageNotFound title={tx('Reports')} back={back}>{tx('Generating reports needs the risk, compliance, audit or administrator role.')}</PageNotFound>

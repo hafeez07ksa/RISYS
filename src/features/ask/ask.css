@@ -318,6 +318,10 @@
   animation: ask-pop-in 260ms var(--ease);
 }
 [dir='rtl'] .ask-pop { transform-origin: bottom left; } /* rtl-ok: mirror of the rule above */
+/* Docked beside the module sidebar, opened from its Ask RISYS entry. */
+.ask-pop.docked { inset-inline-start: calc(var(--ask-dock, 224px) + 14px); inset-inline-end: auto; inset-block-end: 14px; height: min(640px, calc(100vh - 80px)); }
+.ask-pop.docked { transform-origin: bottom left; } /* rtl-ok: grows out of the sidebar; mirrored below */
+[dir='rtl'] .ask-pop.docked { transform-origin: bottom right; } /* rtl-ok: mirror of the rule above */
 @keyframes ask-pop-in { from { opacity: 0; transform: translateY(12px) scale(0.96) } to { opacity: 1; transform: none } }
 
 .ask-pop-head {

@@ -6,15 +6,15 @@ import { useAiSettings, useConversation } from '@/hooks/useAskRisys'
 import { tx } from '@/lib/i18n'
 import { STARTERS, Message, Thinking, ErrorNote, Composer, AskMark } from './askParts'
 
-/* ── Floating assistant ───────────────────────────────────────────────────────
+/* ── Ask RISYS card ───────────────────────────────────────────────────────────
  *
- * A round button at the inline-end corner of every workspace page opens a
- * compact Ask RISYS card over the page. It is not a dialog: nothing behind it
- * is blocked, the page stays usable, and Esc or the button closes it.
+ * The entry at the foot of every module sidebar opens a compact Ask RISYS
+ * card beside the sidebar. It is not a dialog: nothing behind it
+ * is blocked, the page stays usable, and Esc or the entry closes it.
  *
  * The card keeps one conversation going while you move around the app (its id
  * is remembered for the browser tab). "Open in Ask RISYS" continues the same
- * conversation on its full page; the button hides itself there.
+ * conversation on its full page; the card hides itself there.
  *
  * Shown only when AI is on for the workspace — when it is off, nothing here
  * renders and nothing is sent anywhere.
@@ -60,7 +60,7 @@ function Panel({ orgId, onClose }) {
   const empty = !loading && messages.length === 0 && !asking
 
   return (
-    <section className="ask-pop" role="region" aria-label={tx('Ask RISYS')}>
+    <section className="ask-pop docked" role="region" aria-label={tx('Ask RISYS')}>
       <header className="ask-pop-head">
         <span className="ask-pop-mark"><AskMark size={20} /></span>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -123,12 +123,15 @@ function Panel({ orgId, onClose }) {
   )
 }
 
-export function AskRisysWidget() {
+/* The card opens from the "Ask RISYS" entry at the foot of the module sidebar
+ * (open state lives in AppLayout) and sits beside the sidebar, so it never
+ * covers a page's own buttons — form footers and their Save buttons are at the
+ * inline-end corner, where the old floating button used to be. */
+export function AskRisysWidget({ open, onClose }) {
   const { organization } = useAuth()
   const orgId = organization?.id
   const { enabled } = useAiSettings(orgId)
   const { pathname } = useLocation()
-  const [open, setOpen] = useState(false)
   // Once opened, the card stays mounted while hidden, so a question asked just
   // before closing still lands in the conversation.
   const [mounted, setMounted] = useState(false)
@@ -139,34 +142,19 @@ export function AskRisysWidget() {
   // Esc closes, as for any popover in the app.
   useEffect(() => {
     if (!open) return
-    const onKey = (e) => { if (e.key === 'Escape') setOpen(false) }
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open])
+  }, [open, onClose])
 
-  useEffect(() => { if (onAskPage) setOpen(false) }, [onAskPage])
+  useEffect(() => { if (onAskPage && open) onClose() }, [onAskPage]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!enabled || onAskPage || !orgId) return null
+  if (!open && !mounted) return null
 
   return (
-    <>
-      {(open || mounted) && (
-        <div style={{ display: open ? 'contents' : 'none' }}>
-          <Panel key={orgId} orgId={orgId} onClose={() => setOpen(false)} />
-        </div>
-      )}
-      <button
-        type="button"
-        className={`ask-fab${open ? ' open' : ''}`}
-        onClick={() => setOpen(o => !o)}
-        aria-label={open ? tx('Close Ask RISYS') : tx('Ask RISYS')}
-        aria-expanded={open}
-      >
-        <span className="ask-fab-icon" style={{ display: 'inline-flex' }}>
-          {open ? <X size={22} /> : <AskMark size={28} />}
-        </span>
-        <span className="ask-fab-tip">{tx('Ask RISYS')}</span>
-      </button>
-    </>
+    <div style={{ display: open ? 'contents' : 'none' }}>
+      <Panel key={orgId} orgId={orgId} onClose={onClose} />
+    </div>
   )
 }

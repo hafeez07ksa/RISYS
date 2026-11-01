@@ -4,9 +4,10 @@ import {
   Search, Check, X, Link2, SlidersHorizontal,
   ShieldCheck, AlertTriangle, Minus, Loader2, Zap, Layers, Contrast, FileText, RefreshCw,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import {
   FRAMEWORKS, STATUS_CONFIG, STATUS_OPTIONS,
-  useFrameworkRequirements, useComplianceStatuses, useFrameworkMappings,
+  useScopedRequirements, useComplianceStatuses, useFrameworkMappings,
   useRequirementAutomation,
   computeEffectiveStatus, computeFrameworkScore, isSubControl,
   isAutomated, hasAutomatedResult, isOverridingEvidence,
@@ -15,7 +16,9 @@ import {
 import { usePermissions } from '@/hooks/usePermissions'
 import { Spinner } from '@/components/ui/Spinner'
 import { BackLink } from '@/components/ui/BackLink'
-import { AUTOMATION_CLASSES, AUTOMATION_META, automationClassFor } from '@/data/eccAutomation'
+import { AUTOMATION_CLASSES, AUTOMATION_META } from '@/data/eccAutomation'
+import { automationClassForFramework, hasAutomationClasses } from '@/data/frameworkAutomation'
+import { APPLICABILITY_META, CCC_ROLES, CCC_LEVELS } from '@/data/cccAutomation'
 import { tx } from '@/lib/i18n'
 
 const AUTOMATION_ICONS = { automated: Zap, semi_automated: Contrast, manual_evidence: FileText }
@@ -34,6 +37,72 @@ function AutomationChip({ cls }) {
     }}>
       <Icon size={9} /> {meta.short}
     </span>
+  )
+}
+
+// ── CCC: applicability at the workspace's data level ─────────────────────────
+export function ApplicabilityChip({ value }) {
+  if (!value || value === 'mandatory') return null
+  const meta = APPLICABILITY_META[value]
+  if (!meta) return null
+  return (
+    <span title={tx(meta.label)} style={{
+      display: 'inline-flex', alignItems: 'center', flexShrink: 0,
+      fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 99,
+      fontFamily: 'var(--font-sans)', letterSpacing: 0, whiteSpace: 'nowrap',
+      color: meta.tone, background: 'var(--surface-2)', border: '1px solid var(--border)',
+    }}>{tx(meta.short)}</span>
+  )
+}
+
+function RoleChip({ role }) {
+  return (
+    <span title={role === 'CSP' ? tx('Cloud service provider control') : tx('Cloud service tenant control')} style={{
+      fontSize: 9.5, fontWeight: 700, padding: '0 5px', borderRadius: 4, flexShrink: 0,
+      fontFamily: 'var(--font-sans)', letterSpacing: '0.03em',
+      color: '#6d28d9', background: '#f5f3ff', border: '1px solid #ddd6fe',
+    }}>{role}</span>
+  )
+}
+
+// ── CCC scope banner ──────────────────────────────────────────────────────────
+function CccScopeBanner({ profile, counts }) {
+  const role = CCC_ROLES[profile.role]
+  const level = CCC_LEVELS[profile.level]
+  return (
+    <div className="card mb-4" style={{
+      display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
+      padding: '12px 16px', borderInlineStart: '3px solid #6d28d9',
+    }}>
+      <div style={{ flex: 1, minWidth: 240 }}>
+        <p className="eyebrow" style={{ marginBottom: 2 }}>{tx('Your CCC scope')}</p>
+        <p style={{ fontSize: 13, color: 'var(--text)', margin: 0 }}>
+          <strong>{tx(role.label)}</strong> · {tx(level.label)}
+        </p>
+        <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', margin: '2px 0 0' }}>
+          {tx('{{mandatory}} main controls apply at this level; {{optional}} are optional and {{na}} not applicable. Only mandatory controls count towards the score.', counts)}
+        </p>
+      </div>
+      <Link to="/app/settings?tab=organization" className="btn-secondary" style={{ fontSize: 12 }}>
+        {tx('Change scope')}
+      </Link>
+    </div>
+  )
+}
+
+function CccNeedsProfile({ canChange }) {
+  return (
+    <div className="card" style={{ padding: '40px 24px', textAlign: 'center', maxWidth: 620, margin: '24px auto' }}>
+      <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', margin: '0 0 6px' }}>
+        {tx('NCA CCC is not in scope for this workspace yet')}
+      </p>
+      <p style={{ fontSize: 13, color: 'var(--text-3)', margin: '0 0 16px', lineHeight: 1.55 }}>
+        {tx('CCC applies according to whether you use cloud services (tenant), provide them (provider) or both, and the classification of the data you hold in the cloud. Your workspace administrator sets both in Settings → Organization.')}
+      </p>
+      {canChange
+        ? <Link to="/app/settings?tab=organization" className="btn-primary" style={{ fontSize: 13 }}>{tx('Set the CCC scope')}</Link>
+        : <p style={{ fontSize: 12, color: 'var(--text-3)', margin: 0 }}>{tx('Ask a workspace administrator to set it.')}</p>}
+    </div>
   )
 }
 
@@ -241,11 +310,12 @@ export function ControlMapper({ requirementId, controls, mappingsFor, onLink, on
 }
 
 // ── Single requirement row ────────────────────────────────────────────────────
-function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto, canManage, onSetStatus, onOpenControl }) {
+function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto, canManage, onSetStatus, onOpenControl, showRole }) {
   const reqId = req.control_id || req.clause_id || req.requirement_id
   const text  = req.control_text || req.clause_text || req.requirement_text || ''
   const isSubCtrl = isSubControl(req)
-  const automationClass = fw?.id === 'NCA ECC' ? automationClassFor(reqId) : null
+  const automationClass = automationClassForFramework(fw?.id, reqId)
+  const notScored = req._applicability && req._applicability !== 'mandatory'
 
   return (
     <div style={{
@@ -286,7 +356,9 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto
           }}>
             {isSubCtrl ? String(reqId).replace(/-/g, '.') : reqId}
           </span>
+          {!isSubCtrl && showRole && req.role && <RoleChip role={req.role} />}
           {!isSubCtrl && automationClass && <AutomationChip cls={automationClass} />}
+          <ApplicabilityChip value={req._applicability} />
         </span>
 
         {/* Text preview */}
@@ -338,12 +410,12 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto
 
         {/* Status */}
         <div onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <StatusPicker
+          {notScored && req._applicability === 'not_applicable' ? <StatusBadge status="not_applicable" /> : <StatusPicker
             currentStatus={effectiveStatus}
             onSet={(s) => onSetStatus(reqId, s)}
             disabled={!canManage}
             hideCompliant={(automationClass === 'manual_evidence' || automationClass === 'semi_automated') && !isSubCtrl}
-          />
+          />}
           {status?.review_overdue && (
             <span title={`Evidence review was due ${status.review_due_at}`} style={{
               fontSize: 10, padding: '1px 6px', borderRadius: 99, fontWeight: 600, whiteSpace: 'nowrap',
@@ -362,12 +434,13 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto
 }
 
 // ── Domain/article group ──────────────────────────────────────────────────────
-function DomainGroup({ domainId, domainName, requirements, fw, statuses, mappings, controls, automation = {}, canManage, onSetStatus, onOpenControl, domainLabel }) {
+function DomainGroup({ domainId, domainName, requirements, fw, statuses, mappings, controls, automation = {}, canManage, onSetStatus, onOpenControl, domainLabel, showRole }) {
   const [open, setOpen] = useState(true)
   const scoreAll = fw?.scoreAllControls
 
-  // For scoring the group header bar: use scoreable rows
-  const scoreable = scoreAll ? requirements : requirements.filter(r => !isSubControl(r))
+  // For scoring the group header bar: use scoreable rows (CCC: mandatory at the workspace's level)
+  const scoreable = (scoreAll ? requirements : requirements.filter(r => !isSubControl(r)))
+    .filter(r => !r._applicability || r._applicability === 'mandatory')
   const compliant = scoreable.filter(r => {
     const reqId = r.control_id || r.clause_id
     const mapped = controls.filter(c => mappings.filter(m => m.requirement_id === reqId).map(m => m.control_id).includes(c.id))
@@ -440,6 +513,7 @@ function DomainGroup({ domainId, domainName, requirements, fw, statuses, mapping
                 canManage={canManage}
                 onSetStatus={onSetStatus}
                 onOpenControl={onOpenControl}
+                showRole={showRole}
               />
             )
           })}
@@ -455,7 +529,7 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
   const perms = usePermissions()
   const canManage = perms.isManager || perms.isAdmin
 
-  const { requirements, loading: reqLoading } = useFrameworkRequirements(frameworkId)
+  const { requirements, loading: reqLoading, profile: cccScope, needsProfile } = useScopedRequirements(frameworkId)
   const { statuses, loading: statusLoading, setStatus } = useComplianceStatuses(frameworkId)
   const { mappings, controls, loading: mapLoading, linkControl, unlinkControl, mappingsFor, controlsFor } = useFrameworkMappings(frameworkId)
   const { automation, refresh: refreshSignals } = useRequirementAutomation(frameworkId)
@@ -478,8 +552,9 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
 
-  // Only ECC carries an automation class; local state covers rendering without a router.
-  const hasClassification = fw?.id === 'NCA ECC'
+  // ECC and CCC carry an automation class; local state covers rendering without a router.
+  const hasClassification = hasAutomationClasses(fw?.id)
+  const classOf = (id) => automationClassForFramework(fw?.id, id)
   const [localEvidence, setLocalEvidence] = useState('')
   const rawEvidence = evidenceProp ?? localEvidence
   const evidenceFilter = hasClassification && AUTOMATION_CLASSES.includes(rawEvidence) ? rawEvidence : ''
@@ -517,16 +592,28 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
     for (const r of baseReqs) {
       if (isSubControl(r)) continue
       counts.all++
-      const cls = automationClassFor(r.control_id)
+      const cls = classOf(r.control_id)
       if (cls) counts[cls]++
     }
     return counts
-  }, [baseReqs, hasClassification])
+  }, [baseReqs, hasClassification, fw?.id])
+
+  // CCC: how the workspace's level splits the main controls in scope
+  const applicabilityCounts = useMemo(() => {
+    const c = { mandatory: 0, optional: 0, na: 0 }
+    for (const r of requirements) {
+      if (isSubControl(r) || !r._applicability) continue
+      if (r._applicability === 'mandatory') c.mandatory++
+      else if (r._applicability === 'optional') c.optional++
+      else c.na++
+    }
+    return c
+  }, [requirements])
 
   // Group by domain, subdomain, or article depending on framework config
   const grouped = useMemo(() => {
     let reqs = baseReqs
-    if (evidenceFilter) reqs = reqs.filter(r => automationClassFor(r.control_id) === evidenceFilter)
+    if (evidenceFilter) reqs = reqs.filter(r => classOf(r.control_id) === evidenceFilter)
 
     const groups = {}
     for (const req of reqs) {
@@ -554,6 +641,23 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
   }, [baseReqs, evidenceFilter, fw])
 
   if (!fw) return null
+
+  if (needsProfile) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <header style={{
+          padding: 'var(--s-5) var(--gutter) var(--s-4)',
+          borderBottom: '1px solid var(--border)', background: 'var(--bg-2)', flexShrink: 0,
+        }}>
+          <BackLink to={onBack} label={tx('Compliance')} style={{ marginBottom: 8 }} />
+          <h1 style={{ fontSize: 'var(--t-page)', fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+            {fw.label} — {fw.fullName}
+          </h1>
+        </header>
+        <div className="page-content"><CccNeedsProfile canChange={perms.isAdmin} /></div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -589,6 +693,8 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
         </header>
 
         <div className="page-content" style={{ flex: 1, overflowY: 'auto' }}>
+
+          {cccScope && <CccScopeBanner profile={cccScope} counts={applicabilityCounts} />}
 
           {/* Score summary */}
           <div className="card mb-5" style={{ display: 'grid', gridTemplateColumns: '200px 1fr', overflow: 'hidden' }}>
@@ -692,6 +798,7 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
                 canManage={canManage}
                 onSetStatus={setStatus}
                 onOpenControl={onOpenControl}
+                showRole={cccScope?.role === 'both'}
               />
             ))
           )}

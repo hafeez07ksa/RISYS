@@ -1,11 +1,16 @@
 import { useNavigate } from 'react-router-dom'
-import { BookCheck, CalendarClock, ChevronRight, TrendingUp, Zap } from 'lucide-react'
+import { BookCheck, CalendarClock, ChevronRight, Cloud, TrendingUp, Zap } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
+import { usePermissions } from '@/hooks/usePermissions'
+import { CCC_ROLES, CCC_LEVELS } from '@/data/cccAutomation'
 import {
-  PRIMARY_FRAMEWORKS,
+  getFramework,
+  activeFrameworksFor,
+  hasCccProfile,
+  isSubControl,
   STATUS_CONFIG,
-  useFrameworkRequirements,
+  useScopedRequirements,
   useComplianceStatuses,
   useFrameworkMappings,
   useRequirementAutomation,
@@ -36,13 +41,13 @@ function ScoreRing({ score, size = 56 }) {
 
 // ── Framework summary card ────────────────────────────────────────────────────
 function FrameworkCard({ fw, onSelect }) {
-  const { requirements, loading: reqLoading } = useFrameworkRequirements(fw.id)
+  const { requirements, loading: reqLoading, profile } = useScopedRequirements(fw.id)
   const { statuses } = useComplianceStatuses(fw.id)
   const { mappings, controls } = useFrameworkMappings(fw.id)
   const { automation } = useRequirementAutomation(fw.id)
 
   const score = reqLoading ? null : computeFrameworkScore(requirements, statuses, mappings, controls, fw, automation)
-  const mainReqs = requirements.filter(r => r.control_type !== 'Sub-Control')
+  const mainReqs = requirements.filter(r => !isSubControl(r) && (!r._applicability || r._applicability === 'mandatory'))
 
   const bars = score ? [
     { key: 'compliant',     value: score.compliant,     color: '#22c55e' },
@@ -79,7 +84,10 @@ function FrameworkCard({ fw, onSelect }) {
               }}>{fw.tag}</span>
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.4 }}>{fw.fullName}</p>
-            <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{fw.version}</p>
+            <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
+              {fw.version}
+              {profile && ` · ${tx(CCC_ROLES[profile.role].short)} · ${tx(CCC_LEVELS[profile.level].label)}`}
+            </p>
           </div>
           {score !== null && <ScoreRing score={score.score} />}
         </div>
@@ -136,6 +144,41 @@ function FrameworkCard({ fw, onSelect }) {
   )
 }
 
+// ── CCC not yet in scope ──────────────────────────────────────────────────────
+// CCC applies by role and data level, which only the workspace can say. Until
+// an administrator sets them, the framework is offered rather than scored.
+function CccScopeCard() {
+  const navigate = useNavigate()
+  const perms = usePermissions()
+  const fw = getFramework('NCA CCC')
+  return (
+    <div className="card" style={{ padding: 0, display: 'flex', flexDirection: 'column', borderStyle: 'dashed' }}>
+      <div style={{ height: 4, background: fw.color, opacity: 0.35, borderRadius: '12px 12px 0 0' }} />
+      <div style={{ padding: '18px 20px', flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+          <Cloud size={15} style={{ color: fw.color }} />
+          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{fw.label}</span>
+          <span style={{
+            fontSize: 10, padding: '2px 7px', borderRadius: 99, fontWeight: 600,
+            color: fw.color, background: fw.bg, border: `1px solid ${fw.color}22`,
+          }}>{fw.tag}</span>
+        </div>
+        <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.4 }}>{fw.fullName} · {fw.version}</p>
+        <p style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.6, marginTop: 12 }}>
+          {tx('Not in scope yet. CCC applies if you use or provide cloud services, and what applies depends on the classification of the data you hold in the cloud.')}
+        </p>
+      </div>
+      <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border)' }}>
+        {perms.isAdmin
+          ? <button className="btn-secondary" style={{ fontSize: 12 }} onClick={() => navigate('/app/settings?tab=organization')}>
+              {tx('Set the CCC scope')}
+            </button>
+          : <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{tx('A workspace administrator sets the CCC scope.')}</span>}
+      </div>
+    </div>
+  )
+}
+
 // ── Review calendar entry ─────────────────────────────────────────────────────
 // A single line, not a card: it points at the calendar and says whether
 // anything there needs attention. Tone only when something is overdue.
@@ -186,7 +229,7 @@ export function CompliancePage() {
         <div style={{ marginBottom: 24 }}>
           <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{tx('Framework Compliance')}</h2>
           <p style={{ fontSize: 13, color: 'var(--text-3)', maxWidth: 640 }}>{tx(
-            'Your active framework. Requirements covered by a connector signal score themselves from measured data; the rest are assessed manually. Select the framework to map controls, set statuses, and view gap analysis.'
+            'Your active frameworks. Requirements covered by a connector signal score themselves from measured data; the rest are assessed manually. Select the framework to map controls, set statuses, and view gap analysis.'
           )}</p>
         </div>
 
@@ -194,9 +237,10 @@ export function CompliancePage() {
 
         {/* Framework grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 420px))', gap: 16 }}>
-          {PRIMARY_FRAMEWORKS.map(fw => (
+          {activeFrameworksFor(organization).map(fw => (
             <FrameworkCard key={fw.id} fw={fw} onSelect={openFramework} />
           ))}
+          {!hasCccProfile(organization) && <CccScopeCard />}
         </div>
       </div>
     </div>
