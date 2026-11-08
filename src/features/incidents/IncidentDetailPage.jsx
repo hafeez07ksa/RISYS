@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Clock, ExternalLink, Send, Trash2,
-  ShieldAlert, AlertCircle, CheckCircle, RefreshCw, } from 'lucide-react'
+  ShieldAlert, AlertCircle, CheckCircle, RefreshCw, Siren, } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
 import { usePeople } from '@/hooks/usePeople'
@@ -17,6 +17,9 @@ import { getSLAStatus, formatTimeRemaining, SLA_DEFAULTS } from '@/lib/sla'
 import { logAudit, AUDIT } from '@/lib/audit'
 import { ControlReferences } from '@/components/ui/ControlReferences'
 import { tx, appLocale } from '@/lib/i18n'
+import { useIncidentBreach } from '@/hooks/usePrivacy'
+import { usePermissions } from '@/hooks/usePermissions'
+import { breachHoursLeft } from '@/lib/privacy'
 
 // Every incident, whatever its source (Jira, Defender, manual), is handled under
 // ECC 2-13. Reporting to NCA applies to significant incidents; PDPL Art. 24 applies
@@ -152,6 +155,8 @@ export function IncidentDetailPage() {
   const [loading, setLoading]         = useState(true)
   const [saving, setSaving]           = useState(false)
   const [escalated, setEscalated]     = useState(false)
+  const breach = useIncidentBreach(id)
+  const perms = usePermissions()
 
   const load = async () => {
     if (!organization?.id || !id) return
@@ -238,6 +243,23 @@ export function IncidentDetailPage() {
 
           {/* ── Left column (2/3) ─────────────────────────────────────── */}
           <div className="col-span-2 flex flex-col gap-4">
+
+            {/* Personal-data breach (PDPL-IR Art. 24): the record with the 72-hour SDAIA clock. */}
+            {breach ? (
+              <button onClick={() => navigate(`/app/privacy/breaches/${breach.id}`)} className="rounded-xl p-3 flex items-center gap-2 text-sm text-start"
+                style={{ background: 'var(--critical-bg)', border: '1px solid var(--critical-bd)', color: 'var(--critical)' }}>
+                <Siren size={14} />
+                <span><strong>{tx('Personal-data breach')} {breach.ref}</strong>{' · '}
+                  {breach.sdaia_notified_at ? tx('SDAIA notified')
+                    : breach.notifiable === 'not_notifiable' ? tx('Assessed as not notifiable')
+                    : (breachHoursLeft(breach) ?? 0) < 0 ? tx('SDAIA deadline passed')
+                    : tx('{{n}} h left to notify SDAIA', { n: breachHoursLeft(breach) })}</span>
+              </button>
+            ) : !perms.isReadOnly && ['open', 'in_progress'].includes(incident.status) && (
+              <button onClick={() => navigate(`/app/privacy/breaches/new?incident=${incident.id}`)} className="btn-secondary text-xs" style={{ alignSelf: 'flex-start' }}>
+                <Siren size={13} /> {tx('Personal data affected? Report as a breach')}
+              </button>
+            )}
 
             {/* Action bar */}
             <div className="rounded-xl p-4 flex flex-wrap items-center gap-3"

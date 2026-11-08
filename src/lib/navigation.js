@@ -56,6 +56,22 @@ export const MODULES = [
     ],
   },
   {
+    // PDPL. Every member may log a request or report a breach. Requests and
+    // breaches name real people, so RLS shows them in full to compliance
+    // writers and auditors, and otherwise only to the person who logged or is
+    // assigned the record.
+    id: 'privacy', label: tx('Privacy'), icon: 'Fingerprint', match: ['privacy'],
+    items: [
+      { path: 'privacy', label: tx('Overview'), icon: 'Fingerprint' },
+      { path: 'privacy/requests', label: tx('Data subject requests'), icon: 'UserRoundSearch' },
+      { path: 'privacy/breaches', label: tx('Breaches'), icon: 'Siren' },
+      { path: 'privacy/processing', label: tx('Record of processing'), icon: 'Database' },
+      { path: 'privacy/assessments', label: tx('Impact assessments'), icon: 'Scale' },
+      { group: tx('Setup') },
+      { path: 'privacy/settings', label: tx('Controller and DPO'), icon: 'Settings', gate: (p) => p.isComplianceWriter },
+    ],
+  },
+  {
     id: 'security', label: tx('Security'), icon: 'Radar', match: ['incidents', 'findings'],
     items: [
       { path: 'incidents', label: tx('Incidents'), icon: 'AlertTriangle' },

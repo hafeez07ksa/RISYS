@@ -7,7 +7,7 @@ import { useRiskMatrix } from '@/hooks/useRiskGate'
 import {
   PRIMARY_FRAMEWORK_ID, CCC_FRAMEWORK_ID, getFramework, hasCccProfile,
   useFrameworkRequirements, useScopedRequirements, useComplianceStatuses, useFrameworkMappings,
-  useRequirementAutomation, useReviewSchedule, summariseReviews,
+  useRequirementAutomation, useReviewSchedule, usePolicyReviewSchedule, summariseReviews,
   computeFrameworkScore,
 } from '@/hooks/useCompliance'
 import { aggregateFindings } from '@/lib/findings'
@@ -18,6 +18,7 @@ import { isReviewOverdue, normalizeWorkflowState } from '@/lib/risks'
 import { bandForScore, BAND_ORDER } from '@/lib/matrix'
 import { ACTIVE_FINDING } from '@/hooks/useAudits'
 import { localISO } from '@/lib/manualCompliance'
+import { useMyWork } from '@/hooks/useMyWork'
 
 /* ── Dashboard data ───────────────────────────────────────────────────────────
  *
@@ -30,6 +31,8 @@ import { localISO } from '@/lib/manualCompliance'
  *   findings        aggregateFindings — the Findings page
  *   incident SLA    getSLAStatus — the Incidents page
  *   reviews         v_review_schedule — the Review calendar
+ *   policy reviews  v_policy_review_schedule — the Review calendar, Policies tab
+ *   waiting on you  my_work() — the same rules the RPCs enforce
  *
  * Nothing here is estimated or invented. Where a source cannot be read (the
  * role may not see it, or no connector is linked) the panel says so instead
@@ -84,6 +87,8 @@ export function useDashboardData() {
     auto: useRequirementAutomation(cccId),
   }
   const reviews = useReviewSchedule()
+  const policyReviewRows = usePolicyReviewSchedule()
+  const work = useMyWork()
 
   const connectedIds = useMemo(
     () => connections.filter(c => c.status === 'active').map(c => c.connector_id),
@@ -156,9 +161,10 @@ export function useDashboardData() {
     await Promise.all([
       load(), loadFindings(),
       ecc.statuses.refetch(), ecc.maps.refetch(), ecc.auto.refetch(), reviews.refetch(),
+      policyReviewRows.refetch(), work.refetch(),
     ])
     setRefreshing(false)
-  }, [load, loadFindings, ecc.statuses.refetch, ecc.maps.refetch, ecc.auto.refetch, reviews.refetch])
+  }, [load, loadFindings, ecc.statuses.refetch, ecc.maps.refetch, ecc.auto.refetch, reviews.refetch, policyReviewRows.refetch, work.refetch])
 
   const model = useMemo(
     () => buildModel({ raw, findings, matrix, connectedIds, userId: user?.id, canReadFindings }),
@@ -179,6 +185,7 @@ export function useDashboardData() {
   )
 
   const reviewSummary = useMemo(() => summariseReviews(reviews.rows), [reviews.rows])
+  const policyReviewSummary = useMemo(() => summariseReviews(policyReviewRows.rows), [policyReviewRows.rows])
 
   return {
     loading: loading || !raw,
@@ -190,6 +197,8 @@ export function useDashboardData() {
     ecc: eccModel,
     ccc: cccScore,
     reviews: reviewSummary,
+    policyReviews: policyReviewSummary,
+    work,
     matrix,
     perms,
   }

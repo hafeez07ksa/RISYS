@@ -4,7 +4,7 @@ import {
   LayoutDashboard, ShieldAlert, AlertTriangle, CheckSquare, BookCheck, ScrollText, Settings, Users,
   CheckSquare2, FileWarning, Library, PanelLeftClose, PanelLeftOpen, ClipboardCheck, FileText, Sparkles,
   MessagesSquare, ShieldOff, FolderOpen, FilePen, ListChecks, Gauge, CalendarClock, Radar, Landmark, ShieldCheck, Archive,
-  ChevronRight,
+  ChevronRight, Fingerprint, UserRoundSearch, Siren, Database, Scale,
 } from 'lucide-react'
 import { usePendingSuggestionCount } from '@/hooks/useRiskSuggestions'
 import { Tooltip } from '@/components/ui/Tooltip'
@@ -30,6 +30,7 @@ export const ICONS = {
   LayoutDashboard, ShieldAlert, AlertTriangle, CheckSquare, BookCheck, ScrollText, Settings, Users,
   CheckSquare2, FileWarning, Library, ClipboardCheck, FileText, Sparkles, MessagesSquare, ShieldOff,
   FolderOpen, FilePen, ListChecks, Gauge, CalendarClock, Radar, Landmark, ShieldCheck, Archive,
+  Fingerprint, UserRoundSearch, Siren, Database, Scale,
 }
 
 function NavItem({ to, icon, label, active, collapsed, badge }) {

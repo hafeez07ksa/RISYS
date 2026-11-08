@@ -4,8 +4,9 @@ import {
   ArrowUpRight, ShieldAlert, ShieldCheck, AlertTriangle, CheckSquare2, Clock,
   CalendarClock, CalendarX, FileWarning, Inbox, Sparkles, ClipboardList, Plug,
   Fingerprint, Crown, Users, UserPlus, Activity, BookCheck, ChevronRight, CircleCheck,
-  FileText, Radar,
+  FileText, Radar, FileCheck2, ScrollText, ShieldOff, FileSearch, BookOpenCheck, LockKeyhole,
 } from 'lucide-react'
+import { WORK_KINDS } from '@/hooks/useMyWork'
 import { tx, appLocale } from '@/lib/i18n'
 import { BAND_ORDER, bandMeta, bandFor } from '@/lib/matrix'
 import { AUDIT_TYPES, labelOf } from '@/hooks/useAudits'
@@ -286,7 +287,7 @@ export function EccDomains({ ecc, reviews }) {
 }
 
 // ── Needs attention ──────────────────────────────────────────────────────────
-export function NeedsAttention({ model, reviews }) {
+export function NeedsAttention({ model, reviews, policyReviews }) {
   const { risks, incidents, tasks, audits, suggestions, findings } = model
   const items = [
     { key: 'outside', icon: ShieldAlert, tone: 'critical', n: risks.outside, to: '/app/risks',
@@ -299,6 +300,8 @@ export function NeedsAttention({ model, reviews }) {
       label: tx('Overdue tasks'), hint: tx('past their due date') },
     { key: 'reviews', icon: CalendarX, tone: 'high', n: reviews.overdue, to: '/app/compliance/reviews',
       label: tx('Control reviews overdue'), hint: tx('ECC periodic reviews') },
+    { key: 'polrev', icon: CalendarX, tone: 'high', n: policyReviews?.overdue || 0, to: '/app/compliance/reviews',
+      label: tx('Policy reviews overdue'), hint: tx('their controls count as Partial') },
     { key: 'riskrev', icon: CalendarClock, tone: 'medium', n: risks.reviewOverdue, to: '/app/risks',
       label: tx('Risk reviews overdue'), hint: tx('needs recertification') },
     { key: 'audit', icon: FileText, tone: 'medium', n: audits.overdueFindings, to: '/app/audits',
@@ -332,6 +335,61 @@ export function NeedsAttention({ model, reviews }) {
             )
           })}
         </ul>
+      )}
+    </Panel>
+  )
+}
+
+// ── Waiting on you ───────────────────────────────────────────────────────────
+// The person's own queue across modules (my_work). Hidden when empty: the
+// Needs attention panel already says when everything is clear.
+const WORK_ICON = {
+  policy_approval: FileCheck2, attestation: BookOpenCheck, policy_review: CalendarClock,
+  exception_decision: ShieldOff, evidence_review: FileSearch,
+  dsr_due: Users, breach_notify: LockKeyhole, dpia_approval: ScrollText,
+}
+
+export function MyWorkPanel({ work }) {
+  if (!work || work.items.length === 0) return null
+  const today = new Date().toISOString().slice(0, 10)
+  const groups = Object.entries(work.items.reduce((acc, i) => {
+    const g = WORK_KINDS[i.kind]?.group || 'Other'
+    acc[g] = (acc[g] || 0) + 1
+    return acc
+  }, {}))
+
+  return (
+    <Panel title={tx('Waiting on you')} icon={Inbox} className="db-span-12"
+      caption={tx('{{n}} items', { n: work.items.length })}>
+      <div className="db-taskstats">
+        {groups.map(([g, n]) => <span key={g}><b className="tnum">{n}</b>{tx(g)}</span>)}
+      </div>
+      <ul className="db-list db-work">
+        {work.items.slice(0, 8).map(i => {
+          const Icon = WORK_ICON[i.kind] || Inbox
+          const late = i.due_on && i.due_on < today
+          return (
+            <li key={`${i.kind}:${i.item_id}`}>
+              <Link to={i.href} className="db-list-row">
+                <span className="db-panel-icon"><Icon size={13} strokeWidth={1.8} /></span>
+                <span className="db-list-main">
+                  <span className="db-list-title">{i.ref ? `${i.ref} · ` : ''}{i.title}</span>
+                  <span className="db-list-meta">
+                    {tx(WORK_KINDS[i.kind]?.label || i.kind)}{i.detail ? ` · ${tx(i.detail)}` : ''}
+                  </span>
+                </span>
+                <span className={`db-due tnum${late ? ' is-late' : ''}`}>
+                  {i.due_on
+                    ? (late ? tx('Overdue · {{d}}', { d: fmtDate(i.due_on) }) : fmtDate(i.due_on))
+                    : i.since ? tx('Since {{d}}', { d: fmtDate(i.since) }) : ''}
+                </span>
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
+      {work.items.length > 8 && (
+        <p className="db-list-meta" style={{ padding: '8px 4px 0' }}>{tx('and {{n}} more', { n: work.items.length - 8 })}</p>
       )}
     </Panel>
   )

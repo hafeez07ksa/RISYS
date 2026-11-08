@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom'
-import { Pencil, Send, Upload, Stamp, Undo2, BadgeCheck, FilePlus2, BellRing, ShieldOff, Archive, Trash2, ShieldCheck } from 'lucide-react'
+import { Pencil, Send, Upload, Stamp, Undo2, BadgeCheck, FilePlus2, BellRing, ShieldOff, Archive, Trash2, ShieldCheck, CalendarCheck } from 'lucide-react'
 import { RecordPage, PageLoading, PageNotFound } from '@/components/ui/FormPage'
 import { InlineConfirm } from '@/components/ui/InlineConfirm'
 import { Tabs } from '@/components/ui/Tabs'
@@ -165,6 +165,8 @@ function Overview({ pol, members, manage, perms, setError, navigate }) {
           </p>
         )}
       </Section>
+
+      {p.status === 'published' && <ReviewSection pol={pol} members={members} manage={manage} setError={setError} />}
 
       {manage && p.status !== 'retired' && (
         <Section title={tx('Danger zone')}>
@@ -394,6 +396,86 @@ function History({ pol, members, navigate }) {
           </tr>
         ))}</tbody>
       </table>
+    </Section>
+  )
+}
+
+/* ── Periodic review ──────────────────────────────────────────────────────────
+ * ECC asks for the documented requirements to be reviewed periodically (the
+ * X-Y-4 controls). A review ends in a new version (publish it) or in "no
+ * change", recorded here with what was looked at. Either way the next review
+ * date moves on by the cycle and the review is filed as evidence on the mapped
+ * controls. Once the date passes, those controls count as Partial. */
+
+const OUTCOME_LABEL = {
+  first_publication: 'First publication',
+  new_version: 'New version published',
+  unchanged: 'Reviewed, no change',
+}
+
+function ReviewSection({ pol, members, manage, setError }) {
+  const p = pol.policy
+  const [note, setNote] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const days = p.next_review_on ? Math.round((new Date(p.next_review_on) - new Date(todayRiyadh())) / 86400000) : null
+  const inWindow = days === null || days <= 90
+  const changing = !!pol.versions.find((x) => ['in_review', 'approved'].includes(x.status))
+
+  const confirm = async () => {
+    if ((note || '').trim().length < 10) { setError(tx('Say what was reviewed (at least 10 characters).')); return }
+    setBusy(true); setError('')
+    try { await pol.confirmReview(note.trim()); setNote(null) } catch (e) { setError(e.message) } finally { setBusy(false) }
+  }
+
+  return (
+    <Section title={tx('Periodic review')}>
+      <Facts rows={[
+        [tx('Cycle'), labelOf(REVIEW_MONTHS, p.review_months)],
+        [tx('Next review'), p.next_review_on ? <DueText date={p.next_review_on} /> : null],
+      ]} />
+      {pol.reviews.length > 0 && (
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 10 }}>
+          <thead><tr><Th width={110}>{tx('Reviewed')}</Th><Th>{tx('Outcome')}</Th><Th>{tx('By')}</Th><Th width={120}>{tx('Next review')}</Th></tr></thead>
+          <tbody>{pol.reviews.slice(0, 6).map((r) => (
+            <tr key={r.id}>
+              <Td>{fmtDate(r.reviewed_on)}</Td>
+              <Td>
+                {tx(OUTCOME_LABEL[r.outcome] || r.outcome)}
+                {r.note && <span style={{ display: 'block', fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{r.note}</span>}
+              </Td>
+              <Td>{personName(members, r.reviewed_by)}</Td>
+              <Td>{fmtDate(r.next_review_on)}</Td>
+            </tr>
+          ))}</tbody>
+        </table>
+      )}
+      {manage && (
+        <div style={{ marginTop: 12 }}>
+          {changing ? (
+            <p style={{ margin: 0, fontSize: 'var(--t-sm)', color: 'var(--text-3)' }}>
+              {tx('A new version is in approval. Publishing it records the review.')}</p>
+          ) : !inWindow ? (
+            <p style={{ margin: 0, fontSize: 'var(--t-sm)', color: 'var(--text-3)' }}>
+              {tx('A review can be recorded from 90 days before the next review date.')}</p>
+          ) : note === null ? (
+            <div className="flex items-center" style={{ gap: 8, flexWrap: 'wrap' }}>
+              <button className="btn-secondary" onClick={() => setNote('')}><CalendarCheck size={13} /> {tx('Record a review with no change')}</button>
+              <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>
+                {tx('If the policy needs to change, start a new version on the Text and approval tab instead.')}</span>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Field label={tx('What was reviewed')} required help={tx('For example: checked against the current ECC text, the org chart and last year\'s audit findings; no change needed.')}>
+                <textarea className="risys-input" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+              </Field>
+              <div className="flex" style={{ gap: 6 }}>
+                <SubmitButton busy={busy} onClick={confirm}>{tx('Record review')}</SubmitButton>
+                <button className="btn-secondary" onClick={() => setNote(null)}>{tx('Cancel')}</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </Section>
   )
 }

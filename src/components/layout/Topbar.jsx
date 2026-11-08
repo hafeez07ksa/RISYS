@@ -52,6 +52,7 @@ const SEGMENT_LABELS = {
   ask: 'Ask RISYS',
   policies: 'Policies', coverage: 'ECC coverage', versions: 'Versions', 'my-policies': 'My policies',
   exceptions: 'Exceptions', evidence: 'Evidence library',
+  privacy: 'Privacy',
 }
 
 /* A dotted requirement id encodes its own ancestry: 1-5-3-1 is a child of
@@ -81,7 +82,11 @@ function useRouteBreadcrumb() {
     acc += `/${p}`
     // The report pages reuse segment names that mean something else at the top level (audit).
     const REPORT_SEG = { board: 'Board report', ecc: 'ECC status report', audit: 'Audit reports', new: 'Generate' }
-    const label = parts[1] === 'reports' && i === 2 && REPORT_SEG[p] ? REPORT_SEG[p] : SEGMENT_LABELS[p]
+    // Privacy reuses "requests" (audit evidence requests) and "processing".
+    const PRIVACY_SEG = { requests: 'Data subject requests', breaches: 'Breaches', assessments: 'Impact assessments',
+                          processing: 'Record of processing', settings: 'Privacy settings' }
+    const label = parts[1] === 'reports' && i === 2 && REPORT_SEG[p] ? REPORT_SEG[p]
+      : parts[1] === 'privacy' && i === 2 && PRIVACY_SEG[p] ? PRIVACY_SEG[p] : SEGMENT_LABELS[p]
     if (label === null) continue
 
     // /app/compliance/:frameworkId/:requirementId — the last segment is a
@@ -105,7 +110,8 @@ function useRouteBreadcrumb() {
     const RECORD_KIND = { risks: tx('Risk'), controls: tx('Control'), incidents: tx('Incident'), tasks: tx('Task'),
       audits: tx('Engagement'), findings: tx('Finding'), requests: tx('Request'), scope: tx('Scope item'), reports: tx('Report'),
       suggestions: tx('Suggested risk'), ask: tx('Conversation'),
-      policies: tx('Policy'), 'my-policies': tx('Attestation'), exceptions: tx('Exception'), evidence: tx('Evidence') }
+      policies: tx('Policy'), 'my-policies': tx('Attestation'), exceptions: tx('Exception'), evidence: tx('Evidence'),
+      breaches: tx('Breach'), assessments: tx('Assessment'), processing: tx('Processing record') }
     const recordLabel = isRecordId ? (RECORD_KIND[parts[i - 1]] || tx('Details')) : null
     items.push({ label: recordLabel ?? label ?? decodeURIComponent(p), to: acc })
   }

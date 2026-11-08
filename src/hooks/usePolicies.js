@@ -97,13 +97,13 @@ async function saveChildren(orgId, policyId, { mapping, audiences, authors }) {
 
 export function usePolicy(id) {
   const { organization, user } = useAuth()
-  const [state, setState] = useState({ policy: null, versions: [], mapping: [], audiences: [], authors: [], campaigns: [], attestations: [], exceptions: [], approvers: [] })
+  const [state, setState] = useState({ policy: null, versions: [], mapping: [], audiences: [], authors: [], campaigns: [], attestations: [], exceptions: [], reviews: [], approvers: [] })
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
   const fetchAll = useCallback(async () => {
     if (!organization?.id || !id) return
-    const [p, v, m, a, au, c, at, ex] = await Promise.all([
+    const [p, v, m, a, au, c, at, ex, rv] = await Promise.all([
       supabase.from('policies').select('*, unit:business_units ( id, name )').eq('id', id).eq('org_id', organization.id).maybeSingle(),
       supabase.from('policy_versions').select('*').eq('policy_id', id).order('version_no', { ascending: false }),
       supabase.from('policy_requirements').select('*').eq('policy_id', id).order('framework').order('requirement_id'),
@@ -112,6 +112,7 @@ export function usePolicy(id) {
       supabase.from('v_policy_attestation').select('*').eq('policy_id', id).order('created_at', { ascending: false }),
       supabase.from('attestations').select('*').eq('policy_id', id).order('created_at', { ascending: false }),
       supabase.from('exceptions').select('*').eq('org_id', organization.id).eq('subject_type', 'policy').eq('subject_id', id).order('requested_at', { ascending: false }),
+      supabase.from('policy_reviews').select('*').eq('policy_id', id).order('reviewed_on', { ascending: false }).order('created_at', { ascending: false }),
     ])
     if (!p.data) { setNotFound(true); setLoading(false); return }
     const versions = v.data || []
@@ -123,7 +124,7 @@ export function usePolicy(id) {
     }
     setState({
       policy: p.data, versions, mapping: m.data || [], audiences: a.data || [], authors: (au.data || []).map((x) => x.user_id),
-      campaigns: c.data || [], attestations: at.data || [], exceptions: ex.data || [], approvers,
+      campaigns: c.data || [], attestations: at.data || [], exceptions: ex.data || [], reviews: rv.data || [], approvers,
     })
     setNotFound(false)
     setLoading(false)
@@ -161,6 +162,8 @@ export function usePolicy(id) {
     approve: (versionId, comment) => after(rpc('approve_policy_version', { p_version: versionId, p_comment: comment || null })),
     publish: (versionId, effective) => after(rpc('publish_policy_version', { p_version: versionId, p_effective: effective || null })),
     retire: (reason) => after(rpc('retire_policy', { p_policy: id, p_reason: reason })),
+    /** Reviewed with no change: moves the next review on by the cycle and files the review as evidence. */
+    confirmReview: (note) => after(rpc('confirm_policy_review', { p_policy: id, p_note: note })),
 
     startCampaign: (due) => after(rpc('start_attestation_campaign', { p_policy: id, p_trigger: 'manual', p_due: due || null })),
     remind: (campaignId) => after(rpc('remind_attestation_campaign', { p_campaign: campaignId })),

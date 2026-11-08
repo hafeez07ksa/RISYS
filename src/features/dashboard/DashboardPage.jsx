@@ -9,7 +9,7 @@ import {
   KpiRow, CompliancePosture, EccDomains, NeedsAttention,
   RiskHeatMap, RiskBands, RiskAreas,
   IncidentsPanel, TasksPanel, ActivityPanel,
-  AuditsPanel, PlatformsPanel, Highlight,
+  AuditsPanel, PlatformsPanel, Highlight, MyWorkPanel,
 } from './panels'
 import './dashboard.css'
 
@@ -18,6 +18,7 @@ import './dashboard.css'
  * Reads top to bottom as the questions a risk owner asks on a Monday:
  *
  *   1. Where do we stand?            KPI strip
+ *      What is waiting on me?        my_work across modules (hidden when empty)
  *   2. Are we compliant, and what    ECC posture · ECC by domain · needs attention
  *      needs me now?
  *   3. How much risk are we          heat map · bands before and after controls ·
@@ -38,7 +39,7 @@ function greeting(d = new Date()) {
 
 export function DashboardPage() {
   const { organization, user } = useAuth()
-  const { loading, eccLoading, refreshing, refresh, updatedAt, model, ecc, ccc, reviews, matrix, perms } = useDashboardData()
+  const { loading, eccLoading, refreshing, refresh, updatedAt, model, ecc, ccc, reviews, policyReviews, work, matrix, perms } = useDashboardData()
 
   const name = user?.user_metadata?.full_name || ''
   const firstName = name.split(' ')[0]
@@ -89,10 +90,16 @@ export function DashboardPage() {
           <>
             <div className="db-rise"><KpiRow ecc={ecc} ccc={ccc} model={model} /></div>
 
+            {work.items.length > 0 && (
+              <div className="db-grid db-rise" style={{ animationDelay: '30ms' }}>
+                <MyWorkPanel work={work} />
+              </div>
+            )}
+
             <div className="db-grid db-rise" style={{ animationDelay: '60ms' }}>
               <CompliancePosture ecc={ecc} loading={eccLoading} />
               <EccDomains ecc={ecc} reviews={reviews} />
-              <NeedsAttention model={model} reviews={reviews} />
+              <NeedsAttention model={model} reviews={reviews} policyReviews={policyReviews} />
             </div>
 
             <div className="db-grid db-rise" style={{ animationDelay: '120ms' }}>

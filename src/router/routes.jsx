@@ -71,6 +71,12 @@ import { ExceptionDetailPage } from '@/features/exceptions/ExceptionDetailPage'
 import { EvidenceLibraryPage } from '@/features/evidence/EvidenceLibraryPage'
 import { EvidenceFormPage } from '@/features/evidence/EvidenceFormPage'
 import { EvidenceDetailPage } from '@/features/evidence/EvidenceDetailPage'
+import { PrivacyOverviewPage } from '@/features/privacy/PrivacyOverviewPage'
+import { DsrListPage, DsrFormPage, DsrDetailPage } from '@/features/privacy/RequestPages'
+import { BreachListPage, BreachFormPage, BreachDetailPage } from '@/features/privacy/BreachPages'
+import { ProcessingListPage, ProcessingFormPage, ProcessingDetailPage } from '@/features/privacy/ProcessingPages'
+import { PiaListPage, PiaFormPage, PiaDetailPage } from '@/features/privacy/AssessmentPages'
+import { PrivacySettingsPage } from '@/features/privacy/PrivacySettingsPage'
 
 /* The breadcrumb links every segment of the URL, so /app/audits/:id/findings
  * has to go somewhere: to the engagement, on that tab. */
@@ -166,6 +172,26 @@ const appRoutes = [
       { path: 'evidence',                    element: <EvidenceLibraryPage /> },
       { path: 'evidence/new',                element: <EvidenceFormPage /> },
       { path: 'evidence/:id',                element: <EvidenceDetailPage /> },
+      // Privacy (PDPL). Open to every member: anyone may log a data subject
+      // request or report a breach; RLS decides who reads which record and
+      // the RPCs decide who may move a clock or a status.
+      { path: 'privacy',                       element: <PrivacyOverviewPage /> },
+      { path: 'privacy/requests',              element: <DsrListPage /> },
+      { path: 'privacy/requests/new',          element: <DsrFormPage /> },
+      { path: 'privacy/requests/:id',          element: <DsrDetailPage /> },
+      { path: 'privacy/requests/:id/edit',     element: <DsrFormPage /> },
+      { path: 'privacy/breaches',              element: <BreachListPage /> },
+      { path: 'privacy/breaches/new',          element: <BreachFormPage /> },
+      { path: 'privacy/breaches/:id',          element: <BreachDetailPage /> },
+      { path: 'privacy/processing',            element: <ProcessingListPage /> },
+      { path: 'privacy/processing/new',        element: <ProcessingFormPage /> },
+      { path: 'privacy/processing/:id',        element: <ProcessingDetailPage /> },
+      { path: 'privacy/processing/:id/edit',   element: <ProcessingFormPage /> },
+      { path: 'privacy/assessments',           element: <PiaListPage /> },
+      { path: 'privacy/assessments/new',       element: <PiaFormPage /> },
+      { path: 'privacy/assessments/:id',       element: <PiaDetailPage /> },
+      { path: 'privacy/assessments/:id/edit',  element: <PiaFormPage /> },
+      { path: 'privacy/settings',              element: <PrivacySettingsPage /> },
       { path: 'tasks',        element: <TasksPage /> },
       { path: 'tasks/new',   element: <CreateTaskPage /> },
       { path: 'tasks/:id',   element: <TaskDetailPage /> },

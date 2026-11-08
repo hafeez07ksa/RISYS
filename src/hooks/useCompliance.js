@@ -557,6 +557,45 @@ export function useReviewSchedule() {
   return { rows, loading, error, refetch: fetchSchedule }
 }
 
+// ── HOOK: published policies and their next review (v_policy_review_schedule) ──
+//
+// Shaped like a v_review_schedule row so the Review calendar can list both:
+// kind 'policy', framework 'Policy', requirement_id = the policy reference.
+export function usePolicyReviewSchedule() {
+  const { organization } = useAuth()
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchSchedule = useCallback(async () => {
+    if (!organization?.id) { setLoading(false); return }
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('v_policy_review_schedule')
+      .select('*')
+      .eq('org_id', organization.id)
+    setRows(error ? [] : (data || []).map(p => ({
+      kind: 'policy',
+      framework: 'Policy',
+      requirement_id: p.ref,
+      policy_id: p.policy_id,
+      title: p.title,
+      owner_id: p.owner_id,
+      cycle_months: p.review_months,
+      frequency: p.frequency,
+      last_reviewed_on: p.last_reviewed_on,
+      due_date: p.due_date,
+      days_until_due: p.days_until_due,
+      state: p.state,
+      controls: p.controls || [],
+    })))
+    setLoading(false)
+  }, [organization?.id])
+
+  useEffect(() => { fetchSchedule() }, [fetchSchedule])
+
+  return { rows, loading, refetch: fetchSchedule }
+}
+
 // Most urgent first: most overdue, then soonest due, then gaps, then the rest by date.
 export function sortReviewRows(rows) {
   const rank = r => REVIEW_STATES[r.state]?.rank ?? 9

@@ -467,6 +467,12 @@
 .db-list-title { font-size: var(--t-sm); font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .db-list-meta { font-size: var(--t-micro); color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .db-sev { width: 8px; height: 30px; border-radius: 4px; flex-shrink: 0; }
+/* Waiting on you: two columns of work items on wide screens. */
+@media (min-width: 1100px) {
+  .db-work { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; margin-inline: -8px; }
+  .db-work li + li .db-list-row { border-block-start: 0; border-radius: 9px; }
+  .db-work li:nth-child(n + 3) .db-list-row { border-block-start: 1px solid var(--border-3); border-radius: 0 0 9px 9px; }
+}
 .db-sla, .db-due {
   font-size: var(--t-micro); font-weight: 600;
   padding: 3px 8px; border-radius: 999px;
