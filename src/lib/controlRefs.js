@@ -28,7 +28,8 @@ export function parseControlRefs(label) {
     if (pdpl) {
       const part = pdpl[1].toUpperCase() === 'TR' ? 'Transfer Regulation' : 'Implementing Regulation'
       return {
-        key: `pdpl:${pdpl[1]}:${pdpl[2]}`, type: 'pdpl', framework: 'SDAIA PDPL',
+        key: `pdpl:${pdpl[1].toUpperCase()}:${pdpl[2]}`, type: 'pdpl', framework: 'SDAIA PDPL',
+        id: `${pdpl[1].toUpperCase()}-${pdpl[2]}`,
         part, article: `Article ${pdpl[2]}`, code: `PDPL-${pdpl[1].toUpperCase()} Art. ${pdpl[2]}`, name, text,
       }
     }
@@ -44,6 +45,36 @@ export function eccControlPath(id) {
 /** Route of the compliance page for a CCC control. */
 export function cccControlPath(id) {
   return `/app/compliance/${encodeURIComponent('NCA CCC')}/${encodeURIComponent(id)}`
+}
+
+/** Route of the compliance page for a PDPL article: IR-23, TR-5, L-12. */
+export function pdplControlPath(id) {
+  return `/app/compliance/${encodeURIComponent('SDAIA PDPL')}/${encodeURIComponent(id)}`
+}
+
+/**
+ * PDPL articles the ECC references on a finding also evidence (the
+ * PDPL_FROM_ECC_EVIDENCE crosswalk; mirrors framework_crosswalk 'evidence'
+ * rows). Returns refs not already on the label, marked derived.
+ */
+export function derivePdplRefs(refs, fromEcc) {
+  const have = new Set(refs.map(r => r.key))
+  const out = []
+  for (const r of refs) {
+    if (r.type !== 'ecc') continue
+    for (const id of fromEcc[r.id] || []) {
+      const [part, art] = id.split('-')
+      const key = `pdpl:${part}:${art}`
+      if (have.has(key)) continue
+      have.add(key)
+      out.push({
+        key, type: 'pdpl', framework: 'SDAIA PDPL', id,
+        part: part === 'TR' ? 'Transfer Regulation' : 'Implementing Regulation', article: `Article ${art}`,
+        code: `PDPL-${part} Art. ${art}`, name: '', text: '', derived: true, via: r.id,
+      })
+    }
+  }
+  return out
 }
 
 /**

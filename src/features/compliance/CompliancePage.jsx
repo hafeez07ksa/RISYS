@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { BookCheck, CalendarClock, ChevronRight, Cloud, TrendingUp, Zap } from 'lucide-react'
+import { BookCheck, CalendarClock, ChevronRight, Cloud, Lock, TrendingUp, Zap } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -8,6 +8,7 @@ import {
   getFramework,
   activeFrameworksFor,
   hasCccProfile,
+  hasPdplProfile,
   isSubControl,
   STATUS_CONFIG,
   useScopedRequirements,
@@ -41,7 +42,8 @@ function ScoreRing({ score, size = 56 }) {
 
 // ── Framework summary card ────────────────────────────────────────────────────
 function FrameworkCard({ fw, onSelect }) {
-  const { requirements, loading: reqLoading, profile } = useScopedRequirements(fw.id)
+  const { requirements, loading: reqLoading, profile: scopeProfile, profileKind } = useScopedRequirements(fw.id)
+  const profile = profileKind === 'ccc' ? scopeProfile : null
   const { statuses } = useComplianceStatuses(fw.id)
   const { mappings, controls } = useFrameworkMappings(fw.id)
   const { automation } = useRequirementAutomation(fw.id)
@@ -144,19 +146,37 @@ function FrameworkCard({ fw, onSelect }) {
   )
 }
 
-// ── CCC not yet in scope ──────────────────────────────────────────────────────
-// CCC applies by role and data level, which only the workspace can say. Until
-// an administrator sets them, the framework is offered rather than scored.
-function CccScopeCard() {
+// ── CCC or PDPL not yet in scope ──────────────────────────────────────────────
+// CCC applies by role and data level, and PDPL's conditional articles by what
+// the organisation does with personal data — which only the workspace can say.
+// Until an administrator sets them, the framework is offered rather than scored.
+const SCOPE_CARDS = {
+  'NCA CCC': {
+    Icon: Cloud,
+    text: 'Not in scope yet. CCC applies if you use or provide cloud services, and what applies depends on the classification of the data you hold in the cloud.',
+    action: 'Set the CCC scope',
+    note: 'A workspace administrator sets the CCC scope.',
+  },
+  'SDAIA PDPL': {
+    Icon: Lock,
+    text: 'Not in scope yet. The PDPL applies to every organisation that processes personal data in the Kingdom; a few questions decide which of its conditional articles apply to you.',
+    action: 'Set the PDPL scope',
+    note: 'A workspace administrator sets the PDPL scope.',
+  },
+}
+
+function ScopeCard({ frameworkId }) {
   const navigate = useNavigate()
   const perms = usePermissions()
-  const fw = getFramework('NCA CCC')
+  const fw = getFramework(frameworkId)
+  const card = SCOPE_CARDS[frameworkId]
+  const Icon = card.Icon
   return (
     <div className="card" style={{ padding: 0, display: 'flex', flexDirection: 'column', borderStyle: 'dashed' }}>
       <div style={{ height: 4, background: fw.color, opacity: 0.35, borderRadius: '12px 12px 0 0' }} />
       <div style={{ padding: '18px 20px', flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-          <Cloud size={15} style={{ color: fw.color }} />
+          <Icon size={15} style={{ color: fw.color }} />
           <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{fw.label}</span>
           <span style={{
             fontSize: 10, padding: '2px 7px', borderRadius: 99, fontWeight: 600,
@@ -165,15 +185,15 @@ function CccScopeCard() {
         </div>
         <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.4 }}>{fw.fullName} · {fw.version}</p>
         <p style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.6, marginTop: 12 }}>
-          {tx('Not in scope yet. CCC applies if you use or provide cloud services, and what applies depends on the classification of the data you hold in the cloud.')}
+          {tx(card.text)}
         </p>
       </div>
       <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border)' }}>
         {perms.isAdmin
           ? <button className="btn-secondary" style={{ fontSize: 12 }} onClick={() => navigate('/app/settings?tab=organization')}>
-              {tx('Set the CCC scope')}
+              {tx(card.action)}
             </button>
-          : <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{tx('A workspace administrator sets the CCC scope.')}</span>}
+          : <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{tx(card.note)}</span>}
       </div>
     </div>
   )
@@ -240,7 +260,8 @@ export function CompliancePage() {
           {activeFrameworksFor(organization).map(fw => (
             <FrameworkCard key={fw.id} fw={fw} onSelect={openFramework} />
           ))}
-          {!hasCccProfile(organization) && <CccScopeCard />}
+          {!hasCccProfile(organization) && <ScopeCard frameworkId="NCA CCC" />}
+          {!hasPdplProfile(organization) && <ScopeCard frameworkId="SDAIA PDPL" />}
         </div>
       </div>
     </div>

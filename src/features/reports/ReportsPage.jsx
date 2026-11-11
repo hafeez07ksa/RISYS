@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { FileText, Landmark, ShieldCheck, ClipboardCheck } from 'lucide-react'
+import { FileText, Landmark, ShieldCheck, ClipboardCheck, Cloud, Lock } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -7,6 +7,7 @@ import { useReports } from '@/hooks/useReports'
 import { useAudits } from '@/hooks/useAudits'
 import { REPORT_TYPES } from '@/lib/reports/theme'
 import { ReportArchive } from './ReportArchive'
+import { hasCccProfile, hasPdplProfile } from '@/hooks/useCompliance'
 import { tx } from '@/lib/i18n'
 
 /* ── Reports ──────────────────────────────────────────────────────────────────
@@ -28,13 +29,19 @@ export const REPORT_PAGES = {
   ecc: { type: 'ecc_status', icon: ShieldCheck, blurb: tx(
     'Requirement-by-requirement NCA ECC-2:2024 status with measurements, controls, evidence and gaps — for a regulator, assessor or management.'
   ) },
+  ccc: { type: 'ccc_status', icon: Cloud, blurb: tx(
+    'Control-by-control NCA CCC-2:2024 status for the role and data level you set — measurements, controls, evidence and gaps — for a regulator, assessor or management.'
+  ) },
+  pdpl: { type: 'pdpl_status', icon: Lock, blurb: tx(
+    'Article-by-article SDAIA PDPL status for your scope — what the Privacy registers and connected systems measure, controls, evidence and gaps — for the DPO, management or SDAIA.'
+  ) },
   audit: { type: 'audit_report', icon: ClipboardCheck, blurb: tx(
     'The formal report of an audit engagement — opinion, findings with management responses, and the testing behind them.'
   ) },
 }
 export const slugForType = (type) => Object.keys(REPORT_PAGES).find((k) => REPORT_PAGES[k].type === type)
 
-/* /app/reports/board · /ecc · /audit — one report type. */
+/* /app/reports/board · /ecc · /ccc · /pdpl · /audit — one report type. */
 export function ReportTypePage({ slug }) {
   const { organization } = useAuth()
   const perms = usePermissions()
@@ -44,12 +51,15 @@ export function ReportTypePage({ slug }) {
   const { type, icon: Icon, blurb } = REPORT_PAGES[slug]
   const def = REPORT_TYPES[type]
   const noEngagement = type === 'audit_report' && !engagements.length
+  // CCC and PDPL reports need the framework in scope (Settings → Organization).
+  const noScope = (type === 'ccc_status' && !hasCccProfile(organization)) || (type === 'pdpl_status' && !hasPdplProfile(organization))
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Topbar title={def.label} subtitle={organization?.name}
         actions={perms.canGenerateReports && (
-          <button className="btn-primary" disabled={noEngagement} title={noEngagement ? tx('Create an audit engagement first') : undefined}
+          <button className="btn-primary" disabled={noEngagement || noScope}
+            title={noEngagement ? tx('Create an audit engagement first') : noScope ? tx('Set the framework scope in Settings → Organization first') : undefined}
             onClick={() => navigate(`/app/reports/new?type=${type}`)}><FileText size={14} /> {tx('Generate')}</button>
         )} />
 

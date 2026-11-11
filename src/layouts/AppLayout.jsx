@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { hasCccProfile, hasPdplProfile } from '@/hooks/useCompliance'
 import { Outlet, Navigate, useLocation } from 'react-router-dom'
 import { LeaveGuardProvider } from '@/components/layout/LeaveGuard'
 import { ShieldAlert, LogOut } from 'lucide-react'
@@ -48,7 +49,10 @@ export function AppLayout() {
   const perms = usePermissions()
   const { pathname } = useLocation()
   const { enabled: aiOn } = useAiSettings(ASK_RISYS_ENABLED ? organization?.id : null)
-  const modules = useMemo(() => visibleModules(perms, { aiOn }), [perms, aiOn])
+  // Pages that exist only once a framework is in scope (CCC and PDPL status reports).
+  const cccOn = hasCccProfile(organization)
+  const pdplOn = hasPdplProfile(organization)
+  const modules = useMemo(() => visibleModules(perms, { aiOn, cccOn, pdplOn }), [perms, aiOn, cccOn, pdplOn])
   const active = moduleForPath(modules, pathname)
   const hasSidebar = !!active
   const [askOpen, setAskOpen] = useState(false)

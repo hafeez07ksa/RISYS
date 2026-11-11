@@ -8,7 +8,7 @@ import { usePeople } from '@/hooks/usePeople'
 import { useGroups } from '@/hooks/useGroups'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useBusinessUnits } from '@/hooks/useBusinessUnits'
-import { hasCccProfile } from '@/hooks/useCompliance'
+import { linkableRequirements, FRAMEWORK_SHORT } from '@/hooks/useCompliance'
 import { usePolicies, usePolicy, useFrameworkRequirements } from '@/hooks/usePolicies'
 import { POLICY_TEMPLATES, templateByKey, templateMapping } from '@/data/policyTemplates'
 import { POLICY_KINDS, CRITICALITY, REVIEW_MONTHS, RELATIONS, AUDIENCE_KINDS, labelOf } from '@/lib/policies'
@@ -68,15 +68,14 @@ export function PolicyFormPage() {
       .then(({ data }) => setDepartments([...new Set((data || []).map((d) => d.department?.trim()).filter(Boolean))].sort()))
   }, [organization?.id])
 
-  const withCcc = hasCccProfile(organization)
+  const linkable = useMemo(() => linkableRequirements(reqs, organization), [reqs, organization])
   const known = useMemo(() => new Set(reqs.map((r) => `${r.framework}|${r.requirement_id}`)), [reqs])
-  const reqOptions = useMemo(() => reqs
-    .filter((r) => r.framework === 'NCA ECC' || withCcc)
+  const reqOptions = useMemo(() => linkable
     .map((r) => ({
       value: `${r.framework}|${r.requirement_id}`,
-      label: `${r.framework === 'NCA ECC' ? 'ECC' : 'CCC'} ${r.requirement_id}${r.subdomain_name ? ` · ${r.subdomain_name}` : ''}`,
+      label: `${FRAMEWORK_SHORT[r.framework] || r.framework} ${r.requirement_id}${r.subdomain_name ? ` · ${r.subdomain_name}` : ''}`,
       description: r.requirement_text?.slice(0, 140),
-    })), [reqs, withCcc])
+    })), [linkable])
 
   // /app/policies/new?template=iam — opened from a gap on the coverage page.
   useEffect(() => {

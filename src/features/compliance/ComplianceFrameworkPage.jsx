@@ -19,6 +19,7 @@ import { BackLink } from '@/components/ui/BackLink'
 import { AUTOMATION_CLASSES, AUTOMATION_META } from '@/data/eccAutomation'
 import { automationClassForFramework, hasAutomationClasses } from '@/data/frameworkAutomation'
 import { APPLICABILITY_META, CCC_ROLES, CCC_LEVELS } from '@/data/cccAutomation'
+import { APPLICABILITY_META as PDPL_APPLICABILITY_META, PDPL_PROFILE_QUESTIONS, printedSubId } from '@/data/pdplAutomation'
 import { tx } from '@/lib/i18n'
 
 const AUTOMATION_ICONS = { automated: Zap, semi_automated: Contrast, manual_evidence: FileText }
@@ -30,7 +31,7 @@ function AutomationChip({ cls }) {
   const Icon = AUTOMATION_ICONS[cls]
   return (
     <span title={`${meta.label} — ${meta.note}`} style={{
-      display: 'inline-flex', alignItems: 'center', gap: 3, flexShrink: 0,
+      display: 'inline-flex', alignItems: 'center', gap: 3, flexShrink: 0, whiteSpace: 'nowrap',
       fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 99,
       fontFamily: 'var(--font-sans)', letterSpacing: 0,
       color: meta.tone, background: meta.bg, border: `1px solid ${meta.border}`,
@@ -41,9 +42,9 @@ function AutomationChip({ cls }) {
 }
 
 // ── CCC: applicability at the workspace's data level ─────────────────────────
-export function ApplicabilityChip({ value }) {
+export function ApplicabilityChip({ value, frameworkId }) {
   if (!value || value === 'mandatory') return null
-  const meta = APPLICABILITY_META[value]
+  const meta = (frameworkId === 'SDAIA PDPL' ? PDPL_APPLICABILITY_META : APPLICABILITY_META)[value]
   if (!meta) return null
   return (
     <span title={tx(meta.label)} style={{
@@ -86,6 +87,46 @@ function CccScopeBanner({ profile, counts }) {
       <Link to="/app/settings?tab=organization" className="btn-secondary" style={{ fontSize: 12 }}>
         {tx('Change scope')}
       </Link>
+    </div>
+  )
+}
+
+// ── PDPL scope banner ─────────────────────────────────────────────────────────
+function PdplScopeBanner({ profile, counts }) {
+  const answered = PDPL_PROFILE_QUESTIONS.filter(q => profile[q.key]).map(q => tx(q.label))
+  return (
+    <div className="card mb-4" style={{
+      display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
+      padding: '12px 16px', borderInlineStart: '3px solid #166534',
+    }}>
+      <div style={{ flex: 1, minWidth: 240 }}>
+        <p className="eyebrow" style={{ marginBottom: 2 }}>{tx('Your PDPL scope')}</p>
+        <p style={{ fontSize: 13, color: 'var(--text)', margin: 0 }}>
+          {answered.length ? answered.join(' · ') : tx('None of the conditional articles apply')}
+        </p>
+        <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', margin: '2px 0 0' }}>
+          {tx('{{mandatory}} articles apply to you; {{na}} conditional articles do not. Definitions and the Law articles the Regulations implement are in the Frameworks library and are not scored.', counts)}
+        </p>
+      </div>
+      <Link to="/app/settings?tab=organization" className="btn-secondary" style={{ fontSize: 12 }}>
+        {tx('Change scope')}
+      </Link>
+    </div>
+  )
+}
+
+function PdplNeedsProfile({ canChange }) {
+  return (
+    <div className="card" style={{ padding: '40px 24px', textAlign: 'center', maxWidth: 620, margin: '24px auto' }}>
+      <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', margin: '0 0 6px' }}>
+        {tx('SDAIA PDPL is not in scope for this workspace yet')}
+      </p>
+      <p style={{ fontSize: 13, color: 'var(--text-3)', margin: '0 0 16px', lineHeight: 1.55 }}>
+        {tx('The PDPL applies to every organisation that processes personal data in the Kingdom. Some articles apply only in certain cases — health or credit data, marketing, transfers outside the Kingdom. Your workspace administrator answers those questions in Settings → Organization.')}
+      </p>
+      {canChange
+        ? <Link to="/app/settings?tab=organization" className="btn-primary" style={{ fontSize: 13 }}>{tx('Set the PDPL scope')}</Link>
+        : <p style={{ fontSize: 12, color: 'var(--text-3)', margin: 0 }}>{tx('Ask a workspace administrator to set it.')}</p>}
     </div>
   )
 }
@@ -309,6 +350,11 @@ export function ControlMapper({ requirementId, controls, mappingsFor, onLink, on
   )
 }
 
+// The ID column holds the id and its chips (automation class, role, scope);
+// wide enough for a CCC id or IR-23(1) plus a chip, and the chips wrap under
+// the id rather than running into the requirement text.
+const ROW_COLUMNS = '28px 200px minmax(0, 1fr) 160px 200px 80px'
+
 // ── Single requirement row ────────────────────────────────────────────────────
 function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto, canManage, onSetStatus, onOpenControl, showRole }) {
   const reqId = req.control_id || req.clause_id || req.requirement_id
@@ -329,7 +375,7 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto
         title={tx('Open control')}
         style={{
           display: 'grid',
-          gridTemplateColumns: isSubCtrl ? '28px 130px 1fr 160px 200px 80px' : '28px 130px 1fr 160px 200px 80px',
+          gridTemplateColumns: ROW_COLUMNS,
           alignItems: 'center',
           padding: '10px 16px',
           cursor: 'pointer',
@@ -347,18 +393,19 @@ function RequirementRow({ req, fw, status, effectiveStatus, mappedControls, auto
         </span>
 
         {/* ID, with the automation class beside main controls */}
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+        <span style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, rowGap: 4, minWidth: 0 }}>
           <span style={{
+            whiteSpace: 'nowrap', flexShrink: 0, marginInlineEnd: 2,
             fontSize: isSubCtrl ? 11 : 12, fontWeight: isSubCtrl ? 400 : 600,
             color: isSubCtrl ? 'var(--text-3)' : 'var(--crimson)',
             fontFamily: 'var(--font-mono)', letterSpacing: '0.02em',
             paddingInlineStart: isSubCtrl ? 22 : 0,
           }}>
-            {isSubCtrl ? String(reqId).replace(/-/g, '.') : reqId}
+            {isSubCtrl ? printedSubId(reqId) : reqId}
           </span>
           {!isSubCtrl && showRole && req.role && <RoleChip role={req.role} />}
           {!isSubCtrl && automationClass && <AutomationChip cls={automationClass} />}
-          <ApplicabilityChip value={req._applicability} />
+          <ApplicabilityChip value={req._applicability} frameworkId={fw?.id} />
         </span>
 
         {/* Text preview */}
@@ -488,7 +535,7 @@ function DomainGroup({ domainId, domainName, requirements, fw, statuses, mapping
         <div>
           {/* Column headers */}
           <div style={{
-            display: 'grid', gridTemplateColumns: '28px 130px 1fr 160px 200px 80px',
+            display: 'grid', gridTemplateColumns: ROW_COLUMNS,
             padding: '6px 16px', gap: 12, background: '#faf3f1',
             borderBottom: '1px solid var(--border)',
           }}>
@@ -529,7 +576,9 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
   const perms = usePermissions()
   const canManage = perms.isManager || perms.isAdmin
 
-  const { requirements, loading: reqLoading, profile: cccScope, needsProfile } = useScopedRequirements(frameworkId)
+  const { requirements, loading: reqLoading, profile: scopeProfile, profileKind, needsProfile } = useScopedRequirements(frameworkId)
+  const cccScope = profileKind === 'ccc' ? scopeProfile : null
+  const pdplScope = profileKind === 'pdpl' ? scopeProfile : null
   const { statuses, loading: statusLoading, setStatus } = useComplianceStatuses(frameworkId)
   const { mappings, controls, loading: mapLoading, linkControl, unlinkControl, mappingsFor, controlsFor } = useFrameworkMappings(frameworkId)
   const { automation, refresh: refreshSignals } = useRequirementAutomation(frameworkId)
@@ -654,7 +703,9 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
             {fw.label} — {fw.fullName}
           </h1>
         </header>
-        <div className="page-content"><CccNeedsProfile canChange={perms.isAdmin} /></div>
+        <div className="page-content">{profileKind === 'pdpl'
+          ? <PdplNeedsProfile canChange={perms.isAdmin} />
+          : <CccNeedsProfile canChange={perms.isAdmin} />}</div>
       </div>
     )
   }
@@ -695,6 +746,7 @@ export function ComplianceFrameworkPage({ frameworkId, onBack, onOpenControl, ev
         <div className="page-content" style={{ flex: 1, overflowY: 'auto' }}>
 
           {cccScope && <CccScopeBanner profile={cccScope} counts={applicabilityCounts} />}
+          {pdplScope && <PdplScopeBanner profile={pdplScope} counts={applicabilityCounts} />}
 
           {/* Score summary */}
           <div className="card mb-5" style={{ display: 'grid', gridTemplateColumns: '200px 1fr', overflow: 'hidden' }}>

@@ -1,12 +1,13 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { Download, ExternalLink, CheckCircle2, Landmark, ShieldCheck, ClipboardCheck } from 'lucide-react'
+import { Download, ExternalLink, CheckCircle2, Landmark, ShieldCheck, ClipboardCheck, Cloud, Lock } from 'lucide-react'
 import { SelectField } from '@/components/ui/Combobox'
 import { DateField } from '@/components/ui/DateField'
 import { FormPage, FormSection, PageNotFound } from '@/components/ui/FormPage'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useAudits } from '@/hooks/useAudits'
+import { hasCccProfile, hasPdplProfile } from '@/hooks/useCompliance'
 import { REPORT_TYPES } from '@/lib/reports/theme'
 import { slugForType } from './ReportsPage'
 import { generateReport, recentQuarters } from '@/lib/reports/generate'
@@ -14,13 +15,19 @@ import { fmtDate } from '@/lib/reports/models'
 import { Field, SubmitButton, StageBadge } from '@/features/audits/parts'
 import { tx } from '@/lib/i18n'
 
-const ICONS = { board_pack: Landmark, ecc_status: ShieldCheck, audit_report: ClipboardCheck }
+const ICONS = { board_pack: Landmark, ecc_status: ShieldCheck, ccc_status: Cloud, pdpl_status: Lock, audit_report: ClipboardCheck }
 const DESCRIPTIONS = {
   board_pack: tx(
     'Summary for the board or its risk committee: matters for attention, risk heat maps before and after controls, tolerance and accepted risks, NCA ECC position, incidents, findings from connected systems and audit.'
   ),
   ecc_status: tx(
     'The organisation’s position against every NCA ECC-2:2024 requirement — recorded status, what connected systems measure, mapped controls, evidence and open issues. For a regulator, an external assessor or management.'
+  ),
+  ccc_status: tx(
+    'The organisation’s position against every NCA CCC-2:2024 control in its scope — the role and data level it set — with recorded status, measurements, mapped controls, evidence and open issues.'
+  ),
+  pdpl_status: tx(
+    'The organisation’s position against every SDAIA PDPL article in its scope — recorded status, what the Privacy registers and connected systems measure, mapped controls, evidence and open issues.'
   ),
   audit_report: tx(
     'The report of one audit engagement: opinion, findings with condition, criteria, cause, effect and management response, and the testing behind them.'
@@ -60,6 +67,9 @@ export function GenerateReportPage() {
   if (!perms.canGenerateReports) {
     return <PageNotFound title={tx('Reports')} back={back}>{tx('Generating reports needs the risk, compliance, audit or administrator role.')}</PageNotFound>
   }
+
+  // CCC and PDPL reports are offered once the framework is in scope.
+  const inScope = (t) => (t === 'ccc_status' ? hasCccProfile(organization) : t === 'pdpl_status' ? hasPdplProfile(organization) : true)
 
   const period = periodKey === 'custom'
     ? (custom.start && custom.end ? { start: custom.start, end: custom.end, label: `${fmtDate(custom.start)} – ${fmtDate(custom.end)}` } : null)
@@ -138,7 +148,7 @@ export function GenerateReportPage() {
           <p className="rp-text">{DESCRIPTIONS[fixedType]}</p>
         ) : (
           <div role="radiogroup" aria-label={tx('Report')} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {Object.entries(REPORT_TYPES).map(([value, d]) => {
+            {Object.entries(REPORT_TYPES).filter(([value]) => inScope(value)).map(([value, d]) => {
               const Icon = ICONS[value] ?? Landmark
               const on = type === value
               return (

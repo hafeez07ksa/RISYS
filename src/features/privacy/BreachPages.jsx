@@ -225,7 +225,7 @@ export function BreachDetailPage() {
       title={`${b.ref} — ${b.incident?.title || tx('Personal-data breach')}`}
       meta={<><BreachStatusBadge v={b.status} /><NotifiableBadge v={b.notifiable} /></>}
       back={back}
-      actions={b.incident && <Link className="btn-secondary" to={`/app/incidents/${b.incident.id}`}>{tx('Open the incident')}</Link>}
+      actions={b.incident && <Link className="btn-secondary" style={{ textDecoration: 'none' }} to={`/app/incidents/${b.incident.id}`}>{tx('Open the incident')}</Link>}
       aside={
         <Section title={tx('72-hour clock')}>
           <Facts rows={[

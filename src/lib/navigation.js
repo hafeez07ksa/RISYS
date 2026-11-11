@@ -45,6 +45,7 @@ export const MODULES = [
     match: ['compliance', 'frameworks', 'controls', 'policies', 'my-policies', 'exceptions', 'evidence'],
     items: [
       { path: 'compliance', label: tx('Overview'), icon: 'BookCheck' },
+      { path: 'compliance/dashboard', label: tx('Dashboard'), icon: 'LayoutDashboard' },
       { path: 'compliance/reviews', label: tx('Review calendar'), icon: 'CalendarClock' },
       { path: 'controls', label: tx('Controls'), icon: 'CheckSquare' },
       { path: 'frameworks', label: tx('Frameworks'), icon: 'Library' },
@@ -88,6 +89,8 @@ export const MODULES = [
     items: [
       { path: 'reports/board', label: tx('Board report'), icon: 'Landmark' },
       { path: 'reports/ecc', label: tx('ECC status report'), icon: 'ShieldCheck' },
+      { path: 'reports/ccc', label: tx('CCC status report'), icon: 'Cloud', gate: (p, ctx) => !!ctx?.cccOn },
+      { path: 'reports/pdpl', label: tx('PDPL status report'), icon: 'Lock', gate: (p, ctx) => !!ctx?.pdplOn },
       { path: 'reports/audit', label: tx('Audit reports'), icon: 'ClipboardCheck' },
       { group: tx('Filed') },
       { path: 'reports', label: tx('Archive'), icon: 'Archive' },

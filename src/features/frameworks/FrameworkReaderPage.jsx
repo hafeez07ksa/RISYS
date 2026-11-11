@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { printedSubId } from '@/data/pdplAutomation'
 import { ArrowLeft, Search, X } from 'lucide-react'
 import { getFramework, useFrameworkRequirements, compareRequirementIds } from '@/hooks/useCompliance'
 import { Spinner } from '@/components/ui/Spinner'
@@ -23,7 +24,8 @@ const isSub = (row) => (row.control_type || '').toLowerCase().replace(/[\s-]/g, 
 
 // Subcontrols are printed in the source document with dots, not hyphens:
 // row 2-2-3-1 appears on the page as 2.2.3.1
-const dotted = (id) => String(id).replace(/-/g, '.')
+// PDPL paragraphs print as IR-23(1).
+const dotted = (id) => printedSubId(id)
 
 // ── Normalise the differing column shapes into one structure ────────────────
 function buildTree(rows, fw) {

@@ -118,6 +118,10 @@ export const REPORT_TYPES = {
                   audience: tx('Board of Directors'), classification: tx('Confidential — Board') },
   ecc_status:   { label: tx('NCA ECC compliance status report'), short: tx('ECC status'),
                   audience: tx('Regulator and management'), classification: tx('Confidential') },
+  ccc_status:   { label: tx('NCA CCC compliance status report'), short: tx('CCC status'), framework: 'NCA CCC',
+                  audience: tx('Regulator and management'), classification: tx('Confidential') },
+  pdpl_status:  { label: tx('SDAIA PDPL compliance status report'), short: tx('PDPL status'), framework: 'SDAIA PDPL',
+                  audience: tx('Regulator, DPO and management'), classification: tx('Confidential') },
   audit_report: { label: tx('Audit report'), short: tx('Audit report'),
                   audience: tx('Audit committee and management'), classification: tx('Confidential — Audit') },
 }

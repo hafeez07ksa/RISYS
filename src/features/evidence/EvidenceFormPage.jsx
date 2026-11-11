@@ -10,7 +10,7 @@ import { usePeople } from '@/hooks/usePeople'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useEvidenceLibrary } from '@/hooks/useEvidenceLibrary'
 import { useFrameworkRequirements } from '@/hooks/usePolicies'
-import { hasCccProfile } from '@/hooks/useCompliance'
+import { linkableRequirements, FRAMEWORK_SHORT } from '@/hooks/useCompliance'
 import { EVIDENCE_KINDS, todayRiyadh, addMonths, fileSize } from '@/lib/policies'
 import { Field, SubmitButton } from '@/features/audits/parts'
 import { tx } from '@/lib/i18n'
@@ -44,10 +44,10 @@ export function EvidenceFormPage() {
     supabase.from('risk_controls').select('id, control_id, name').eq('org_id', organization.id).order('control_id').then(({ data }) => setControls(data || []))
   }, [organization?.id])
 
-  const withCcc = hasCccProfile(organization)
-  const reqOptions = useMemo(() => reqs.filter((r) => r.framework === 'NCA ECC' || withCcc).map((r) => ({
-    value: `${r.framework}|${r.requirement_id}`, label: `${r.framework === 'NCA ECC' ? 'ECC' : 'CCC'} ${r.requirement_id}`, description: r.requirement_text?.slice(0, 120),
-  })), [reqs, withCcc])
+  const linkable = useMemo(() => linkableRequirements(reqs, organization), [reqs, organization])
+  const reqOptions = useMemo(() => linkable.map((r) => ({
+    value: `${r.framework}|${r.requirement_id}`, label: `${FRAMEWORK_SHORT[r.framework] || r.framework} ${r.requirement_id}`, description: r.requirement_text?.slice(0, 120),
+  })), [linkable])
   const back = () => navigate('/app/evidence')
 
   const save = async () => {

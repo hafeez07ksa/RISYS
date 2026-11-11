@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { isActiveFramework, compareRequirementIds } from '@/hooks/useCompliance'
 import { useAuth } from '@/hooks/useAuth'
 import { cccProfile, scopeCccRequirements } from '@/data/cccAutomation'
+import { pdplProfile, scopePdplRequirements, printedSubId, isPdplId } from '@/data/pdplAutomation'
 import { tx, localizeRow } from '@/lib/i18n'
 
 // ── Framework registry ────────────────────────────────────────────────────────
@@ -13,7 +14,7 @@ import { tx, localizeRow } from '@/lib/i18n'
 const ALL_FRAMEWORKS = [
   { id: 'NCA ECC',    label: 'NCA ECC',    fullName: tx('Essential Cybersecurity Controls'),         table: 'nca_ecc',     color: '#5D0F0F', bg: '#fdf5f5', tag: tx('Critical Sector'),  idKey: 'control_id',  textKey: 'control_text',  groupKey: 'domain_id',    groupName: 'domain_name'    },
   { id: 'SAMA CSF',   label: 'SAMA CSF',   fullName: tx('Cybersecurity Framework'),                  table: 'sama_csf',    color: '#1e40af', bg: '#eff6ff', tag: tx('Financial Sector'), idKey: 'control_id',  textKey: 'control_text',  groupKey: 'subdomain_id', groupName: 'subdomain_name' },
-  { id: 'SDAIA PDPL', label: 'SDAIA PDPL', fullName: tx('Personal Data Protection Law'),             table: 'sdaia_pdpl',  color: '#166534', bg: '#f0fdf4', tag: tx('Data Privacy'),     idKey: 'clause_id',   textKey: 'clause_text',   groupKey: 'article_id',   groupName: 'article_title'  },
+  { id: 'SDAIA PDPL', label: 'SDAIA PDPL', fullName: tx('Personal Data Protection Law'),             table: 'sdaia_pdpl',  color: '#166534', bg: '#f0fdf4', tag: tx('Data Privacy'),     idKey: 'control_id',  textKey: 'control_text',  groupKey: 'domain_id',    groupName: 'domain_name'    },
   { id: 'NCA CCC',    label: 'NCA CCC',    fullName: tx('Cloud Cybersecurity Controls'),             table: 'nca_ccc',     color: '#6d28d9', bg: '#f5f3ff', tag: tx('Cloud'),            idKey: 'control_id',  textKey: 'control_text',  groupKey: 'domain_id',    groupName: 'domain_name'    },
   { id: 'NCA DCC',    label: 'NCA DCC',    fullName: tx('Data Cybersecurity Controls'),              table: 'nca_dcc',     color: '#92400e', bg: '#fffbeb', tag: tx('Data'),             idKey: 'control_id',  textKey: 'control_text',  groupKey: 'domain_id',    groupName: 'domain_name'    },
   { id: 'NCA TCC',    label: 'NCA TCC',    fullName: tx('Telework Cybersecurity Controls'),          table: 'nca_tcc',     color: '#0e7490', bg: '#ecfeff', tag: tx('Telework'),         idKey: 'control_id',  textKey: 'control_text',  groupKey: 'domain_id',    groupName: 'domain_name'    },
@@ -21,7 +22,7 @@ const ALL_FRAMEWORKS = [
   { id: 'NCA NCNICC', label: 'NCA NCNICC', fullName: tx('Non-CNI Private Sector Controls'),         table: 'nca_ncnicc',  color: '#b45309', bg: '#fffbeb', tag: tx('Private Sector'),   idKey: 'control_id',  textKey: 'control_text',  groupKey: 'domain_id',    groupName: 'domain_name'    },
 ]
 
-// ECC always; CCC once the workspace has a CCC scope (role + data level).
+// ECC always; CCC and PDPL once the workspace has a CCC or PDPL scope.
 const frameworksFor = (organization) => ALL_FRAMEWORKS.filter(f => isActiveFramework(f.id, organization))
 
 // ── Clause drill-down within a framework ──────────────────────────────────────
@@ -32,7 +33,10 @@ function ClauseList({ fw, onSelect, selected, search }) {
   // CCC: only the controls for the workspace's role, in document order.
   const rows = fw.id === 'NCA CCC'
     ? scopeCccRequirements(allRows, cccScope).sort((a, b) => compareRequirementIds(a.control_id, b.control_id))
-    : allRows
+    : fw.id === 'SDAIA PDPL'
+      // PDPL: the scored articles and their paragraphs, in document order.
+      ? scopePdplRequirements(allRows, pdplProfile(organization)).sort((a, b) => compareRequirementIds(a.control_id, b.control_id))
+      : allRows
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState({})
 
@@ -113,9 +117,9 @@ function ClauseList({ fw, onSelect, selected, search }) {
                   <span style={{
                     fontSize: 11, fontFamily: 'var(--font-mono)', fontWeight: 600,
                     color: isSelected ? 'var(--crimson)' : 'var(--rose)',
-                    flexShrink: 0, minWidth: 80, marginTop: 1,
+                    flexShrink: 0, minWidth: 80, marginTop: 1, whiteSpace: 'nowrap',
                   }}>
-                    {clauseId}
+                    {isPdplId(clauseId) ? printedSubId(clauseId) : clauseId}
                   </span>
                   <span style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.55, flex: 1 }}>
                     {text}

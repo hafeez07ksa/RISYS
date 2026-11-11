@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Inbox, Plus, Siren, UserRoundSearch } from 'lucide-react'
+import { Inbox, Plus, Siren, UserRoundSearch, ChevronRight } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { MetricStrip } from '@/components/ui/Metric'
 import { Spinner } from '@/components/ui/Spinner'
@@ -16,6 +16,13 @@ import { fmtDate } from '@/lib/reports/models'
 import { tx } from '@/lib/i18n'
 
 const labelOfType = (v) => labelOf(REQUEST_TYPES, v)
+
+/** A small link-button for section headers: one line, icon and label together. */
+const HeaderLink = ({ to, children }) => (
+  <Link to={to} className="btn-ghost" style={{ textDecoration: 'none', fontSize: 'var(--t-sm)', padding: '4px 8px', whiteSpace: 'nowrap', gap: 4 }}>
+    {children}<ChevronRight size={12} className="rtl-flip" />
+  </Link>
+)
 
 /* ── Privacy overview — /app/privacy ──────────────────────────────────────────
  *
@@ -67,6 +74,14 @@ export function PrivacyOverviewPage() {
         </>} />
       <div className="page-content" style={{ flex: 1, overflowY: 'auto' }}>
         <LawNote>{tx('Personal data protection under the PDPL Implementing Regulation: data subject requests answered within 30 days (Art. 3), personal-data breaches notified to SDAIA within 72 hours (Art. 24), impact assessments where Art. 25 asks for one, and a record of processing kept for five years after the processing ends (Art. 33).')}</LawNote>
+        <p style={{ fontSize: 12.5, color: 'var(--text-3)', margin: '-4px 0 14px', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          {organization?.pdpl_profile
+            ? tx('These registers measure your SDAIA PDPL compliance.')
+            : tx('SDAIA PDPL is not in scope in Compliance yet; once it is, these registers measure it.')}
+          <HeaderLink to={organization?.pdpl_profile ? `/app/compliance/${encodeURIComponent('SDAIA PDPL')}` : '/app/settings?tab=organization'}>
+            {organization?.pdpl_profile ? tx('Open PDPL compliance') : tx('Set the PDPL scope')}
+          </HeaderLink>
+        </p>
 
         {loading ? <div style={{ padding: 60, display: 'flex', justifyContent: 'center' }}><Spinner /></div> : (
           <>
@@ -99,7 +114,7 @@ export function PrivacyOverviewPage() {
               </section>
             )}
 
-            <Section title={tx('Open breaches')} actions={<Link to="/app/privacy/breaches" className="text-sm">{tx('All breaches')}</Link>} pad={false}>
+            <Section title={tx('Open breaches')} actions={<HeaderLink to="/app/privacy/breaches">{tx('All breaches')}</HeaderLink>} pad={false}>
               {m.openBreaches.length === 0 ? <Empty title={tx('No open breaches')} /> : (
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead><tr><Th width={100}>{tx('Ref')}</Th><Th>{tx('Breach')}</Th><Th>{tx('Aware since')}</Th><Th>{tx('SDAIA clock')}</Th></tr></thead>
@@ -115,7 +130,7 @@ export function PrivacyOverviewPage() {
               )}
             </Section>
 
-            <Section title={tx('Open data subject requests')} actions={<Link to="/app/privacy/requests" className="text-sm">{tx('All requests')}</Link>} pad={false}>
+            <Section title={tx('Open data subject requests')} actions={<HeaderLink to="/app/privacy/requests">{tx('All requests')}</HeaderLink>} pad={false}>
               {m.openReqs.length === 0 ? <Empty title={tx('No open requests')} /> : (
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead><tr><Th width={100}>{tx('Ref')}</Th><Th>{tx('Request')}</Th><Th>{tx('Status')}</Th><Th width={170}>{tx('Due')}</Th></tr></thead>
@@ -132,7 +147,7 @@ export function PrivacyOverviewPage() {
             </Section>
 
             <Section title={tx('Processing that needs an impact assessment')} pad={false}
-              actions={perms.isComplianceWriter && <Link to="/app/privacy/processing/new" className="text-sm"><Plus size={12} /> {tx('Record processing')}</Link>}>
+              actions={perms.isComplianceWriter && <HeaderLink to="/app/privacy/processing/new"><Plus size={12} /> {tx('Record processing')}</HeaderLink>}>
               {m.needAssessment.length === 0 ? (
                 <Empty title={tx('Nothing outstanding')}>{tx('Every active processing record that meets an Art. 25 trigger has an approved impact assessment.')}</Empty>
               ) : (

@@ -5,7 +5,7 @@ import { usePermissions } from '@/hooks/usePermissions'
 import { useConnectors } from '@/hooks/useConnectors'
 import { useRiskMatrix } from '@/hooks/useRiskGate'
 import {
-  PRIMARY_FRAMEWORK_ID, CCC_FRAMEWORK_ID, getFramework, hasCccProfile,
+  PRIMARY_FRAMEWORK_ID, CCC_FRAMEWORK_ID, PDPL_FRAMEWORK_ID, getFramework, hasCccProfile, hasPdplProfile,
   useFrameworkRequirements, useScopedRequirements, useComplianceStatuses, useFrameworkMappings,
   useRequirementAutomation, useReviewSchedule, usePolicyReviewSchedule, summariseReviews,
   computeFrameworkScore,
@@ -41,6 +41,7 @@ import { useMyWork } from '@/hooks/useMyWork'
 
 const ECC = getFramework(PRIMARY_FRAMEWORK_ID)
 const CCC = getFramework(CCC_FRAMEWORK_ID)
+const PDPL = getFramework(PDPL_FRAMEWORK_ID)
 const DAY = 86400000
 
 /** The score a risk carries now: residual once scored, inherent until then. */
@@ -85,6 +86,14 @@ export function useDashboardData() {
     statuses: useComplianceStatuses(cccId),
     maps: useFrameworkMappings(cccId),
     auto: useRequirementAutomation(cccId),
+  }
+  // SDAIA PDPL, only once the workspace has a PDPL scope.
+  const pdplId = hasPdplProfile(organization) ? PDPL.id : null
+  const pdpl = {
+    reqs: useScopedRequirements(pdplId),
+    statuses: useComplianceStatuses(pdplId),
+    maps: useFrameworkMappings(pdplId),
+    auto: useRequirementAutomation(pdplId),
   }
   const reviews = useReviewSchedule()
   const policyReviewRows = usePolicyReviewSchedule()
@@ -177,6 +186,12 @@ export function useDashboardData() {
     [ecc.reqs.requirements, ecc.statuses.statuses, ecc.maps.mappings, ecc.maps.controls, ecc.auto.automation],
   )
 
+  const pdplScore = useMemo(
+    () => (pdplId && pdpl.reqs.requirements.length
+      ? computeFrameworkScore(pdpl.reqs.requirements, pdpl.statuses.statuses, pdpl.maps.mappings, pdpl.maps.controls, PDPL, pdpl.auto.automation)
+      : null),
+    [pdplId, pdpl.reqs.requirements, pdpl.statuses.statuses, pdpl.maps.mappings, pdpl.maps.controls, pdpl.auto.automation],
+  )
   const cccScore = useMemo(
     () => (cccId && ccc.reqs.requirements.length
       ? computeFrameworkScore(ccc.reqs.requirements, ccc.statuses.statuses, ccc.maps.mappings, ccc.maps.controls, CCC, ccc.auto.automation)
@@ -196,6 +211,7 @@ export function useDashboardData() {
     model,
     ecc: eccModel,
     ccc: cccScore,
+    pdpl: pdplScore,
     reviews: reviewSummary,
     policyReviews: policyReviewSummary,
     work,

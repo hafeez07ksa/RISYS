@@ -9,7 +9,7 @@ import { usePeople } from '@/hooks/usePeople'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useEvidenceItem } from '@/hooks/useEvidenceLibrary'
 import { useFrameworkRequirements } from '@/hooks/usePolicies'
-import { hasCccProfile } from '@/hooks/useCompliance'
+import { linkableRequirements, FRAMEWORK_SHORT } from '@/hooks/useCompliance'
 import { EVIDENCE_KINDS, labelOf } from '@/lib/policies'
 import { fmtDate, fmtDateTime } from '@/lib/reports/models'
 import { Section, Facts, Field, SubmitButton, ErrorText, Empty, DueText, personName } from '@/features/audits/parts'
@@ -42,10 +42,10 @@ export function EvidenceDetailPage() {
       .order('created_at', { ascending: false }).limit(200).then(({ data }) => setOthers(data || []))
   }, [organization?.id, i?.id, i?.review_status, i?.superseded_by]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const withCcc = hasCccProfile(organization)
-  const reqOptions = useMemo(() => reqs.filter((r) => r.framework === 'NCA ECC' || withCcc).map((r) => ({
-    value: `${r.framework}|${r.requirement_id}`, label: `${r.framework === 'NCA ECC' ? 'ECC' : 'CCC'} ${r.requirement_id}`, description: r.requirement_text?.slice(0, 120),
-  })), [reqs, withCcc])
+  const linkable = useMemo(() => linkableRequirements(reqs, organization), [reqs, organization])
+  const reqOptions = useMemo(() => linkable.map((r) => ({
+    value: `${r.framework}|${r.requirement_id}`, label: `${FRAMEWORK_SHORT[r.framework] || r.framework} ${r.requirement_id}`, description: r.requirement_text?.slice(0, 120),
+  })), [linkable])
 
   const back = { label: tx('Evidence library'), onClick: () => navigate('/app/evidence') }
   if (ev.loading) return <PageLoading />

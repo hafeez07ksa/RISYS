@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { tx } from '@/lib/i18n'
 import { cccProfile, cccRoleOf } from '@/data/cccAutomation'
+import { isPdplRequirementId, PDPL_PARTS } from '@/data/pdplAutomation'
 
 /* Reference data the scope and finding pages pick from. */
 
@@ -13,7 +14,9 @@ const ECC_DOMAINS = {
   4: tx('4 — Third-party and cloud computing cybersecurity'),
 }
 
-const sortKey = (id) => id.split('-').map((p) => p.padStart(4, '0')).join('-')
+// PDPL ids lead with the document (L, IR, TR); keep the Law first.
+const DOC = { L: '0001', IR: '0002', TR: '0003' }
+const sortKey = (id) => id.split('-').map((p) => DOC[p] || p.padStart(4, '0')).join('-')
 
 export function useFrameworkRequirements(framework) {
   const { organization } = useAuth()
@@ -27,7 +30,10 @@ export function useFrameworkRequirements(framework) {
     supabase.from('framework_requirements_v').select('requirement_id, requirement_text, parent_requirement_id')
       .eq('framework', framework).then(({ data }) => {
         if (!alive) return
-        const rows = (data || []).filter(r => !roles || roles.includes(cccRoleOf(r.requirement_id)))
+        const rows = (data || [])
+          .filter(r => !roles || roles.includes(cccRoleOf(r.requirement_id)))
+          // PDPL: the scored articles and their paragraphs, not definitions or reference text.
+          .filter(r => framework !== 'SDAIA PDPL' || isPdplRequirementId(r.requirement_id))
         setReqs(rows.sort((a, b) => sortKey(a.requirement_id).localeCompare(sortKey(b.requirement_id))))
       })
     return () => { alive = false }
@@ -49,7 +55,7 @@ export function requirementOptions(reqs, { inScope = new Set(), noneLabel = tx('
   }
   return [
     { value: '', label: noneLabel },
-    ...[...groups.entries()].map(([d, options]) => ({ group: ECC_DOMAINS[d] ?? `${tx('Domain')} ${d}`, options })),
+    ...[...groups.entries()].map(([d, options]) => ({ group: ECC_DOMAINS[d] ?? (PDPL_PARTS[d] ? tx(PDPL_PARTS[d].label) : `${tx('Domain')} ${d}`), options })),
   ]
 }
 

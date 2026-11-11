@@ -131,7 +131,7 @@ function Kpi({ to, icon: Icon, tone = 'wine', label, value, unit, sub, subTone, 
   )
 }
 
-export function KpiRow({ ecc, ccc, model }) {
+export function KpiRow({ ecc, ccc, pdpl, model }) {
   const { risks, incidents, findings } = model
   const o = ecc?.overall
   const applicable = o ? o.total - o.na : 0
@@ -159,6 +159,7 @@ export function KpiRow({ ecc, ccc, model }) {
           ? <>
               {tx('{{c}} of {{n}} main controls compliant', { c: o.compliant, n: applicable })}
               {ccc && <> · <span style={{ fontWeight: 600 }}>{tx('CCC {{n}}%', { n: ccc.score })}</span></>}
+              {pdpl && <> · <span style={{ fontWeight: 600 }}>{tx('PDPL {{n}}%', { n: pdpl.score })}</span></>}
             </>
           : tx('Loading framework…')}
         chip={o && o.automatedWithResult > 0 ? tx('{{n}} measured', { n: o.automatedWithResult }) : null}>

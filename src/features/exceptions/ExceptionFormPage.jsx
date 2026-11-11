@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useExceptions } from '@/hooks/useExceptions'
 import { useFrameworkRequirements } from '@/hooks/usePolicies'
-import { hasCccProfile } from '@/hooks/useCompliance'
+import { linkableRequirements, FRAMEWORK_SHORT } from '@/hooks/useCompliance'
 import { EXCEPTION_SUBJECTS, CRITICALITY, AUTHORITY_FOR, EXCEPTION_MAX_MONTHS, todayRiyadh, addMonths, labelOf } from '@/lib/policies'
 import { Field, SubmitButton } from '@/features/audits/parts'
 import { authorityLabel } from '@/features/policies/parts'
@@ -44,14 +44,14 @@ export function ExceptionFormPage() {
     supabase.from('risk_controls').select('id, control_id, name').eq('org_id', organization.id).order('control_id').then(({ data }) => setControls(data || []))
   }, [organization?.id])
 
-  const withCcc = hasCccProfile(organization)
+  const linkable = useMemo(() => linkableRequirements(reqs, organization), [reqs, organization])
   const subjectOptions = useMemo(() => ({
     policy: policies.map((p) => ({ value: p.id, label: `${p.ref} ${p.title}` })),
     control: controls.map((c) => ({ value: c.id, label: `${c.control_id || ''} ${c.name}`.trim() })),
-    requirement: reqs.filter((r) => r.framework === 'NCA ECC' || withCcc).map((r) => ({
-      value: `${r.framework}|${r.requirement_id}`, label: `${r.framework === 'NCA ECC' ? 'ECC' : 'CCC'} ${r.requirement_id}`, description: r.requirement_text?.slice(0, 120),
+    requirement: linkable.map((r) => ({
+      value: `${r.framework}|${r.requirement_id}`, label: `${FRAMEWORK_SHORT[r.framework] || r.framework} ${r.requirement_id}`, description: r.requirement_text?.slice(0, 120),
     })),
-  }[f.subject_type]), [f.subject_type, policies, controls, reqs, withCcc])
+  }[f.subject_type]), [f.subject_type, policies, controls, linkable])
 
   const maxMonths = EXCEPTION_MAX_MONTHS[f.risk_rating]
   const latest = f.starts_on ? addMonths(f.starts_on, maxMonths) : null

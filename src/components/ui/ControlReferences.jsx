@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { BookOpen, ChevronDown, ExternalLink } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { parseControlRefs, eccControlPath, cccControlPath, deriveCccRefs } from '@/lib/controlRefs'
+import { parseControlRefs, eccControlPath, cccControlPath, pdplControlPath, deriveCccRefs, derivePdplRefs } from '@/lib/controlRefs'
 import { mainControlId } from '@/data/eccAutomation'
 import { CCC_FROM_ECC_EVIDENCE, cccMainId, cccProfile } from '@/data/cccAutomation'
+import { PDPL_FROM_ECC_EVIDENCE, pdplProfile, printedSubId } from '@/data/pdplAutomation'
 import { useAuth } from '@/hooks/useAuth'
 import { tx, localizeRow } from '@/lib/i18n'
 
@@ -13,7 +14,9 @@ import { tx, localizeRow } from '@/lib/i18n'
 //
 // In a workspace that is a cloud service tenant (CCC scope set), the CCC
 // tenant controls a finding also evidences are added beside its ECC
-// references, marked as derived from the ECC control they come through.
+// references, marked as derived from the ECC control they come through. With
+// SDAIA PDPL in scope, the PDPL articles a finding also evidences are added
+// the same way.
 
 const cache = new Map()   // reference key → loaded detail
 let guidesPromise = null  // bundled reference content, loaded once
@@ -84,11 +87,14 @@ export async function loadDetail(ref) {
     }
   } else if (ref.type === 'pdpl') {
     const { data } = await supabase.from('sdaia_pdpl')
-      .select('article_title, clause_id, clause_text')
-      .eq('regulation_part', ref.part).eq('article_id', ref.article).order('id')
+      .select('control_id, control_type, control_text, article_title')
+      .eq('subdomain_id', ref.id).order('sort_order')
+    const rows = data || []
+    const main = rows.find(r => r.control_type === 'Main Control')
     detail = {
-      heading: data?.[0] ? `${ref.article} · ${data[0].article_title} (${ref.part})` : `${ref.article} (${ref.part})`,
-      clauses: (data || []).map(c => ({ id: c.clause_id, text: c.clause_text })),
+      heading: main ? `${ref.article} · ${main.article_title} (${ref.part})` : `${ref.article} (${ref.part})`,
+      lead: main?.control_text || null,
+      clauses: rows.filter(r => r.control_type !== 'Main Control').map(c => ({ id: c.control_id, text: c.control_text })),
     }
   }
   cache.set(ref.key, detail)
@@ -101,7 +107,8 @@ export function ControlReferences({ control, compact = false }) {
   const parsed = parseControlRefs(control)
   // CCC chips only for a workspace with CCC in scope, and derived ones only for tenants.
   const stated = scope ? parsed : parsed.filter(r => r.type !== 'ccc')
-  const refs = scope?.roles.includes('CST') ? [...stated, ...deriveCccRefs(stated, CCC_FROM_ECC_EVIDENCE)] : stated
+  const withCcc = scope?.roles.includes('CST') ? [...stated, ...deriveCccRefs(stated, CCC_FROM_ECC_EVIDENCE)] : stated
+  const refs = pdplProfile(organization) ? [...withCcc, ...derivePdplRefs(withCcc, PDPL_FROM_ECC_EVIDENCE)] : withCcc
   const [open, setOpen] = useState(null)
   if (!refs.length) return null
   const active = refs.find(r => r.key === open)
@@ -117,7 +124,9 @@ export function ControlReferences({ control, compact = false }) {
             <button key={ref.key} type="button" disabled={!linkable}
               onClick={() => setOpen(isOpen ? null : ref.key)}
               title={ref.derived
-                ? tx('Also evidences this CCC tenant control, through ECC {{id}}', { id: ref.via })
+                ? (ref.type === 'pdpl'
+                    ? tx('Also evidences this PDPL article, through ECC {{id}}', { id: ref.via })
+                    : tx('Also evidences this CCC tenant control, through ECC {{id}}', { id: ref.via }))
                 : linkable ? tx('Show the control text and implementation guidance') : undefined}
               className="inline-flex items-center gap-1"
               style={{
@@ -205,12 +214,22 @@ function ReferencePanel({ ref_: ref }) {
     return (
       <div style={box}>
         <p style={{ fontWeight: 600 }}>{tx('SDAIA PDPL ·')} {detail.heading}</p>
-        {detail.clauses.length === 0 && <p style={{ color: '#8a7070' }}>{tx('Article text not loaded.')}</p>}
-        <ol style={{ margin: '6px 0 0', paddingInlineStart: 18 }}>
-          {detail.clauses.map((c, i) => <li key={`${c.id}-${i}`} style={{ marginBottom: 4 }}>{c.text}</li>)}
-        </ol>
-        <a href={`/app/compliance/${encodeURIComponent('SDAIA PDPL')}`} target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 mt-2" style={{ color: '#5D0F0F', fontWeight: 600 }}>{tx('Open SDAIA PDPL in RISYS')} <ExternalLink size={11} />
+        {ref.derived && (
+          <p style={{ color: '#6b5555', marginTop: 2 }}>
+            {tx('Derived: the finding is keyed to ECC {{id}}, and the same evidence serves this PDPL article.', { id: ref.via })}
+          </p>
+        )}
+        {!detail.lead && detail.clauses.length === 0 && <p style={{ color: '#8a7070' }}>{tx('Article text not loaded.')}</p>}
+        {detail.lead && <p style={{ marginTop: 6 }}>{detail.lead}</p>}
+        <ul style={{ margin: '6px 0 0', paddingInlineStart: 18 }}>
+          {detail.clauses.map(c => (
+            <li key={c.id} style={{ marginBottom: 4 }}>
+              <span className="mono" style={{ color: '#5D0F0F', fontWeight: 600 }}>{printedSubId(c.id)}</span> {c.text}
+            </li>
+          ))}
+        </ul>
+        <a href={pdplControlPath(ref.id)} target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 mt-2" style={{ color: '#5D0F0F', fontWeight: 600 }}>{tx('Open {{id}} in RISYS (status, evidence and the Law text)', { id: ref.code })} <ExternalLink size={11} />
         </a>
       </div>
     )

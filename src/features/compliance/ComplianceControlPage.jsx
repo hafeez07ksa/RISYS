@@ -22,6 +22,9 @@ import {
   automationClassForFramework, mainIdForFramework, evidenceRequirementForFramework, hasAutomationClasses,
 } from '@/data/frameworkAutomation'
 import { CCC_EXTENDS_ECC, CCC_LEVELS, cccRoleOf } from '@/data/cccAutomation'
+import {
+  PDPL_LAW_REFS, PDPL_ALSO_SERVES_ECC, PDPL_CONDITION_LABELS, pdplConditionFor, pdplLabel, printedSubId,
+} from '@/data/pdplAutomation'
 import { ApplicabilityChip } from './ComplianceFrameworkPage'
 import { tx, appLocale } from '@/lib/i18n'
 
@@ -152,9 +155,9 @@ function SubHead({ children }) {
   )
 }
 
-function BulletList({ items }) {
+function BulletList({ items, dir }) {
   return (
-    <ul style={{ display: 'flex', flexDirection: 'column', gap: 8, listStyle: 'none', padding: 0, margin: 0 }}>
+    <ul dir={dir} style={{ display: 'flex', flexDirection: 'column', gap: 8, listStyle: 'none', padding: 0, margin: 0 }}>
       {items.map((b, i) => (
         <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', paddingInlineStart: b.level * 20 }}>
           <span style={{
@@ -235,12 +238,16 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
   const canManage = perms.isManager || perms.isAdmin
 
   const {
-    requirements: scopedRequirements, allRequirements, loading: reqLoading, profile: cccScope,
+    requirements: scopedRequirements, allRequirements, loading: reqLoading, profile: scopeProfile, profileKind,
   } = useScopedRequirements(frameworkId)
   const isCcc = frameworkId === 'NCA CCC'
+  const isPdpl = frameworkId === 'SDAIA PDPL'
+  const cccScope = profileKind === 'ccc' ? scopeProfile : null
+  const pdplScope = profileKind === 'pdpl' ? scopeProfile : null
   // CCC rows carry _applicability for the workspace's role and level; a CCC id
-  // outside that role still opens (from a link or search) but says so.
-  const requirements = isCcc && cccScope ? scopedRequirements : allRequirements
+  // outside that role still opens (from a link or search) but says so. PDPL
+  // rows carry it for the workspace's PDPL scope; reference articles open too.
+  const requirements = (isCcc && cccScope) || (isPdpl && pdplScope) ? scopedRequirements : allRequirements
   const { statuses, setStatus, refetch: refetchStatuses } = useComplianceStatuses(frameworkId)
   const { controls, mappingsFor, controlsFor, linkControl, unlinkControl } = useFrameworkMappings(frameworkId)
   const { automation } = useRequirementAutomation(frameworkId)
@@ -248,8 +255,8 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
 
   // CCC builds on ECC: show where the ECC controls it extends stand, and on
   // an ECC control, the CCC controls in this workspace's scope that extend it.
-  const { statuses: eccStatuses } = useComplianceStatuses(isCcc ? 'NCA ECC' : null)
-  const { automation: eccAutomation } = useRequirementAutomation(isCcc ? 'NCA ECC' : null)
+  const { statuses: eccStatuses } = useComplianceStatuses(isCcc || isPdpl ? 'NCA ECC' : null)
+  const { automation: eccAutomation } = useRequirementAutomation(isCcc || isPdpl ? 'NCA ECC' : null)
 
   const [guidance, setGuidance] = useState(null)
   const [guidanceError, setGuidanceError] = useState(false)
@@ -262,7 +269,9 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
   useEffect(() => {
     let cancelled = false
     setGuidance(null); setGuidanceError(false)
-    const load = frameworkId === 'NCA CCC' ? import('@/data/cccGuidance.json') : import('@/data/eccGuidance.json')
+    const load = frameworkId === 'NCA CCC' ? import('@/data/cccGuidance.json')
+      : frameworkId === 'SDAIA PDPL' ? import('@/data/pdplGuidance.json')
+      : import('@/data/eccGuidance.json')
     load
       .then(m => { if (!cancelled) setGuidance(m.default ?? m) })
       .catch(() => { if (!cancelled) setGuidanceError(true) })
@@ -288,6 +297,10 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
   )
   const req = scopedReq || allRequirements.find(r => r[idKey] === requirementId)
   const outOfCccScope = isCcc && !!req && (!cccScope || !scopedReq)
+  // PDPL: a reference article (definitions, the regulator, the Law text the
+  // Regulations implement), or a requirement while PDPL is not in scope.
+  const pdplReference = isPdpl && !!req && !req.is_requirement
+  const outOfPdplScope = isPdpl && !!req && req.is_requirement && !pdplScope
   const applicability = scopedReq?._applicability || null
 
   const children = useMemo(
@@ -317,7 +330,9 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
   const isSub = isSubControl(req || {})
   const mainId = mainIdForFramework(fw?.id, requirementId)
   // CCC: no evidence form outside the workspace's scope, or where the level makes the control not applicable.
-  const evidenceAllowed = !isCcc || (!outOfCccScope && applicability !== 'not_applicable')
+  const evidenceAllowed = isCcc ? (!outOfCccScope && applicability !== 'not_applicable')
+    : isPdpl ? (!!scopedReq && applicability !== 'not_applicable')
+    : true
   const evidence = classified && !isSub && evidenceAllowed
     ? evidenceRequirementForFramework(fw?.id, requirementId, { measured: hasAutomatedResult(auto), level: cccScope?.level })
     : null
@@ -326,6 +341,10 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
 
   // ECC controls a CCC main control extends ("In addition to ECC 2-2-3 …")
   const extendsEcc = isCcc && !isSub ? (req?.ecc_refs?.length ? req.ecc_refs : CCC_EXTENDS_ECC[requirementId] || []) : []
+  // PDPL: the Law articles this requirement implements, and the ECC controls its evidence also serves
+  const pdplLawRefs = isPdpl && !isSub ? (req?.law_refs?.length ? req.law_refs : PDPL_LAW_REFS[requirementId] || []) : []
+  const pdplAlsoServes = isPdpl && !isSub ? PDPL_ALSO_SERVES_ECC[requirementId] || [] : []
+  const pdplCondition = isPdpl ? pdplConditionFor(requirementId) : null
   // CCC controls in scope that extend this ECC control
   const extendedByCcc = isEcc && cccScope
     ? Object.entries(CCC_EXTENDS_ECC)
@@ -438,7 +457,14 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                 }}>{req.role === 'CSP' ? tx('Provider (CSP)') : tx('Tenant (CST)')}</span>
               )}
 
-              <ApplicabilityChip value={applicability} />
+              <ApplicabilityChip value={applicability} frameworkId={frameworkId} />
+
+              {isPdpl && req.regulation_part && (
+                <span style={{
+                  fontSize: 'var(--t-micro)', padding: '2px 8px', borderRadius: 'var(--r-full)', fontWeight: 600,
+                  color: '#166534', background: '#f0fdf4', border: '1px solid #bbf7d0',
+                }}>{tx(req.regulation_part)}</span>
+              )}
 
               {isSubControl(req) && (
                 <span style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)' }}>{tx('Subcontrol of')} <span className="mono">{parentId}</span>
@@ -508,7 +534,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                               fontSize: 'var(--t-sm)', color: 'var(--crimson)', flexShrink: 0,
                               minWidth: 52, paddingTop: 1, fontWeight: 500,
                             }}>
-                              {String(sid).replace(/-/g, '.')}
+                              {printedSubId(sid)}
                             </span>
                             <span style={{ fontSize: 13.5, lineHeight: 1.65, color: 'var(--text-2)', flex: 1 }}>
                               {sub[textKey]}
@@ -543,6 +569,73 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                   </p>
                 </div>
               </Panel>
+            )}
+
+            {(pdplReference || outOfPdplScope) && (
+              <Panel style={{ marginBottom: 30, background: 'var(--surface)' }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <Info size={14} style={{ color: 'var(--taupe)', flexShrink: 0, marginTop: 2 }} />
+                  <p style={{ fontSize: 'var(--t-body)', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
+                    {pdplReference
+                      ? (req.part === 'L'
+                          ? tx('Reference text. RISYS scores the Law through the Implementing Regulation and Transfer Regulation articles that implement it.')
+                          : tx('Reference text: definitions, scope or the duties of the Competent Authority. It puts no obligation on the Controller and is not scored.'))
+                      : tx('SDAIA PDPL is not in scope for this workspace yet. A workspace administrator sets the PDPL scope in Settings → Organization.')}
+                  </p>
+                </div>
+              </Panel>
+            )}
+
+            {isPdpl && pdplScope && applicability === 'not_applicable' && (
+              <Panel style={{ marginBottom: 30, background: 'var(--surface)' }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <Info size={14} style={{ color: 'var(--taupe)', flexShrink: 0, marginTop: 2 }} />
+                  <p style={{ fontSize: 'var(--t-body)', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
+                    {tx('{{condition}}. Your PDPL scope says it does not, so this article is not applicable and does not count towards the PDPL score. A workspace administrator can change the scope in Settings → Organization.',
+                      { condition: tx(PDPL_CONDITION_LABELS[pdplCondition] || 'Applies only in some cases') })}
+                  </p>
+                </div>
+              </Panel>
+            )}
+
+            {(pdplLawRefs.length > 0 || pdplAlsoServes.length > 0) && (
+              <Source
+                icon={Link2}
+                title={tx('Where it comes from')}
+                attribution={tx('The Law article this requirement implements, and the NCA ECC controls the same evidence serves.')}
+              >
+                <Panel>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {pdplLawRefs.map(lid => (
+                      <Link key={lid} to={`/app/compliance/${encodeURIComponent('SDAIA PDPL')}/${encodeURIComponent(lid)}`}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+                        <span className="mono" style={{ fontSize: 'var(--t-sm)', color: 'var(--crimson)', fontWeight: 600, minWidth: 90 }}>
+                          {pdplLabel(lid)}
+                        </span>
+                        <span style={{ fontSize: 'var(--t-sm)', color: 'var(--text-2)' }}>{tx('Personal Data Protection Law')}</span>
+                        <ChevronRight size={12} className="rtl-flip" style={{ color: 'var(--taupe)', marginInlineStart: 'auto' }} />
+                      </Link>
+                    ))}
+                    {pdplAlsoServes.map(eid => {
+                      const st = computeEffectiveStatus(eccStatuses[eid]?.status, [], eccAutomation[eid])
+                      const sc = STATUS_CONFIG[st] || STATUS_CONFIG.not_started
+                      return (
+                        <Link key={eid} to={`/app/compliance/${encodeURIComponent('NCA ECC')}/${encodeURIComponent(eid)}`}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+                          <span className="mono" style={{ fontSize: 'var(--t-sm)', color: 'var(--crimson)', fontWeight: 600, minWidth: 90 }}>
+                            ECC {eid}
+                          </span>
+                          <span style={{
+                            fontSize: 'var(--t-micro)', padding: '1px 7px', borderRadius: 'var(--r-full)', fontWeight: 600,
+                            color: sc.color, background: sc.bg, border: `1px solid ${sc.border}`,
+                          }}>{sc.label}</span>
+                          <ChevronRight size={12} className="rtl-flip" style={{ color: 'var(--taupe)', marginInlineStart: 'auto' }} />
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </Panel>
+              </Source>
             )}
 
             {isCcc && !outOfCccScope && applicability && applicability !== 'mandatory' && (
@@ -684,7 +777,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                         borderTop: i === 0 ? 'none' : '1px solid var(--border-3)',
                       }}>
                         <SubHead>{sec.label}</SubHead>
-                        <BulletList items={sec.items} />
+                        <BulletList items={sec.items} dir={sec.dir} />
                       </div>
                     ))}
                     {src.caveat && <Caveat>{src.caveat}</Caveat>}
@@ -719,7 +812,7 @@ export function ComplianceControlPage({ frameworkId, requirementId, onBack, onOp
                             background: 'none', border: 'none', padding: 0, cursor: 'pointer',
                             color: 'var(--crimson)', fontSize: 'var(--t-sm)', fontWeight: 500,
                           }}>
-                          {String(sid).replace(/-/g, '.')}
+                          {printedSubId(sid)}
                         </button>
                       </span>
                     ))}

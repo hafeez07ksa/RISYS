@@ -39,7 +39,7 @@ function greeting(d = new Date()) {
 
 export function DashboardPage() {
   const { organization, user } = useAuth()
-  const { loading, eccLoading, refreshing, refresh, updatedAt, model, ecc, ccc, reviews, policyReviews, work, matrix, perms } = useDashboardData()
+  const { loading, eccLoading, refreshing, refresh, updatedAt, model, ecc, ccc, pdpl, reviews, policyReviews, work, matrix, perms } = useDashboardData()
 
   const name = user?.user_metadata?.full_name || ''
   const firstName = name.split(' ')[0]
@@ -88,7 +88,7 @@ export function DashboardPage() {
           <div className="flex justify-center py-20"><Spinner /></div>
         ) : (
           <>
-            <div className="db-rise"><KpiRow ecc={ecc} ccc={ccc} model={model} /></div>
+            <div className="db-rise"><KpiRow ecc={ecc} ccc={ccc} pdpl={pdpl} model={model} /></div>
 
             {work.items.length > 0 && (
               <div className="db-grid db-rise" style={{ animationDelay: '30ms' }}>

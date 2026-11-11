@@ -65,6 +65,8 @@ const SEGMENT_LABELS = {
  * 1, 1-5, 1-5-3, 1-5-3-1. */
 function expandRequirementAncestry(id) {
   const seg = String(id).split('-')
+  // PDPL: IR-23-1 is a paragraph of article IR-23.
+  if (['L', 'IR', 'TR'].includes(seg[0])) return seg.length > 2 ? [seg.slice(0, 2).join('-'), id] : [id]
   if (seg.length <= 3) return [id]
   const out = []
   for (let n = 3; n <= seg.length; n++) out.push(seg.slice(0, n).join('-'))
@@ -81,7 +83,7 @@ function useRouteBreadcrumb() {
     const p = parts[i]
     acc += `/${p}`
     // The report pages reuse segment names that mean something else at the top level (audit).
-    const REPORT_SEG = { board: 'Board report', ecc: 'ECC status report', audit: 'Audit reports', new: 'Generate' }
+    const REPORT_SEG = { board: 'Board report', ecc: 'ECC status report', ccc: 'CCC status report', pdpl: 'PDPL status report', audit: 'Audit reports', new: 'Generate' }
     // Privacy reuses "requests" (audit evidence requests) and "processing".
     const PRIVACY_SEG = { requests: 'Data subject requests', breaches: 'Breaches', assessments: 'Impact assessments',
                           processing: 'Record of processing', settings: 'Privacy settings' }

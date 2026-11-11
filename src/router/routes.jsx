@@ -36,6 +36,7 @@ import { ControlDetailPage } from '@/features/controls/ControlDetailPage'
 import { CompliancePage } from '@/features/compliance/CompliancePage'
 import { ComplianceFrameworkRoute, ComplianceControlRoute } from '@/features/compliance/ComplianceRoutes'
 import { ReviewCalendarPage } from '@/features/compliance/ReviewCalendarPage'
+import { ComplianceDashboardPage } from '@/features/compliance/ComplianceDashboardPage'
 import { FrameworksPage } from '@/features/frameworks/FrameworksPage'
 import { AuditsPage } from '@/features/audits/AuditsPage'
 import { AuditDetailPage } from '@/features/audits/AuditDetailPage'
@@ -150,6 +151,7 @@ const appRoutes = [
       { path: 'controls/:id/edit', element: <ControlFormPage /> },
       { path: 'compliance',   element: <CompliancePage /> },
       { path: 'compliance/reviews', element: <ReviewCalendarPage /> },
+      { path: 'compliance/dashboard', element: <ComplianceDashboardPage /> },
       // Framework and control are addressable so an assessment can be linked to
       { path: 'compliance/:frameworkId',                 element: <ComplianceFrameworkRoute /> },
       { path: 'compliance/:frameworkId/:requirementId',  element: <ComplianceControlRoute /> },
@@ -222,6 +224,8 @@ const appRoutes = [
       { path: 'reports/new',  element: <GenerateReportPage /> },
       { path: 'reports/board', element: <ReportTypePage key="board" slug="board" /> },
       { path: 'reports/ecc',   element: <ReportTypePage key="ecc" slug="ecc" /> },
+      { path: 'reports/ccc',   element: <ReportTypePage key="ccc" slug="ccc" /> },
+      { path: 'reports/pdpl',  element: <ReportTypePage key="pdpl" slug="pdpl" /> },
       { path: 'reports/audit', element: <ReportTypePage key="audit" slug="audit" /> },
       { path: 'reports/:runId', element: <Navigate to="/app/reports" replace /> },
       { path: 'reports/:runId/record', element: <RecordPresentationPage /> },

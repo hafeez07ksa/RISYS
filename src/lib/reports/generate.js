@@ -20,7 +20,7 @@
 import { createElement } from 'react'
 import { supabase } from '@/lib/supabase'
 import { REPORT_TYPES } from './theme'
-import { buildBoardPackModel, buildEccModel, buildAuditModel, fmtDate, fmtDateTime, quarterLabel } from './models'
+import { buildBoardPackModel, buildEccModel, buildFrameworkModel, buildAuditModel, fmtDate, fmtDateTime, quarterLabel } from './models'
 
 import fontRegular from '@/assets/fonts/IBMPlexSans-Regular.ttf?url'
 import fontItalic from '@/assets/fonts/IBMPlexSans-Italic.ttf?url'
@@ -41,6 +41,8 @@ export const REPORTS_BUCKET = 'reports'
 const TEMPLATES = {
   board_pack:   () => import('./BoardPackPdf'),
   ecc_status:   () => import('./EccStatusPdf'),
+  ccc_status:   () => import('./FrameworkStatusPdf'),
+  pdpl_status:  () => import('./FrameworkStatusPdf'),
   audit_report: () => import('./AuditReportPdf'),
 }
 
@@ -102,7 +104,7 @@ async function rpc(name, args) {
  * Generate, fingerprint, store and record a report.
  *
  * @param {object} p
- * @param {'board_pack'|'ecc_status'|'audit_report'} p.type
+ * @param {'board_pack'|'ecc_status'|'ccc_status'|'pdpl_status'|'audit_report'} p.type
  * @param {object} p.organization  { id, name }
  * @param {object} p.user          { id, name }
  * @param {object} [p.period]      { start, end, label } — board pack
@@ -137,6 +139,11 @@ export async function generateReport({ type, organization, user, period, engagem
       })
     }
     model = buildEccModel(raw)
+    title = def.label
+    periodLabel = `${tx('As at')} ${fmtDate(new Date())}`
+  } else if (type === 'ccc_status' || type === 'pdpl_status') {
+    const raw = await rpc('report_framework_status_data', { p_org: organization.id, p_framework: def.framework })
+    model = buildFrameworkModel(raw)
     title = def.label
     periodLabel = `${tx('As at')} ${fmtDate(new Date())}`
   } else {

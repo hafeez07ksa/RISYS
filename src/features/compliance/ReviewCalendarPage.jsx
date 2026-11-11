@@ -91,10 +91,10 @@ export function ReviewCalendarPage() {
       key: 'requirement_id', header: tx('Control'),
       render: r => (
         <span style={{ display: 'flex', gap: 10, alignItems: 'baseline', minWidth: 0 }}>
-          <span className="tnum" style={{ fontWeight: 600, color: 'var(--text)', flexShrink: 0, minWidth: 52 }}>
+          <span className="tnum" style={{ fontWeight: 600, color: 'var(--text)', flexShrink: 0, minWidth: 52, whiteSpace: 'nowrap' }}>
             {r.framework && r.framework !== 'NCA ECC' && r.kind !== 'policy' && (
               <span style={{ fontSize: 'var(--t-micro)', fontWeight: 600, color: 'var(--text-3)', marginInlineEnd: 5 }}>
-                {r.framework.replace(/^NCA\s+/, '')}
+                {r.framework.replace(/^(NCA|SDAIA)\s+/, '')}
               </span>
             )}
             {r.requirement_id}

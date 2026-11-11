@@ -9,17 +9,18 @@ import { usePermissions } from '@/hooks/usePermissions'
 import { useAudits, useAudit, AUDIT_TYPES } from '@/hooks/useAudits'
 import { Field, SubmitButton } from './parts'
 import { useAuth } from '@/hooks/useAuth'
-import { hasCccProfile } from '@/hooks/useCompliance'
+import { hasCccProfile, hasPdplProfile } from '@/hooks/useCompliance'
 import { tx } from '@/lib/i18n'
 
 // Frameworks whose requirements are in framework_requirements_v, so scope
-// items and findings can point at a clause. NCA CCC is offered once the
-// workspace has a CCC scope.
+// items and findings can point at a clause. NCA CCC and SDAIA PDPL are
+// offered once the workspace has a CCC or PDPL scope.
 const BASE_FRAMEWORKS = [
   { value: '', label: tx('Not tied to a framework') },
   { value: 'NCA ECC', label: 'NCA ECC-2:2024' },
 ]
 const CCC_OPTION = { value: 'NCA CCC', label: 'NCA CCC-2:2024' }
+const PDPL_OPTION = { value: 'SDAIA PDPL', label: 'SDAIA PDPL' }
 
 const EMPTY = {
   title: '', audit_type: 'internal', framework: 'NCA ECC', objective: '', scope_summary: '', methodology: '',
@@ -33,7 +34,11 @@ export function EngagementFormPage() {
   const editing = !!id
   const navigate = useNavigate()
   const { organization } = useAuth()
-  const FRAMEWORKS = hasCccProfile(organization) ? [...BASE_FRAMEWORKS, CCC_OPTION] : BASE_FRAMEWORKS
+  const FRAMEWORKS = [
+    ...BASE_FRAMEWORKS,
+    ...(hasCccProfile(organization) ? [CCC_OPTION] : []),
+    ...(hasPdplProfile(organization) ? [PDPL_OPTION] : []),
+  ]
   const perms = usePermissions()
   const { members } = usePeople()
   const { createEngagement } = useAudits()

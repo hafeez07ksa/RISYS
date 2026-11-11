@@ -4,6 +4,7 @@ import { useAuth } from './useAuth'
 import { localISO } from '@/lib/manualCompliance'
 import { tx, localizeRow } from '@/lib/i18n'
 import { cccProfile, scopeCccRequirements } from '@/data/cccAutomation'
+import { pdplProfile, scopePdplRequirements, isPdplRequirementId } from '@/data/pdplAutomation'
 
 // ── FRAMEWORK REGISTRY ────────────────────────────────────────────────────────
 export const FRAMEWORKS = [
@@ -38,14 +39,19 @@ export const FRAMEWORKS = [
     id: 'SDAIA PDPL',
     label: 'SDAIA PDPL',
     fullName: tx('Personal Data Protection Law'),
-    version: 'PDPL-IR:2023',
+    version: 'PDPL 2023 · IR · TR',
     table: 'sdaia_pdpl',
     color: '#166534',
     bg: '#f0fdf4',
     tag: tx('Data Privacy'),
-    requirementKey: 'clause_id',
-    textKey: 'clause_text',
-    groupBy: 'article',
+    requirementKey: 'control_id',
+    textKey: 'control_text',
+    groupBy: 'domain',
+    // The Law, the Implementing Regulation and the Transfer Regulation, one row
+    // per article and paragraph. In scope once a workspace admin sets the PDPL
+    // scope in Settings → Organization; conditional articles (health data,
+    // marketing, transfers, ...) apply according to it.
+    scopedByProfile: 'pdpl',
   },
   {
     id: 'NCA CCC',
@@ -61,7 +67,7 @@ export const FRAMEWORKS = [
     groupBy: 'domain',
     // In scope only when the workspace admin sets a CCC profile (role + data level)
     // in Settings → Organization; the rows are then filtered to that role and level.
-    scopedByProfile: true,
+    scopedByProfile: 'ccc',
   },
   {
     id: 'NCA DCC',
@@ -121,12 +127,14 @@ export const getFramework = (id) => FRAMEWORKS.find(f => f.id === id)
 
 // ── ACTIVE SCOPE ──────────────────────────────────────────────────────────────
 // NCA ECC is always in scope. NCA CCC joins it when the workspace has a CCC
-// profile (role + data classification level), set by its administrator in
-// Settings → Organization. Everything else lives in the read-only Frameworks
-// library until it is brought into scope.
+// profile (role + data classification level), and SDAIA PDPL when it has a
+// PDPL scope, both set by its administrator in Settings → Organization.
+// Everything else lives in the read-only Frameworks library until it is
+// brought into scope.
 export const PRIMARY_FRAMEWORK_ID = 'NCA ECC'
 export const CCC_FRAMEWORK_ID = 'NCA CCC'
-export const IMPLEMENTED_FRAMEWORK_IDS = [PRIMARY_FRAMEWORK_ID, CCC_FRAMEWORK_ID]
+export const PDPL_FRAMEWORK_ID = 'SDAIA PDPL'
+export const IMPLEMENTED_FRAMEWORK_IDS = [PRIMARY_FRAMEWORK_ID, CCC_FRAMEWORK_ID, PDPL_FRAMEWORK_ID]
 
 export const PRIMARY_FRAMEWORKS   = FRAMEWORKS.filter(f => f.id === PRIMARY_FRAMEWORK_ID)
 export const SECONDARY_FRAMEWORKS = FRAMEWORKS.filter(f => !IMPLEMENTED_FRAMEWORK_IDS.includes(f.id))
@@ -140,10 +148,31 @@ export function hasCccProfile(organization) {
   return ['cst', 'csp', 'both'].includes(organization?.ccc_role) && level >= 1 && level <= 4
 }
 
-/** The frameworks this workspace works against: ECC, plus CCC once it has a profile. */
+/** True when the workspace has a PDPL scope. */
+export function hasPdplProfile(organization) {
+  return !!pdplProfile(organization)
+}
+
+/** The frameworks this workspace works against: ECC, plus CCC and PDPL once each has a profile. */
 export function activeFrameworksFor(organization) {
   return FRAMEWORKS.filter(f =>
-    f.id === PRIMARY_FRAMEWORK_ID || (f.id === CCC_FRAMEWORK_ID && hasCccProfile(organization)))
+    f.id === PRIMARY_FRAMEWORK_ID
+    || (f.id === CCC_FRAMEWORK_ID && hasCccProfile(organization))
+    || (f.id === PDPL_FRAMEWORK_ID && hasPdplProfile(organization)))
+}
+
+/** Short label for a framework in pickers: ECC, CCC, PDPL. */
+export const FRAMEWORK_SHORT = { 'NCA ECC': 'ECC', 'NCA CCC': 'CCC', 'SDAIA PDPL': 'PDPL' }
+
+/**
+ * framework_requirements_v rows a workspace can link to: the active
+ * frameworks only, and for PDPL only the scored articles and their paragraphs
+ * (definitions and reference text are not something to map a policy to).
+ */
+export function linkableRequirements(rows, organization) {
+  const active = new Set(activeFrameworksFor(organization).map(f => f.id))
+  return (rows || []).filter(r => active.has(r.framework)
+    && (r.framework !== PDPL_FRAMEWORK_ID || isPdplRequirementId(r.requirement_id)))
 }
 
 export function isActiveFramework(id, organization) {
@@ -192,16 +221,22 @@ export function useFrameworkRequirements(frameworkId) {
 // For most frameworks this is every row. NCA CCC is filtered by the workspace's
 // CCC profile: only the role it holds (tenant, provider or both), each row
 // tagged with _applicability at its data level (mandatory · optional ·
-// not_applicable). Without a profile CCC has nothing in scope.
+// not_applicable). SDAIA PDPL keeps its scored articles, each tagged mandatory
+// or not_applicable by the workspace's PDPL scope. Without a profile neither
+// has anything in scope.
 export function useScopedRequirements(frameworkId) {
   const { organization } = useAuth()
   const { requirements, loading, refetch } = useFrameworkRequirements(frameworkId)
   const fw = getFramework(frameworkId)
-  const profile = fw?.scopedByProfile ? cccProfile(organization) : null
+  const kind = fw?.scopedByProfile || null
+  const profile = kind === 'ccc' ? cccProfile(organization) : kind === 'pdpl' ? pdplProfile(organization) : null
+  const profileKey = profile ? JSON.stringify(profile) : ''
 
   const scoped = useMemo(
-    () => (fw?.scopedByProfile ? scopeCccRequirements(requirements, profile) : requirements),
-    [requirements, fw?.scopedByProfile, profile?.role, profile?.level],
+    () => (kind === 'ccc' ? scopeCccRequirements(requirements, profile)
+      : kind === 'pdpl' ? scopePdplRequirements(requirements, profile)
+      : requirements),
+    [requirements, kind, profileKey], // eslint-disable-line react-hooks/exhaustive-deps
   )
 
   return {
@@ -210,7 +245,8 @@ export function useScopedRequirements(frameworkId) {
     loading,
     refetch,
     profile,
-    needsProfile: !!fw?.scopedByProfile && !profile,
+    profileKind: kind,
+    needsProfile: !!kind && !profile,
   }
 }
 
@@ -638,9 +674,13 @@ export function hasAutomatedResult(auto) {
 //
 // CCC ids carry a role letter (1-3-P-1-1, 1-3-T-1-1): provider (P) sorts
 // before tenant (T), as in the published document.
+// PDPL ids lead with the document: the Law, then the Implementing Regulation,
+// then the Transfer Regulation.
+const DOC_ORDER = { L: -0.9, IR: -0.8, TR: -0.7 }
 const idSegment = (s) => {
   const n = Number(s)
   if (Number.isFinite(n)) return n
+  if (s in DOC_ORDER) return DOC_ORDER[s]
   return /^[A-Za-z]$/.test(s) ? s.toUpperCase().charCodeAt(0) / 1000 : NaN
 }
 

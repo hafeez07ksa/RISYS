@@ -245,6 +245,45 @@ export function buildEccModel(raw) {
   }
 }
 
+/* ═══ NCA CCC / SDAIA PDPL status report ═══════════════════════════════════ */
+
+// Requirement ids in document order: 2-2-T-1-1 (CCC) and L-12, IR-23-1, TR-5
+// (PDPL: the Law, then the Implementing Regulation, then the Transfer Regulation).
+const DOC_ORDER = { L: -0.9, IR: -0.8, TR: -0.7 }
+const seg = (s) => {
+  const v = Number(s)
+  if (Number.isFinite(v)) return v
+  if (s in DOC_ORDER) return DOC_ORDER[s]
+  return /^[A-Za-z]$/.test(s) ? s.toUpperCase().charCodeAt(0) / 1000 : -1
+}
+export function compareIds(a, b) {
+  const pa = String(a ?? '').split('-').map(seg), pb = String(b ?? '').split('-').map(seg)
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] ?? -2, y = pb[i] ?? -2
+    if (x !== y) return x - y
+  }
+  return 0
+}
+
+/**
+ * The same model as the ECC report, built from the requirements in the
+ * workspace's scope. A requirement that is optional or not applicable at the
+ * workspace's scope is shown as Not applicable and not counted, whatever was
+ * recorded against it; the reason is kept on the row.
+ */
+export function buildFrameworkModel(raw) {
+  const requirements = [...(raw.requirements ?? [])]
+    .sort((a, b) => compareIds(a.req, b.req))
+    .map((r) => (r.applicability && r.applicability !== 'mandatory'
+      ? { ...r, recorded_status: r.status, status: 'not_applicable', review_due_at: null, outOfScope: r.applicability }
+      : r))
+  const model = buildEccModel({ ...raw, requirements })
+  const outOfScope = model.mains.filter((r) => r.outOfScope)
+  const domains = [...model.domains].sort((a, b) => compareIds(a.id, b.id))
+  return { ...model, domains, scope: raw.scope ?? null, outOfScope,
+           criticalFindings: model.reqs.reduce((a, r) => a + n(r.connector_critical), 0) }
+}
+
 /* ═══ Audit report ═════════════════════════════════════════════════════════ */
 
 export function buildAuditModel(raw) {
