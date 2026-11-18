@@ -5,6 +5,7 @@ import {
   CalendarClock, CalendarX, FileWarning, Inbox, Sparkles, ClipboardList, Plug,
   Fingerprint, Crown, Users, UserPlus, Activity, BookCheck, ChevronRight, CircleCheck,
   FileText, Radar, FileCheck2, ScrollText, ShieldOff, FileSearch, BookOpenCheck, LockKeyhole,
+  Megaphone, MessageCircleQuestion, Gauge, Scale,
 } from 'lucide-react'
 import { WORK_KINDS } from '@/hooks/useMyWork'
 import { tx, appLocale } from '@/lib/i18n'
@@ -348,6 +349,8 @@ const WORK_ICON = {
   policy_approval: FileCheck2, attestation: BookOpenCheck, policy_review: CalendarClock,
   exception_decision: ShieldOff, evidence_review: FileSearch,
   dsr_due: Users, breach_notify: LockKeyhole, dpia_approval: ScrollText,
+  risk_triage: Megaphone, risk_clarify: MessageCircleQuestion, risk_assessment: Gauge,
+  acceptance_review: Scale, acceptance_decision: Scale,
 }
 
 export function MyWorkPanel({ work }) {

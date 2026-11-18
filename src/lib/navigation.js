@@ -34,7 +34,10 @@ export const MODULES = [
   {
     id: 'risk', label: tx('Risk Management'), icon: 'ShieldAlert', match: ['risks'],
     items: [
+      { path: 'risks/overview', label: tx('Overview'), icon: 'LayoutDashboard' },
       { path: 'risks', label: tx('Risk Register'), icon: 'ShieldAlert' },
+      // Anyone but a viewer raises a risk; risk managers triage the queue.
+      { path: 'risks/intake', label: tx('Raised risks'), icon: 'Megaphone', gate: (p) => !p.isViewer, badge: 'intake' },
       { path: 'risks/suggestions', label: tx('Suggested risks'), icon: 'Sparkles', gate: findingsReader, badge: 'suggestions' },
       { path: 'risks/triage', label: tx('Finding triage'), icon: 'ListChecks', gate: findingsReader },
       { path: 'risks/tolerances', label: tx('Tolerances and authority'), icon: 'Gauge', gate: riskManager },

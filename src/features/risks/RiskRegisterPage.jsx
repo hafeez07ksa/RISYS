@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Plus, Search, ShieldAlert, RefreshCw, LayoutGrid, List, Filter,
-  Download, Trash2, ChevronUp, ChevronDown, AlertTriangle, User, SlidersHorizontal, Sparkles,
+  Download, Trash2, ChevronUp, ChevronDown, AlertTriangle, User, SlidersHorizontal, Sparkles, Megaphone,
 } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuth } from '@/hooks/useAuth'
@@ -231,6 +231,12 @@ export function RiskRegisterPage() {
                 className="flex items-center gap-1.5 text-xs px-2.5 py-2 rounded-md border transition-colors hover:bg-[#f6eeec]"
                 style={{ borderColor: '#e9dad7', color: 'var(--text-2)' }}>
                 <SlidersHorizontal size={13} /> {tx('Tolerances')}</button>
+            )}
+            {!perms.isViewer && (
+              <button onClick={() => navigate('/app/risks/intake/new')} title={tx('Raise a risk for a risk manager to triage')}
+                className="flex items-center gap-1.5 text-xs px-2.5 py-2 rounded-md border transition-colors hover:bg-[#f6eeec]"
+                style={{ borderColor: '#e9dad7', color: 'var(--text-2)' }}>
+                <Megaphone size={13} /> {tx('Raise a risk')}</button>
             )}
             {perms.canCreateRisk && <button onClick={() => navigate('/app/risks/new')}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md"

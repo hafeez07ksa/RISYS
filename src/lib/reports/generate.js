@@ -20,7 +20,7 @@
 import { createElement } from 'react'
 import { supabase } from '@/lib/supabase'
 import { REPORT_TYPES } from './theme'
-import { buildBoardPackModel, buildEccModel, buildFrameworkModel, buildAuditModel, fmtDate, fmtDateTime, quarterLabel } from './models'
+import { buildBoardPackModel, buildEccModel, buildFrameworkModel, buildAuditModel, buildRiskReportModel, fmtDate, fmtDateTime, quarterLabel } from './models'
 
 import fontRegular from '@/assets/fonts/IBMPlexSans-Regular.ttf?url'
 import fontItalic from '@/assets/fonts/IBMPlexSans-Italic.ttf?url'
@@ -44,6 +44,7 @@ const TEMPLATES = {
   ccc_status:   () => import('./FrameworkStatusPdf'),
   pdpl_status:  () => import('./FrameworkStatusPdf'),
   audit_report: () => import('./AuditReportPdf'),
+  risk_report:  () => import('./RiskReportPdf'),
 }
 
 let rendererPromise
@@ -109,15 +110,20 @@ async function rpc(name, args) {
  * @param {object} p.user          { id, name }
  * @param {object} [p.period]      { start, end, label } — board pack
  * @param {object} [p.engagement]  { id } — audit report
+ * @param {object} [p.risk]        { id } — risk report
+ * @param {boolean} [p.includeEvidence=true] risk report: put the evidence files in an appendix
+ * @param {boolean} [p.archive=true] false: build and return the file without filing it
+ *                                   (for people who may read a risk but not file reports)
  * @param {(stage: string) => void} [p.onStage]  progress callback for the UI
  * @returns {Promise<{ run: object, blob: Blob }>}
  */
-export async function generateReport({ type, organization, user, period, engagement, onStage = () => {} }) {
+export async function generateReport({ type, organization, user, period, engagement, risk, archive = true, includeEvidence = true, onStage = () => {} }) {
   const def = REPORT_TYPES[type]
   if (!def) throw new Error(`Unknown report type: ${type}`)
 
   onStage(tx('Reading data'))
-  let model, title, periodLabel = null, periodStart = null, periodEnd = null, engagementId = null
+  let model, title, periodLabel = null, periodStart = null, periodEnd = null, engagementId = null, riskId = null
+  let media = null   // risk report only: the evidence files (kept out of the snapshot)
   if (type === 'board_pack') {
     if (!period?.start || !period?.end) throw new Error(tx('Choose a reporting period.'))
     const raw = await rpc('report_board_pack_data', { p_org: organization.id, p_start: period.start, p_end: period.end })
@@ -146,6 +152,18 @@ export async function generateReport({ type, organization, user, period, engagem
     model = buildFrameworkModel(raw)
     title = def.label
     periodLabel = `${tx('As at')} ${fmtDate(new Date())}`
+  } else if (type === 'risk_report') {
+    if (!risk?.id) throw new Error(tx('Choose a risk.'))
+    const raw = await rpc('report_risk_data', { p_risk: risk.id })
+    model = buildRiskReportModel(raw)
+    title = `${def.label}: ${model.risk.risk_id ? `${model.risk.risk_id} ` : ''}${model.risk.title}`
+    periodLabel = `${tx('As at')} ${fmtDate(new Date())}`
+    riskId = risk.id
+    if (includeEvidence && model.evidence.length) {
+      onStage(tx('Reading evidence'))
+      const { collectRiskEvidence } = await import('./riskEvidence')
+      media = await collectRiskEvidence(risk.id, model.evidence, onStage)
+    }
   } else {
     if (!engagement?.id) throw new Error(tx('Choose an audit engagement.'))
     const raw = await rpc('report_audit_data', { p_engagement: engagement.id })
@@ -165,9 +183,20 @@ export async function generateReport({ type, organization, user, period, engagem
   const meta = {
     title, shortTitle: def.short, eyebrow: def.short,
     orgName: organization.name, audience: def.audience, classification: def.classification,
-    periodLabel, generatedLabel: fmtDateTime(now), generatedBy: user.name ?? null, reportId: id,
+    periodLabel, generatedLabel: fmtDateTime(now), generatedBy: user.name ?? null, reportId: archive ? id : null,
+    ...(type === 'risk_report' ? { title: model.risk.title, eyebrow: `${def.short} · ${model.risk.risk_id ?? ''}` } : {}),
+    ...(archive ? {} : { coverNote: tx('Generated from the organisation’s records in RISYS at the time shown. This copy was downloaded without being filed in the report archive.') }),
   }
-  const blob = await renderer.pdf(createElement(template.default, { model, meta })).toBlob()
+  let blob = await renderer.pdf(createElement(template.default, { model, meta, media })).toBlob()
+  if (media?.pdfs.length) {
+    onStage(tx('Adding evidence documents'))
+    const { appendEvidencePdfs } = await import('./riskEvidence')
+    blob = await appendEvidencePdfs(blob, media.pdfs, model.risk.risk_id)
+  }
+  if (!archive) return { run: null, blob }
+  if (blob.size > 25 * 1024 * 1024) {
+    throw new Error(tx('The report with its evidence is larger than 25 MB, which is too large to file in the archive. Export it without evidence, or remove large files from the risk.'))
+  }
 
   onStage(tx('Fingerprinting and filing'))
   const buffer = await blob.arrayBuffer()
@@ -183,8 +212,8 @@ export async function generateReport({ type, organization, user, period, engagem
   const { data: run, error } = await supabase.from('report_runs').insert({
     id, org_id: organization.id, report_type: type, title,
     period_label: periodLabel, period_start: periodStart, period_end: periodEnd,
-    engagement_id: engagementId,
-    snapshot: { model, meta, schema: 1 },
+    engagement_id: engagementId, risk_id: riskId,
+    snapshot: { model, meta, schema: 1, ...(media ? { evidence_appendix: media.summary } : {}) },
     file_path: filePath, file_size: blob.size, sha256,
     generated_by: user.id, generated_at: now.toISOString(),
   }).select().single()

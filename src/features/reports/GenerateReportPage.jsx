@@ -69,7 +69,9 @@ export function GenerateReportPage() {
   }
 
   // CCC and PDPL reports are offered once the framework is in scope.
-  const inScope = (t) => (t === 'ccc_status' ? hasCccProfile(organization) : t === 'pdpl_status' ? hasPdplProfile(organization) : true)
+  // Risk reports are made from the risk itself (Export PDF on the risk page).
+  const inScope = (t) => (REPORT_TYPES[t]?.perRecord ? false
+    : t === 'ccc_status' ? hasCccProfile(organization) : t === 'pdpl_status' ? hasPdplProfile(organization) : true)
 
   const period = periodKey === 'custom'
     ? (custom.start && custom.end ? { start: custom.start, end: custom.end, label: `${fmtDate(custom.start)} – ${fmtDate(custom.end)}` } : null)

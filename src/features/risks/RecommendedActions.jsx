@@ -29,6 +29,8 @@ export function RecommendedActions({ risk, canCreateTasks }) {
   const [s, setS] = useState(null)
   const [loaded, setLoaded] = useState(false)
   const [showDone, setShowDone] = useState(false)
+  // Folded by default: the header and progress bar say enough until someone wants the list.
+  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     let live = true
@@ -57,6 +59,7 @@ export function RecommendedActions({ risk, canCreateTasks }) {
   if (!loaded || !s) return null
 
   const total = actions.open.length + actions.done.length
+  const criticalOpen = actions.open.filter(e => e.severity === 'critical').length
   const pct = total ? Math.round((actions.done.length / total) * 100) : 100
 
   const createTask = (e) => {
@@ -81,10 +84,19 @@ export function RecommendedActions({ risk, canCreateTasks }) {
 
   return (
     <section className="card" style={{ padding: '16px 18px' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+      <button type="button" onClick={() => setOpen(v => !v)} aria-expanded={open}
+        style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12, width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'start' }}>
+        <ChevronDown size={15} style={{ color: 'var(--text-3)', flexShrink: 0, marginTop: 2, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 120ms' }} />
         <Sparkles size={15} style={{ color: 'var(--crimson)', flexShrink: 0, marginTop: 2 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{tx('Recommended actions')}</p>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+            {tx('Recommended actions')}
+            {criticalOpen > 0 && (
+              <span className="badge tnum" style={{ marginInlineStart: 8, color: 'var(--critical)', background: 'var(--critical-bg)', border: '1px solid var(--critical-bd)', fontWeight: 600 }}>
+                {tx('{{n}} critical open', { n: criticalOpen })}
+              </span>
+            )}
+          </p>
           <p style={{ margin: '3px 0 0', fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.55 }}>
             {tx('What RISYS found in ECC {{area}}, as things to fix. Each one is ticked off automatically when the next scan no longer reports it.', { area: s.area_id })}
             {' '}{tx('Last checked {{when}}.', { when: fmtDateTime(s.last_evaluated_at) })}
@@ -92,14 +104,17 @@ export function RecommendedActions({ risk, canCreateTasks }) {
         </div>
         <span className="tnum" style={{ fontSize: 12.5, fontWeight: 600, color: actions.open.length ? 'var(--text-2)' : '#2F6B3C', whiteSpace: 'nowrap' }}>
           {tx('{{done}} of {{total}} done', { done: actions.done.length, total })}
+          <span style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: 'var(--crimson)', marginTop: 2, textAlign: 'end' }}>
+            {open ? tx('Hide') : tx('Show actions')}
+          </span>
         </span>
-      </div>
+      </button>
 
-      <div aria-hidden style={{ height: 6, borderRadius: 3, background: 'var(--border-3)', overflow: 'hidden', marginBottom: 14 }}>
+      <div aria-hidden style={{ height: 6, borderRadius: 3, background: 'var(--border-3)', overflow: 'hidden', marginBottom: open ? 14 : 0 }}>
         <div style={{ height: '100%', width: `${pct}%`, background: '#2F6B3C', transition: 'width 300ms' }} />
       </div>
 
-      {actions.open.length === 0 ? (
+      {!open ? null : actions.open.length === 0 ? (
         <p style={{ margin: 0, fontSize: 13, color: '#2F6B3C', display: 'flex', alignItems: 'center', gap: 8 }}>
           <CheckCircle2 size={15} /> {tx('Everything RISYS found here has been fixed. Consider re-scoring the residual risk.')}
         </p>
@@ -144,7 +159,7 @@ export function RecommendedActions({ risk, canCreateTasks }) {
         </div>
       )}
 
-      {actions.done.length > 0 && (
+      {open && actions.done.length > 0 && (
         <div style={{ marginTop: 12, borderTop: '1px solid var(--border-3)', paddingTop: 10 }}>
           <button type="button" onClick={() => setShowDone(v => !v)} style={{
             display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 600,

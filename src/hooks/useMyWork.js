@@ -24,6 +24,11 @@ export const WORK_KINDS = {
   dsr_due:            { label: 'Data subject request',     group: 'Privacy' },
   breach_notify:      { label: 'Personal-data breach',     group: 'Privacy' },
   dpia_approval:      { label: 'Approve an impact assessment', group: 'Privacy' },
+  risk_triage:        { label: 'Triage a raised risk',     group: 'Risks' },
+  risk_clarify:       { label: 'Answer a question on your risk', group: 'Risks' },
+  risk_assessment:    { label: 'Assess a risk',            group: 'Risks' },
+  acceptance_review:  { label: 'Management review of an acceptance', group: 'Risks' },
+  acceptance_decision:{ label: 'Decide a risk acceptance', group: 'Risks' },
 }
 
 export function useMyWork() {

@@ -305,3 +305,52 @@ export function buildAuditModel(raw) {
     requests: raw.requests ?? {}, evidenceFiles: n(raw.evidence_files),
   }
 }
+
+/* ═══ Risk report ══════════════════════════════════════════════════════════ */
+
+/**
+ * One risk, complete, from report_risk_data(). People are resolved to names
+ * here so the archived snapshot reads on its own, without the member list.
+ */
+export function buildRiskReportModel(raw) {
+  const people = raw.people || {}
+  const who = (id) => (id ? people[id] || tx('Former member') : null)
+  const r = raw.risk || {}
+  const withNames = (rows, keys) => (rows || []).map((x) => {
+    const out = { ...x }
+    for (const k of keys) out[`${k}_name`] = who(x[k])
+    return out
+  })
+  const score = (l, i) => (l && i ? Number(l) * Number(i) : null)
+  return {
+    generated_at: raw.generated_at,
+    org: raw.org,
+    risk: {
+      ...r,
+      owner_name: who(r.owner_id), assigned_name: who(r.assigned_to), reviewer_name: who(r.reviewer_id),
+      approver_name: who(r.approver_id), approved_by_name: who(r.approved_by), created_by_name: who(r.created_by),
+      inherent: score(r.inherent_likelihood, r.inherent_impact),
+      residual: score(r.residual_likelihood, r.residual_impact),
+      inherent_band: raw.inherent_band || null,
+      residual_band: raw.residual_band || null,
+    },
+    tolerance: raw.tolerance || null,
+    controls: (raw.controls || []).map(({ mapping, control }) => ({ ...control, ...mapping, control_ref: control?.control_id, owner_name: who(control?.owner_id) })),
+    control_tests: withNames(raw.control_tests, ['tested_by']),
+    score_history: withNames(raw.score_history, ['assessed_by']),
+    treatment_options: withNames(raw.treatment_options, ['decided_by']),
+    treatment_plans: withNames(raw.treatment_plans, ['owner_id', 'approved_by']),
+    treatment_actions: withNames(raw.treatment_actions, ['owner_id']),
+    acceptances: withNames(raw.acceptances, ['requested_by', 'approver_id', 'decided_by', 'management_reviewer_id', 'revoked_by']),
+    kris: withNames(raw.kris, ['owner_id']),
+    loss_events: raw.loss_events || [],
+    reviews: withNames(raw.reviews, ['reviewed_by']),
+    evidence: withNames(raw.evidence, ['collected_by', 'approved_by']),
+    findings: withNames(raw.findings, ['decided_by']),
+    tasks: withNames(raw.tasks, ['assigned_to']),
+    collaborators: (raw.collaborators || []).map(who),
+    comments: withNames(raw.comments, ['user_id']),
+    workflow: withNames(raw.workflow, ['performed_by']),
+    submission: raw.submission ? { ...raw.submission, submitted_by_name: who(raw.submission.submitted_by) } : null,
+  }
+}

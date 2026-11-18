@@ -4,9 +4,10 @@ import {
   LayoutDashboard, ShieldAlert, AlertTriangle, CheckSquare, BookCheck, ScrollText, Settings, Users,
   CheckSquare2, FileWarning, Library, PanelLeftClose, PanelLeftOpen, ClipboardCheck, FileText, Sparkles,
   MessagesSquare, ShieldOff, FolderOpen, FilePen, ListChecks, Gauge, CalendarClock, Radar, Landmark, ShieldCheck, Archive,
-  ChevronRight, Fingerprint, UserRoundSearch, Siren, Database, Scale, Cloud, Lock,
+  ChevronRight, Fingerprint, UserRoundSearch, Siren, Database, Scale, Cloud, Lock, Megaphone,
 } from 'lucide-react'
 import { usePendingSuggestionCount } from '@/hooks/useRiskSuggestions'
+import { useTriageCount } from '@/hooks/useErm'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { usePermissions } from '@/hooks/usePermissions'
 import { activePage } from '@/lib/navigation'
@@ -30,7 +31,7 @@ export const ICONS = {
   LayoutDashboard, ShieldAlert, AlertTriangle, CheckSquare, BookCheck, ScrollText, Settings, Users,
   CheckSquare2, FileWarning, Library, ClipboardCheck, FileText, Sparkles, MessagesSquare, ShieldOff,
   FolderOpen, FilePen, ListChecks, Gauge, CalendarClock, Radar, Landmark, ShieldCheck, Archive,
-  Fingerprint, UserRoundSearch, Siren, Database, Scale, Cloud, Lock,
+  Fingerprint, UserRoundSearch, Siren, Database, Scale, Cloud, Lock, Megaphone,
 }
 
 function NavItem({ to, icon, label, active, collapsed, badge }) {
@@ -89,8 +90,13 @@ export function Sidebar({ module, collapsed, onToggle, ask }) {
   const { pathname } = useLocation()
   const withSuggestions = !!module?.pages.some((i) => i.badge === 'suggestions')
   const { count: suggestions, refetch } = usePendingSuggestionCount(withSuggestions && (perms.canTriageFindings || perms.isAuditor))
+  const withIntake = !!module?.pages.some((i) => i.badge === 'intake')
+  const { count: intake, refetch: refetchIntake } = useTriageCount(withIntake && perms.isManager)
   // Re-count when the person moves around, so approving clears the badge.
-  useEffect(() => { if (withSuggestions) refetch() }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (withSuggestions) refetch()
+    if (withIntake && perms.isManager) refetchIntake()
+  }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!module) return null
   const current = activePage(module, pathname)
@@ -110,7 +116,7 @@ export function Sidebar({ module, collapsed, onToggle, ask }) {
             : <p key={`g${k}`} className="nav-section" style={{ marginTop: 14 }}>{i.group}</p>
         ) : (
           <NavItem key={i.path} to={`/app/${i.path}`} icon={i.icon} label={i.label} collapsed={collapsed}
-            active={current?.path === i.path} badge={i.badge === 'suggestions' ? suggestions : 0} />
+            active={current?.path === i.path} badge={i.badge === 'suggestions' ? suggestions : i.badge === 'intake' ? intake : 0} />
         ))}
       </nav>
 

@@ -58,6 +58,8 @@ import { FindingFormPage } from '@/features/audits/FindingFormPage'
 import { FindingPage } from '@/features/audits/FindingPage'
 import { SuggestedRisksPage } from '@/features/risks/SuggestedRisksPage'
 import { SuggestionDetailPage } from '@/features/risks/SuggestionDetailPage'
+import { IntakeListPage, RaiseRiskPage, SubmissionDetailPage } from '@/features/risks/IntakePages'
+import { ErmOverviewPage } from '@/features/risks/ErmOverviewPage'
 import { AskRisysPage } from '@/features/ask/AskRisysPage'
 import { PoliciesPage } from '@/features/policies/PoliciesPage'
 import { PolicyCoveragePage } from '@/features/policies/PolicyCoveragePage'
@@ -141,6 +143,11 @@ const appRoutes = [
       { path: 'risks/triage',     element: <RequireRole roles={ROLE_SETS.findingsReader}><TriagePage /></RequireRole> },
       { path: 'risks/suggestions', element: <RequireRole roles={ROLE_SETS.findingsReader}><SuggestedRisksPage /></RequireRole> },
       { path: 'risks/suggestions/:id', element: <RequireRole roles={ROLE_SETS.findingsReader}><SuggestionDetailPage /></RequireRole> },
+      { path: 'risks/overview',   element: <ErmOverviewPage /> },
+      { path: 'risks/intake',     element: <IntakeListPage /> },
+      { path: 'risks/intake/new', element: <RaiseRiskPage /> },
+      { path: 'risks/intake/:id', element: <SubmissionDetailPage /> },
+      { path: 'risks/intake/:id/edit', element: <RaiseRiskPage /> },
       { path: 'risks/new',        element: <RiskFormPage /> },
       { path: 'risks/:id',        element: <RiskDetailPage /> },
       { path: 'risks/:id/edit',   element: <RiskFormPage /> },

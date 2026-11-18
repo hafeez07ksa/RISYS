@@ -53,6 +53,7 @@ const SEGMENT_LABELS = {
   policies: 'Policies', coverage: 'ECC coverage', versions: 'Versions', 'my-policies': 'My policies',
   exceptions: 'Exceptions', evidence: 'Evidence library',
   privacy: 'Privacy',
+  intake: 'Raised risks', overview: 'Overview',
 }
 
 /* A dotted requirement id encodes its own ancestry: 1-5-3-1 is a child of
@@ -111,7 +112,7 @@ function useRouteBreadcrumb() {
     const isRecordId = label === undefined && /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(p)
     const RECORD_KIND = { risks: tx('Risk'), controls: tx('Control'), incidents: tx('Incident'), tasks: tx('Task'),
       audits: tx('Engagement'), findings: tx('Finding'), requests: tx('Request'), scope: tx('Scope item'), reports: tx('Report'),
-      suggestions: tx('Suggested risk'), ask: tx('Conversation'),
+      suggestions: tx('Suggested risk'), ask: tx('Conversation'), intake: tx('Raised risk'),
       policies: tx('Policy'), 'my-policies': tx('Attestation'), exceptions: tx('Exception'), evidence: tx('Evidence'),
       breaches: tx('Breach'), assessments: tx('Assessment'), processing: tx('Processing record') }
     const recordLabel = isRecordId ? (RECORD_KIND[parts[i - 1]] || tx('Details')) : null

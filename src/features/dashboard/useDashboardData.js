@@ -222,13 +222,14 @@ export function useDashboardData() {
 
 // ── Pure derivations (exported so they can be exercised without a database) ──
 
-export function buildModel({ raw, findings, matrix, connectedIds = [], userId, canReadFindings }) {
-  if (!raw) return null
-  const now = new Date()
+/**
+ * Bands, tolerance and areas for a list of risks: the register's own reading.
+ * Shared by the GRC overview and the Risk Management overview so the two can
+ * never disagree.
+ */
+export function buildRiskModel(risks, matrix, now = new Date()) {
   const since30 = new Date(now.getTime() - 30 * DAY)
-
-  // Risks
-  const openRisks = raw.risks.filter(r => normalizeWorkflowState(r.workflow_state) !== 'closed')
+  const openRisks = risks.filter(r => normalizeWorkflowState(r.workflow_state) !== 'closed')
   const band = r => bandForScore(currentScore(r), matrix)
   const inherentBand = r => bandForScore(r.inherent_score || r.risk_score || 0, matrix)
   const bands = Object.fromEntries(BAND_ORDER.map(b => [b, 0]))
@@ -242,7 +243,7 @@ export function buildModel({ raw, findings, matrix, connectedIds = [], userId, c
   }
   const outside = openRisks.filter(r => r.tolerance_status === 'breached').length
   const within = openRisks.filter(r => r.tolerance_status === 'within').length
-  const newRisks30 = raw.risks.filter(r => r.created_at && new Date(r.created_at) >= since30).length
+  const newRisks30 = risks.filter(r => r.created_at && new Date(r.created_at) >= since30).length
 
   // Risk areas: one row per category, ranked by the worst band then count.
   const areaMap = {}
@@ -256,6 +257,17 @@ export function buildModel({ raw, findings, matrix, connectedIds = [], userId, c
   }
   const areas = Object.values(areaMap).sort((x, y) =>
     (BAND_ORDER.indexOf(y.worst) - BAND_ORDER.indexOf(x.worst)) || (y.count - x.count))
+
+  return { all: risks, open: openRisks, bands, inherentBands, unscored, outside, within, newRisks30, areas }
+}
+
+export function buildModel({ raw, findings, matrix, connectedIds = [], userId, canReadFindings }) {
+  if (!raw) return null
+  const now = new Date()
+
+  // Risks
+  const riskModel = buildRiskModel(raw.risks, matrix, now)
+  const { open: openRisks, bands, inherentBands, unscored, outside, within, newRisks30, areas } = riskModel
 
   // Incidents
   const openIncidents = raw.incidents.filter(isOpenIncident)

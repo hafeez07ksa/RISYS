@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useUnsavedChanges } from '@/components/layout/LeaveGuard'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Trash2, ChevronDown, ChevronRight, ShieldAlert, Save, Info, UserPlus, X, Scale } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronRight, ShieldAlert, Save, Info, UserPlus, X, Scale, Timer } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { SelectField } from '@/components/ui/Combobox'
 import { Spinner } from '@/components/ui/Spinner'
@@ -16,6 +16,7 @@ import { BAND_ORDER, bandMeta } from '@/lib/matrix'
 import { usePeople } from '@/hooks/usePeople'
 import { useAuthorityHolders } from '@/hooks/useTreatment'
 import { AUTHORITY_TIERS, BAND_AUTHORITY, EXCEPTION_FLOOR, tierMeta } from '@/lib/authority'
+import { useRiskSettings } from '@/hooks/useErm'
 import { tx } from '@/lib/i18n'
 
 // ============================================================
@@ -329,6 +330,7 @@ export function TolerancePage() {
         )}
 
         <AuthorityPanel canEdit={perms.isAdmin} />
+        <DeadlinesPanel canEdit={perms.isManager} />
 
         {(loading || risksLoading) ? (
           <div style={{ padding: '48px 0', display: 'flex', justifyContent: 'center' }}><Spinner /></div>
@@ -451,6 +453,59 @@ function AuthorityPanel({ canEdit }) {
         })}
       </div>
       {error && <p style={{ fontSize: 'var(--t-sm)', color: 'var(--critical)', marginTop: 8 }}>{error}</p>}
+    </div>
+  )
+}
+
+/**
+ * The two ERM clocks the database runs: how long an admitted risk may wait
+ * for its assessment, and the default time an approver has to decide an
+ * acceptance. Changing them affects risks admitted and requests made from now
+ * on; existing deadlines stay as they were set.
+ */
+function DeadlinesPanel({ canEdit }) {
+  const { settings, loading, save } = useRiskSettings()
+  const [draft, setDraft] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+  const f = draft || { a: settings.assessment_sla_days, d: settings.acceptance_decision_days }
+  const dirty = !!draft && (Number(f.a) !== settings.assessment_sla_days || Number(f.d) !== settings.acceptance_decision_days)
+
+  const submit = async () => {
+    setBusy(true); setMsg('')
+    try { await save(Number(f.a), Number(f.d)); setDraft(null); setMsg(tx('Saved.')) }
+    catch (e) { setMsg(e.message) } finally { setBusy(false) }
+  }
+
+  return (
+    <div className="card" style={{ padding: '14px 16px', marginBottom: 18 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+        <Timer size={14} style={{ color: 'var(--crimson)' }} />
+        <p style={{ fontSize: 'var(--t-section)', fontWeight: 600, color: 'var(--text)' }}>{tx('Deadlines')}</p>
+      </div>
+      <p style={{ fontSize: 'var(--t-meta)', color: 'var(--text-3)', marginBottom: 12, maxWidth: 760 }}>{tx(
+        'The database sets these clocks. A risk admitted to the register must be assessed within the first; an acceptance request must be decided within the second unless the requester sets an earlier date. Changes apply to new risks and requests.'
+      )}</p>
+      {loading ? <Spinner size="sm" /> : (
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span className="field-label">{tx('Assess an admitted risk within (days)')}</span>
+            <input type="number" min={5} max={180} className="risys-input" style={{ width: 120 }} disabled={!canEdit}
+              value={f.a} onChange={(e) => setDraft({ ...f, a: e.target.value })} />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span className="field-label">{tx('Decide an acceptance within (days)')}</span>
+            <input type="number" min={3} max={60} className="risys-input" style={{ width: 120 }} disabled={!canEdit}
+              value={f.d} onChange={(e) => setDraft({ ...f, d: e.target.value })} />
+          </label>
+          {canEdit && (
+            <button className="btn-primary" style={{ fontSize: 'var(--t-sm)' }} disabled={!dirty || busy} onClick={submit}>
+              {busy ? <Spinner size="sm" /> : <Save size={13} />} {tx('Save')}
+            </button>
+          )}
+          {msg && <span style={{ fontSize: 'var(--t-sm)', color: msg === tx('Saved.') ? 'var(--low)' : 'var(--critical)' }}>{msg}</span>}
+        </div>
+      )}
     </div>
   )
 }

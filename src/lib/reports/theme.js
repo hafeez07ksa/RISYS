@@ -124,4 +124,7 @@ export const REPORT_TYPES = {
                   audience: tx('Regulator, DPO and management'), classification: tx('Confidential') },
   audit_report: { label: tx('Audit report'), short: tx('Audit report'),
                   audience: tx('Audit committee and management'), classification: tx('Confidential — Audit') },
+  // One per risk, generated from the risk page (Export PDF), never from the Generate page.
+  risk_report:  { label: tx('Risk report'), short: tx('Risk report'), perRecord: true,
+                  audience: tx('Risk owner and management'), classification: tx('Confidential') },
 }

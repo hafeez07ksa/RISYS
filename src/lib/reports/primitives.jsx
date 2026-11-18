@@ -256,19 +256,24 @@ export function Table({ columns, rows, empty = 'None recorded.', dense, indentKe
       })}
     </View>
   )
-  // The headings and the column header carry minPresenceAhead, so they move to
-  // the next page rather than sit alone at its foot. (This used to be one wrap={false} group holding the heading,
+  // The heading and the column header are one small unbreakable group with
+  // minPresenceAhead, so they move to the next page together, with room for
+  // the first row, rather than the heading being left alone at the foot of a
+  // page (seen in the risk report, 18 Nov). Rows are not in the group. (This used to be one wrap={false} group holding the heading,
   // header and first row; react-pdf then squeezed whole tables into a strip
   // at the bottom of the page when that group had to move.)
   return (
     <View style={{ marginBottom: 10 }}>
-      {heading}
-      <View minPresenceAhead={30}>{header}</View>
+      <View wrap={false}>
+        {heading}
+        {header}
+        {rows.length > 0 ? row(rows[0], 0) : null}
+      </View>
       {rows.length === 0 ? (
         <Text style={{ paddingVertical: 8, paddingHorizontal: 5, color: C.text3, borderBottomWidth: 0.6, borderBottomColor: C.border }}>
           {empty}
         </Text>
-      ) : rows.map((r, i) => row(r, i))}
+      ) : rows.slice(1).map((r, i) => row(r, i + 1))}
     </View>
   )
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, Edit2, Trash2, Plus, Shield, FileText, AlertTriangle,
   Activity, MessageSquare, Clock, Check, ExternalLink, Trash, Link,
@@ -18,6 +18,8 @@ import { useTreatmentOptions, useTreatmentPlans } from '@/hooks/useTreatment'
 import { treatmentReadiness } from '@/lib/treatment'
 import { coverageGaps } from '@/lib/gate'
 import { WorkflowBar } from './WorkflowBar'
+import { ErmRiskStrip } from './ErmRiskStrip'
+import { ExportRiskPdf } from './ExportRiskPdf'
 import { GatePanel, CoverageGapNotice } from './GatePanel'
 import { ScoreHistoryTab } from './ScoreHistoryTab'
 import { LinkedFindings } from './LinkedFindings'
@@ -42,6 +44,10 @@ const EVIDENCE_ICONS = {
   'Test Result': FlaskConical, Policy: ScrollText, Certificate: Award, Report: BarChart3,
 }
 
+// The risk file's own tint: a shade deeper than the page canvas, so the white
+// cards inside it stand out and the panel reads as one place to work.
+const FILE_BG = '#f8f0ee'
+
 const TABS = [
   { id: 'overview',  label: tx('Overview'),    icon: Shield },
   { id: 'scoring',   label: tx('Scoring'),     icon: TrendingDown },
@@ -63,7 +69,9 @@ export function RiskDetailPage() {
   const { members } = usePeople()
   const [risk, setRisk] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('overview')
+  const [searchParams] = useSearchParams()
+  // ?tab=treatment etc. — links from notifications and Waiting on you land on the right tab.
+  const [tab, setTab] = useState(() => (TABS.some(t => t.id === searchParams.get('tab')) ? searchParams.get('tab') : 'overview'))
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [showAddCollab, setShowAddCollab] = useState(false)
   const { deleteRisk } = useRisks()
@@ -222,6 +230,7 @@ export function RiskDetailPage() {
 
             {/* Action buttons — gated by role & ownership */}
             <div style={{ display: 'flex', gap: 8 }}>
+              <ExportRiskPdf risk={risk} />
               {perms.canEditRisk(riskWithCollabs) && (
                 <button onClick={() => navigate(`/app/risks/${id}/assess`)}
                   title={tx(
@@ -275,6 +284,7 @@ export function RiskDetailPage() {
 
       {/* ── WORKFLOW ── */}
       <WorkflowBar risk={riskWithCollabs} member={member} onChanged={reload} perms={perms} treatmentReadiness={readiness} />
+      <ErmRiskStrip risk={risk} perms={perms} onChanged={reload} />
 
       {/* ── THE GATE ──
           Everything above this is measurement. This is the step that
@@ -297,27 +307,42 @@ export function RiskDetailPage() {
         </div>
       )}
 
-      {/* ── TABS ── */}
-      <div style={{ margin: '0 28px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 0, marginTop: 4 }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
+      {/* ── RISK FILE: tabs and their content in one framed panel ──
+          Everything below the banners is the working record of the risk.
+          The frame, the tinted tab strip and the filled active tab set it apart
+          from the summary above, so the tabs read as one place to work. */}
+      <section style={{
+        margin: '16px 28px 40px', borderRadius: 14, overflow: 'hidden',
+        border: '1px solid var(--border-2)', borderTop: '3px solid var(--crimson)',
+        background: FILE_BG, boxShadow: '0 1px 2px rgba(41,32,33,0.04), 0 8px 24px -14px rgba(41,32,33,0.18)',
+      }}>
+      <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '10px 14px 0' }}>
+        <p className="eyebrow" style={{ margin: '0 4px 8px', color: 'var(--crimson)' }}>{tx('Risk file')}</p>
+        <div role="tablist" style={{ display: 'flex', gap: 4, overflowX: 'auto' }}>
+        {TABS.map(t => {
+          const active = tab === t.id
+          return (
+          <button key={t.id} role="tab" aria-selected={active} onClick={() => setTab(t.id)}
             style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              padding: '10px 14px', fontSize: 12, fontWeight: 500,
-              color: tab === t.id ? 'var(--crimson)' : 'var(--text-3)',
-              background: 'none', border: 'none', cursor: 'pointer',
-              borderBottom: tab === t.id ? '2px solid var(--crimson)' : '2px solid transparent',
-              transition: 'color 0.15s',
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 14px', fontSize: 12.5, fontWeight: active ? 600 : 500,
+              color: active ? 'var(--crimson)' : 'var(--text-2)',
+              background: active ? FILE_BG : 'transparent',
+              border: '1px solid', borderColor: active ? 'var(--border)' : 'transparent', borderBottom: 'none',
+              borderRadius: '9px 9px 0 0', marginBottom: -1, cursor: 'pointer',
+              transition: 'color 0.15s, background 0.15s',
               whiteSpace: 'nowrap',
             }}>
-            <t.icon size={12} />
+            <t.icon size={13} />
             {t.label}
           </button>
-        ))}
+          )
+        })}
+        </div>
       </div>
 
       {/* ── TAB CONTENT ── */}
-      <div style={{ padding: '20px 28px 40px' }}>
+      <div style={{ padding: '20px 20px 24px' }}>
         {tab === 'overview'  && <OverviewTab  risk={risk} member={member} iScore={iScore}
           perms={perms} riskWithCollabs={riskWithCollabs} organization={organization} members={members}
           collaborators={collaborators} addCollaborator={addCollaborator} removeCollaborator={removeCollaborator}
@@ -333,6 +358,7 @@ export function RiskDetailPage() {
         {tab === 'comments'  && <DiscussionTab riskId={risk.id} />}
         {tab === 'audit'     && <AuditTab     riskId={risk.id} member={member} />}
       </div>
+      </section>
 
     </>
   )

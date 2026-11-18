@@ -4,6 +4,10 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTreatmentActions, useRiskExceptions } from '@/hooks/useRisks'
+import { fetchAcceptanceTerms } from '@/hooks/useErm'
+import { ACCEPTANCE_PURPOSES, maxTermMonths, monthsPlus, daysUntil } from '@/lib/erm'
+import { labelOf } from '@/lib/policies'
+import { DateField } from '@/components/ui/DateField'
 import { useTreatmentOptions, useTreatmentPlans, useAuthorityHolders } from '@/hooks/useTreatment'
 import { useRiskMatrix } from '@/hooks/useRiskGate'
 import {
@@ -428,22 +432,31 @@ function PlanForm({ option, horizon, members, matrix, onCancel, onCreate }) {
 }
 
 /* ── 3. An acceptance / exception record ─────────────────── */
-function ExceptionCard({ exc, member, risk, holders, fallbackRequired, onDecide }) {
+// Who may decide is shown from the same ladder the database enforces in
+// decide_risk_acceptance(); the database has the last word either way.
+function ExceptionCard({ exc, member, risk, holders, fallbackRequired, onDecide, onReview, canManage }) {
   const { user } = useAuth()
   const st = getExceptionStatus(exc.status)
   const [comment, setComment] = useState('')
+  const [conditions, setConditions] = useState('')
+  const [reviewNote, setReviewNote] = useState('')
+  const [revoking, setRevoking] = useState(false)
   const [deciding, setDeciding] = useState(false)
+  const [error, setError] = useState('')
   const required = exc.required_authority || fallbackRequired
   const verdict = canApprove({ userId: user?.id, risk, holders, required, requestedBy: exc.requested_by })
   const held = highestTierFor({ userId: user?.id, risk, holders })
-  const canRevoke = exc.status === 'approved' && tierRank(held) >= tierRank(required)
+  const canRevoke = exc.status === 'approved' && (tierRank(held) >= tierRank(required) || canManage)
   const isException = exc.exception_type === 'exception'
-  const expiringSoon = exc.status === 'approved' && exc.expires_at &&
-    (new Date(exc.expires_at) - new Date()) < 30 * 86400000 && new Date(exc.expires_at) > new Date()
+  const reviewPending = exc.status === 'pending' && exc.management_review_required && !exc.management_reviewed_at
+  const iReview = reviewPending && exc.management_reviewer_id === user?.id
+  const objected = exc.management_review_outcome === 'objected'
+  const decisionDays = exc.status === 'pending' && exc.decision_due_on ? daysUntil(exc.decision_due_on) : null
+  const expiringSoon = exc.status === 'approved' && exc.expires_at && daysUntil(exc.expires_at) <= 30 && daysUntil(exc.expires_at) >= 0
 
-  const decide = async (decision) => {
-    setDeciding(true)
-    try { await onDecide(exc.id, decision, comment, decision === 'approved' ? verdict.held : null) } finally { setDeciding(false) }
+  const act = async (fn) => {
+    setDeciding(true); setError('')
+    try { await fn() } catch (e) { setError(e.message) } finally { setDeciding(false) }
   }
 
   return (
@@ -456,41 +469,80 @@ function ExceptionCard({ exc, member, risk, holders, fallbackRequired, onDecide 
           {isException ? tx('Exception · above tolerance') : tx('Acceptance')}
         </span>
         <Pill s={st} />
+        {exc.purpose && <span style={{ fontSize: 11.5, color: 'var(--text-2)', fontWeight: 500 }}>{labelOf(ACCEPTANCE_PURPOSES, exc.purpose)}</span>}
         <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{tx('Needs')} <strong style={{ color: 'var(--text-2)' }}>{tierMeta(required).label}</strong></span>
         {exc.residual_at_request != null && (
           <span className="tnum" style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{tx('at')} {exc.residual_at_request} · {bandMeta(exc.band_at_request).label}</span>
         )}
         {expiringSoon && <span style={{ fontSize: 11, color: 'var(--high)', fontWeight: 600 }}>{tx('Expires')} {new Date(exc.expires_at).toLocaleDateString(appLocale())}</span>}
+        {decisionDays !== null && (
+          <span className="tnum" style={{ fontSize: 11, fontWeight: 600, color: decisionDays < 0 ? 'var(--critical)' : 'var(--text-3)' }}>
+            {decisionDays < 0 ? tx('Decision {{n}} days overdue', { n: -decisionDays }) : `${tx('Decide by')} ${new Date(`${exc.decision_due_on}T12:00:00`).toLocaleDateString(appLocale())}`}
+          </span>
+        )}
       </div>
       <p style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5, marginBottom: 6 }}>{exc.justification}</p>
       {exc.compensating_controls && (
         <p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}><strong>{tx('Compensating controls:')}</strong> {exc.compensating_controls}</p>
       )}
+      {exc.conditions && (
+        <p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}><strong>{tx('Conditions:')}</strong> {exc.conditions}</p>
+      )}
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 11.5, color: 'var(--text-3)' }}>
         <span>{tx('Requested by')} <strong style={{ color: 'var(--text-2)' }}>{member(exc.requested_by)}</strong> {new Date(exc.created_at).toLocaleDateString(appLocale())}</span>
         {exc.approver_id && <span>{tx('Approver:')} <strong style={{ color: 'var(--text-2)' }}>{member(exc.approver_id)}</strong></span>}
         {exc.expires_at && <span>{tx('Valid until')} <strong style={{ color: 'var(--text-2)' }}>{new Date(exc.expires_at).toLocaleDateString(appLocale())}</strong></span>}
-        {exc.review_frequency && <span>{tx('Reviewed')} <strong style={{ color: 'var(--text-2)' }}>{exc.review_frequency}</strong></span>}
+        {exc.review_frequency && <span>{tx('Reviewed')} <strong style={{ color: 'var(--text-2)' }}>{tx(exc.review_frequency)}</strong></span>}
         {exc.decided_at && (
           <span>{tx('Decided')} {new Date(exc.decided_at).toLocaleDateString(appLocale())}
-            {exc.decided_authority ? ` as ${tierMeta(exc.decided_authority).label}` : ''}
+            {exc.decided_by ? ` ${tx('by')} ${member(exc.decided_by)}` : ''}
+            {exc.decided_authority ? ` ${tx('as')} ${tierMeta(exc.decided_authority).label}` : ''}
             {exc.decision_comment ? ` — "${exc.decision_comment}"` : ''}
           </span>
         )}
+        {exc.revoked_at && (
+          <span>{tx('Revoked')} {new Date(exc.revoked_at).toLocaleDateString(appLocale())} {tx('by')} {member(exc.revoked_by)}{exc.revoke_reason ? ` — "${exc.revoke_reason}"` : ''}</span>
+        )}
       </div>
 
-      {exc.status === 'pending' && (
+      {exc.management_review_required && (
+        <div style={{ marginTop: 10, padding: '8px 10px', borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)', fontSize: 12, color: 'var(--text-2)' }}>
+          <strong>{tx('Management review')}</strong>{' · '}{member(exc.management_reviewer_id)}{' · '}
+          {exc.management_reviewed_at
+            ? <><span style={{ color: objected ? 'var(--critical)' : 'var(--low)', fontWeight: 600 }}>{objected ? tx('Objected') : tx('Endorsed')}</span>{exc.management_review_note ? ` — "${exc.management_review_note}"` : ''}</>
+            : <span style={{ color: 'var(--medium)' }}>{tx('Waiting for the review before the decision')}</span>}
+        </div>
+      )}
+
+      {iReview && (
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+          <p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}>{tx('You are the management reviewer. Endorse the acceptance or object to it; the approver decides after you.')}</p>
+          <textarea value={reviewNote} onChange={e => setReviewNote(e.target.value)} rows={2} className="risys-input"
+            placeholder={tx('The basis of your review (at least 10 characters)')} style={{ width: '100%', fontSize: 12, marginBottom: 8, resize: 'vertical' }} />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button disabled={deciding} onClick={() => act(() => onReview(exc.id, 'endorsed', reviewNote))} className="btn-primary" style={{ fontSize: 12 }}>
+              <CheckCircle2 size={13} /> {tx('Endorse')}</button>
+            <button disabled={deciding} onClick={() => act(() => onReview(exc.id, 'objected', reviewNote))} className="btn-secondary" style={{ fontSize: 12, color: 'var(--critical)' }}>
+              <XCircle size={13} /> {tx('Object')}</button>
+          </div>
+        </div>
+      )}
+
+      {exc.status === 'pending' && !reviewPending && (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
           {verdict.allowed ? (
             <>
-              <input value={comment} onChange={e => setComment(e.target.value)} placeholder={tx('Decision comment')}
+              <input value={comment} onChange={e => setComment(e.target.value)}
+                placeholder={objected ? tx('Management objected: record why you approve anyway (at least 20 characters)') : tx('Decision comment (required to reject)')}
+                className="risys-input" style={{ width: '100%', fontSize: 12, marginBottom: 8 }} />
+              <input value={conditions} onChange={e => setConditions(e.target.value)} placeholder={tx('Conditions of approval (optional)')}
                 className="risys-input" style={{ width: '100%', fontSize: 12, marginBottom: 8 }} />
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => decide('approved')} disabled={deciding}
+                <button onClick={() => act(() => onDecide(exc.id, 'approved', comment, conditions))} disabled={deciding}
                   style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500, padding: '6px 12px', borderRadius: 7, background: 'var(--low)', color: '#fff', border: 'none', cursor: 'pointer' }}>
                   <CheckCircle2 size={13} /> {tx('Approve as')} {tierMeta(verdict.held).label}
                 </button>
-                <button onClick={() => decide('rejected')} disabled={deciding}
+                <button onClick={() => act(() => onDecide(exc.id, 'rejected', comment))} disabled={deciding}
                   style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500, padding: '6px 12px', borderRadius: 7, background: '#fff', color: 'var(--critical)', border: '1px solid var(--critical-bd)', cursor: 'pointer' }}>
                   <XCircle size={13} /> {tx('Reject')}</button>
               </div>
@@ -505,27 +557,50 @@ function ExceptionCard({ exc, member, risk, holders, fallbackRequired, onDecide 
       )}
       {canRevoke && (
         <div style={{ marginTop: 10 }}>
-          <button onClick={() => decide('revoked')} disabled={deciding}
-            style={{ fontSize: 11.5, color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>{tx('Revoke — puts the risk back in front of the gate')}</button>
+          {!revoking ? (
+            <button onClick={() => { setRevoking(true); setComment('') }}
+              style={{ fontSize: 11.5, color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>{tx('Revoke — puts the risk back in front of the gate')}</button>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <input value={comment} onChange={e => setComment(e.target.value)} autoFocus className="risys-input" style={{ fontSize: 12 }}
+                placeholder={tx('Why is the acceptance being revoked? (at least 10 characters)')} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn-secondary" style={{ fontSize: 12, color: 'var(--critical)' }} disabled={deciding}
+                  onClick={() => act(async () => { await onDecide(exc.id, 'revoked', comment); setRevoking(false) })}>{tx('Revoke acceptance')}</button>
+                <button className="btn-secondary" style={{ fontSize: 12 }} onClick={() => setRevoking(false)}>{tx('Cancel')}</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
+      {error && <p style={{ fontSize: 12, color: 'var(--critical)', marginTop: 8 }}>{error}</p>}
     </Card>
   )
 }
 
 /* ── Main tab ────────────────────────────────────────────── */
 export function TreatmentTab({ risk, member, members, onRiskChanged, perms, verdict, onTreatmentChanged }) {
+  const { user } = useAuth()
   const riskId = risk.id
   const canManage = !!perms?.canManageRiskChildren(risk)
   const taskApi = useTreatmentActions(riskId)
-  const { exceptions, loading: loadingExc, requestException, decideException } = useRiskExceptions(riskId)
+  const { exceptions, loading: loadingExc, requestException, decideException, reviewException } = useRiskExceptions(riskId)
   const { options, loading: loadingOpt, migrated, saveOption } = useTreatmentOptions(riskId)
   const { plans, loading: loadingPlans, createPlan, updatePlan } = useTreatmentPlans(riskId)
   const { holders } = useAuthorityHolders()
   const { matrix } = useRiskMatrix()
   const [planFor, setPlanFor] = useState(null)
   const [requesting, setRequesting] = useState(false)
-  const [excForm, setExcForm] = useState({ justification: '', compensating_controls: '', approver_id: '', expires_at: '', review_frequency: '' })
+  const BLANK_ACCEPTANCE = { purpose: '', justification: '', compensating_controls: '', approver_id: '', expires_on: '', decision_due_on: '',
+    review_frequency: '', management_review: false, management_reviewer_id: '' }
+  const [excForm, setExcForm] = useState(BLANK_ACCEPTANCE)
+  // The database's own reading of band, type and authority (risk_acceptance_terms).
+  const [terms, setTerms] = useState(null)
+  useEffect(() => {
+    let live = true
+    if (requesting) fetchAcceptanceTerms(riskId).then(t => { if (live) setTerms(t) })
+    return () => { live = false }
+  }, [requesting, riskId])
   const [excError, setExcError] = useState('')
   const [excSaving, setExcSaving] = useState(false)
 
@@ -541,10 +616,15 @@ export function TreatmentTab({ risk, member, members, onRiskChanged, perms, verd
   // Who may accept, from the gate when it has judged, else from the band.
   const residualScored = !!(risk.residual_likelihood && risk.residual_impact)
   const score = residualScored ? risk.residual_score : (risk.inherent_score || 0)
-  const band = bandForScore(score, matrix)
+  const clientBand = bandForScore(score, matrix)
   const within = verdict?.evaluated ? verdict.passed : undefined
-  const required = verdict?.evaluated ? verdict.requiredAuthority : requiredAuthority({ band, withinTolerance: within })
-  const type = acceptanceType(within)
+  const clientRequired = verdict?.evaluated ? verdict.requiredAuthority : requiredAuthority({ band: clientBand, withinTolerance: within })
+  const band = terms?.band || clientBand
+  const required = terms?.required_authority || clientRequired
+  const type = terms?.acceptance_type || acceptanceType(within)
+  const maxMonths = maxTermMonths({ purpose: excForm.purpose, band, type })
+  const purposes = ACCEPTANCE_PURPOSES.filter(p => type !== 'exception' || p.value !== 'within_tolerance')
+  const reviewers = members.filter(m => m.role !== 'viewer' && m.user_id !== excForm.approver_id && m.user_id !== user?.id)
   const eligible = eligibleApprovers({ required, risk, holders, members })
   const state = normalizeWorkflowState(risk.workflow_state)
   const preMeasurement = state === 'draft' || state === 'registered'
@@ -559,31 +639,37 @@ export function TreatmentTab({ risk, member, members, onRiskChanged, perms, verd
   const submitAcceptance = async () => {
     setExcError('')
     const f = excForm
+    if (!f.purpose) { setExcError(tx('Choose the purpose of the acceptance.')); return }
     if (f.justification.trim().length < 20) { setExcError(tx('Give the rationale — why retaining this risk is justified.')); return }
-    if (type === 'exception' && !f.compensating_controls.trim()) { setExcError(tx('An exception above tolerance needs its compensating controls on record.')); return }
-    if (!f.approver_id) { setExcError(`Choose an approver who holds ${tierMeta(required).label} authority.`); return }
-    if (!f.expires_at || new Date(f.expires_at) <= new Date()) { setExcError(tx('An acceptance is time-bound: set an expiry date in the future.')); return }
+    if (type === 'exception' && f.compensating_controls.trim().length < 10) { setExcError(tx('An exception above tolerance needs its compensating controls on record.')); return }
+    if (!f.approver_id) { setExcError(`${tx('Choose an approver who holds this authority:')} ${tierMeta(required).label}`); return }
+    if (!f.expires_on || daysUntil(f.expires_on) <= 0) { setExcError(tx('An acceptance is time-bound: set an expiry date in the future.')); return }
+    if (f.expires_on > monthsPlus(maxMonths)) { setExcError(tx('This acceptance can run for at most {{n}} months.', { n: maxMonths })); return }
+    if (f.management_review && !f.management_reviewer_id) { setExcError(tx('Choose who carries out the management review.')); return }
     setExcSaving(true)
     try {
       await requestException({
+        purpose: f.purpose,
         justification: f.justification.trim(),
         compensating_controls: f.compensating_controls.trim() || null,
         approver_id: f.approver_id,
-        expires_at: new Date(f.expires_at).toISOString(),
-        exception_type: type,
-        required_authority: required,
-        band_at_request: band,
-        residual_at_request: score || null,
+        expires_on: f.expires_on,
+        decision_due_on: f.decision_due_on || null,
         review_frequency: f.review_frequency || (type === 'exception' ? 'Monthly' : 'Quarterly'),
-      }, risk)
-      setExcForm({ justification: '', compensating_controls: '', approver_id: '', expires_at: '', review_frequency: '' })
+        management_review: !!f.management_review,
+        management_reviewer_id: f.management_review ? f.management_reviewer_id : null,
+      })
+      setExcForm(BLANK_ACCEPTANCE)
       setRequesting(false)
     } catch (e) { setExcError(e.message) } finally { setExcSaving(false) }
   }
 
-  const handleDecide = async (id, decision, comment, authority) => {
-    await decideException(id, decision, comment, risk, authority)
+  const handleDecide = async (id, decision, comment, conditions) => {
+    await decideException(id, decision, comment, conditions)
     onRiskChanged && onRiskChanged()
+  }
+  const handleReview = async (id, outcome, note) => {
+    await reviewException(id, outcome, note)
   }
 
   return (
@@ -693,6 +779,16 @@ export function TreatmentTab({ risk, member, members, onRiskChanged, perms, verd
         <Card>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
+              <SelectField label={`${tx('Purpose')} *`} size="sm" value={excForm.purpose}
+                onChange={e => setExcForm(f => ({ ...f, purpose: e.target.value }))}>
+                <option value="">{tx('Why is this risk being retained?')}</option>
+                {purposes.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </SelectField>
+              {excForm.purpose && (
+                <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>{ACCEPTANCE_PURPOSES.find(p => p.value === excForm.purpose)?.desc}</p>
+              )}
+            </div>
+            <div>
               <p className="field-label">{tx('Rationale')} <span className="field-req">*</span></p>
               <textarea className="risys-input" rows={3} autoFocus style={{ width: '100%', resize: 'vertical', fontSize: 12.5 }}
                 value={excForm.justification} onChange={e => setExcForm(f => ({ ...f, justification: e.target.value }))}
@@ -710,7 +806,7 @@ export function TreatmentTab({ risk, member, members, onRiskChanged, perms, verd
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: 10 }}>
               <div>
-                <SelectField label={`Approver (${tierMeta(required).label} or above) *`} size="sm" value={excForm.approver_id}
+                <SelectField label={`${tx('Approver')} (${tierMeta(required).label} ${tx('or above')}) *`} size="sm" value={excForm.approver_id}
                   disabled={eligible.length === 0} onChange={e => setExcForm(f => ({ ...f, approver_id: e.target.value }))}>
                   <option value="">{eligible.length ? tx('Select approver…') : tx('Nobody holds this authority')}</option>
                   {eligible.map(m => <option key={m.user_id} value={m.user_id}>{m.full_name || m.email || m.user_id?.slice(0, 8)}</option>)}
@@ -721,17 +817,40 @@ export function TreatmentTab({ risk, member, members, onRiskChanged, perms, verd
               </div>
               <div>
                 <p className="field-label">{tx('Expires')} <span className="field-req">*</span></p>
-                <input type="date" className="risys-input" style={{ width: '100%', fontSize: 12 }} value={excForm.expires_at}
-                  onChange={e => setExcForm(f => ({ ...f, expires_at: e.target.value }))} />
+                <DateField value={excForm.expires_on} onChange={e => setExcForm(f => ({ ...f, expires_on: e.target.value }))} aria-label={tx('Expires')} />
+                <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>{tx('At most {{n}} months', { n: maxMonths })}</p>
               </div>
               <SelectField label={tx('Review')} size="sm" value={excForm.review_frequency || (type === 'exception' ? 'Monthly' : 'Quarterly')}
                 onChange={e => setExcForm(f => ({ ...f, review_frequency: e.target.value }))}>
-                {REVIEW_FREQUENCIES.map(r => <option key={r} value={r}>{r}</option>)}
+                {REVIEW_FREQUENCIES.map(r => <option key={r} value={r}>{tx(r)}</option>)}
               </SelectField>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 10, alignItems: 'start' }}>
+              <div>
+                <p className="field-label">{tx('Decision due')}</p>
+                <DateField value={excForm.decision_due_on} onChange={e => setExcForm(f => ({ ...f, decision_due_on: e.target.value }))} aria-label={tx('Decision due')} />
+                <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>{tx('Empty: the workspace default. At most 60 days.')}</p>
+              </div>
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: 'var(--text-2)', marginTop: 20 }}>
+                  <input type="checkbox" checked={excForm.management_review}
+                    onChange={e => setExcForm(f => ({ ...f, management_review: e.target.checked, management_reviewer_id: '' }))} />
+                  {tx('Management review before the decision')}
+                </label>
+                {excForm.management_review && (
+                  <div style={{ marginTop: 6 }}>
+                    <SelectField size="sm" value={excForm.management_reviewer_id}
+                      onChange={e => setExcForm(f => ({ ...f, management_reviewer_id: e.target.value }))}>
+                      <option value="">{tx('Who reviews it?')}</option>
+                      {reviewers.map(m => <option key={m.user_id} value={m.user_id}>{m.full_name || m.email || m.user_id?.slice(0, 8)}</option>)}
+                    </SelectField>
+                  </div>
+                )}
+              </div>
             </div>
             {excError && <p style={{ fontSize: 12, color: 'var(--critical)' }}>{excError}</p>}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => { setRequesting(false); setExcError('') }} className="btn-secondary" style={{ fontSize: 12.5 }}>{tx('Cancel')}</button>
+              <button onClick={() => { setRequesting(false); setExcError(''); setTerms(null) }} className="btn-secondary" style={{ fontSize: 12.5 }}>{tx('Cancel')}</button>
               <button onClick={submitAcceptance} disabled={excSaving} className="btn-primary" style={{ fontSize: 12.5 }}>
                 {excSaving ? <Spinner size="sm" /> : tx('Submit for approval')}
               </button>
@@ -742,7 +861,7 @@ export function TreatmentTab({ risk, member, members, onRiskChanged, perms, verd
 
       {exceptions.map(e => (
         <ExceptionCard key={e.id} exc={e} member={member} risk={risk} holders={holders}
-          fallbackRequired={required} onDecide={handleDecide} />
+          fallbackRequired={required} onDecide={handleDecide} onReview={handleReview} canManage={!!perms?.isManager} />
       ))}
 
       {/* Legacy actions not yet attached to a plan */}

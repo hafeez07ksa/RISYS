@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
 import { logAudit, AUDIT } from '@/lib/audit'
 import { uploadEvidenceFile, deleteEvidenceRecord } from '@/lib/evidence'
+import { requestRiskAcceptance, decideRiskAcceptance, reviewRiskAcceptance } from './useErm'
 
 // ── RISKS ─────────────────────────────────────────────────────────────────────
 export function useRisks(filters = {}) {
@@ -428,6 +429,19 @@ export function useRiskWorkflow(risk, onChanged) {
   const transition = async ({ action, to, comment }) => {
     setBusy(true)
     try {
+      // Revoking an acceptance is a decision on the acceptance record: the
+      // database checks who may revoke, closes the record, moves the risk back
+      // in front of the gate and writes the history in one step.
+      if (action === 'acceptance_revoked') {
+        const { data: active } = await supabase.from('risk_exceptions').select('id')
+          .eq('risk_id', risk.id).eq('status', 'approved').limit(1).maybeSingle()
+        if (active?.id) {
+          await decideRiskAcceptance(active.id, 'revoked', comment)
+          await fetchHistory()
+          onChanged && onChanged()
+          return
+        }
+      }
       const updates = { workflow_state: to, updated_at: new Date().toISOString() }
       // Admission is the reviewer's act: it validates the record and
       // makes the risk ID permanent.
@@ -588,7 +602,7 @@ export function useTreatmentActions(riskId) {
 
 // ── EXCEPTION REQUESTS (Risk Acceptance with expiry) ──────────
 export function useRiskExceptions(riskId) {
-  const { organization, user } = useAuth()
+  const { organization } = useAuth()
   const [exceptions, setExceptions] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -606,70 +620,29 @@ export function useRiskExceptions(riskId) {
 
   useEffect(() => { fetchExceptions() }, [fetchExceptions])
 
-  const requestException = async (data, risk) => {
-    const { data: exc, error } = await supabase
-      .from('risk_exceptions')
-      .insert({ ...data, org_id: organization.id, risk_id: riskId, requested_by: user?.id, status: 'pending' })
-      .select().single()
-    if (error) throw new Error(error.message)
-    if (data.approver_id) {
-      await notify(organization.id, data.approver_id, {
-        type: 'exception', title: `Exception approval requested: ${exc.exception_ref}`,
-        body: `Risk acceptance requested${risk?.risk_id ? ` for ${risk.risk_id}` : ''} — "${risk?.title || ''}".`,
-        link: `/app/risks/${riskId}`,
-      })
-    }
+  // Every change to an acceptance is an RPC: the database checks the authority
+  // ladder, independence, the purpose and term limits, moves the risk in and
+  // out of Accepted, writes the workflow history and notifies the people
+  // involved (migration erm_intake_assessment_acceptance).
+  const requestException = async (values) => {
+    const id = await requestRiskAcceptance(riskId, values)
     await fetchExceptions()
-    return exc
+    return id
   }
 
-  // Approve / reject / revoke. Approving marks the risk accepted;
-  // expiry is enforced by the expire_risk_exceptions() DB function.
-  const decideException = async (id, decision, comment, risk, authority) => {
-    const patch = {
-      status: decision, decision_comment: comment || null,
-      decided_at: new Date().toISOString(),
-    }
-    if (decision === 'approved') patch.granted_at = new Date().toISOString()
-    if (decision === 'approved' && authority) patch.decided_authority = authority
-    const { error } = await supabase.from('risk_exceptions').update(patch).eq('id', id)
-    if (error) throw new Error(error.message)
-
-    // An approved acceptance is a decision of record: it moves the risk into
-    // the Accepted lifecycle state, which the gate leaves alone until the
-    // acceptance is revoked or expires. Revoking puts it back before the gate.
-    if (riskId && (decision === 'approved' || (decision === 'revoked' && risk?.workflow_state === 'accepted'))) {
-      const to = decision === 'approved' ? 'accepted' : 'assessed'
-      const now = new Date().toISOString()
-      const riskPatch = decision === 'approved'
-        ? { status: 'accepted', treatment: 'accept', workflow_state: to, updated_at: now }
-        : { status: 'open', workflow_state: to, updated_at: now }
-      await supabase.from('risks').update(riskPatch).eq('id', riskId)
-      if (risk?.workflow_state !== to) {
-        await supabase.from('risk_workflow_history').insert({
-          org_id: organization.id, risk_id: riskId,
-          from_state: risk?.workflow_state || null, to_state: to,
-          action: decision === 'approved' ? 'acceptance_approved' : 'acceptance_revoked',
-          comment: comment || null, performed_by: user?.id,
-        })
-      }
-    }
-    const decidedRow = exceptions.find(e => e.id === id)
-    await logAudit(organization.id, AUDIT.RISK_EXCEPTION_DECIDED, 'risk', riskId, risk?.title ?? null, {
-      decision, type: decidedRow?.exception_type || null, authority: authority || null, comment: comment || null,
-    })
-    const exc = exceptions.find(e => e.id === id)
-    if (exc?.requested_by) {
-      await notify(organization.id, exc.requested_by, {
-        type: 'exception', title: `Exception ${decision}: ${exc.exception_ref}`,
-        body: comment || `Your risk acceptance request was ${decision}.`,
-        link: `/app/risks/${riskId}`,
-      })
-    }
+  // decision: 'approved' | 'rejected' | 'revoked'
+  const decideException = async (id, decision, comment, conditions = null) => {
+    await decideRiskAcceptance(id, decision, comment, conditions)
     await fetchExceptions()
   }
 
-  return { exceptions, loading, requestException, decideException, refetch: fetchExceptions }
+  // outcome: 'endorsed' | 'objected' — the named management reviewer only
+  const reviewException = async (id, outcome, note) => {
+    await reviewRiskAcceptance(id, outcome, note)
+    await fetchExceptions()
+  }
+
+  return { exceptions, loading, requestException, decideException, reviewException, refetch: fetchExceptions }
 }
 
 // Run exception auto-expiry for the org (cheap; call on register load)
